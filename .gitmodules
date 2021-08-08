@@ -1,0 +1,21 @@
+[submodule "Milo/dependencies/glfw"]
+	path = Milo/dependencies/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "Milo/dependencies/imgui"]
+	path = Milo/dependencies/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "Milo/dependencies/glm"]
+	path = Milo/dependencies/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Milo/dependencies/VulkanMemoryAllocator"]
+	path = Milo/dependencies/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "Milo/dependencies/spdlog"]
+	path = Milo/dependencies/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "Milo/dependencies/stb"]
+	path = Milo/dependencies/stb
+	url = https://github.com/nothings/stb.git
+[submodule "Milo/dependencies/json"]
+	path = Milo/dependencies/json
+	url = https://github.com/nlohmann/json.git
