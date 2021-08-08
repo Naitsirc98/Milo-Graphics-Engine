@@ -8,7 +8,7 @@ int main()
 {
 	Log::debug("Hello, {}", Random::nextInt(0, 10));
 
-	const ArrayList<String>& lines = Files::readAllLines("file.txt");
+	const ArrayList<String>& lines = Files::readAllLines("C:/Users/naits/Documents/vector 2.txt");
 	for(const String& line : lines) {
 		Log::info(line);
 	}
