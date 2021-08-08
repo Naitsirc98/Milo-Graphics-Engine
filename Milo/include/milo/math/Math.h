@@ -11,7 +11,7 @@
 
 #include "milo/common/Strings.h"
 
-namespace milo::math {
+namespace milo {
 
 		using namespace glm;
 

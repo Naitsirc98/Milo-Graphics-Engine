@@ -6,6 +6,7 @@
 #include <deque>
 #include <unordered_map>
 #include <map>
+#include "Strings.h"
 
 namespace milo {
 
@@ -35,4 +36,19 @@ namespace milo {
 
 	template<typename First, typename Second>
 	using Pair = std::pair<First, Second>;
+
+	class Lists {
+	public:
+		template<typename T>
+		inline static String str(const ArrayList<T>& list) {
+			StringStream stream;
+			stream << '[';
+			for(size_t i = 0;i < list.size() - 1;++i) {
+				stream << milo::str(list[i]) << ", ";
+			}
+			if(!list.empty()) stream << milo::str(list[list.size() - 1]);
+			stream << ']';
+			return stream.str();
+		}
+	};
 }

@@ -16,4 +16,9 @@ namespace milo {
 	inline String str(const char* value) {
 		return value;
 	}
+
+	template<>
+	inline String str(const String& value) {
+		return value;
+	}
 }

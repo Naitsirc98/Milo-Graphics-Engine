@@ -1,6 +1,6 @@
 #include "milo/math/Math.h"
 
-namespace milo::math {
+namespace milo {
 	
 	String str(const Vector2& vec) {
 		StringStream ss;
@@ -39,12 +39,12 @@ namespace milo::math {
 
 	static int _ = genSeed();
 
-	int32 milo::math::Random::nextInt(int32 min, int32 max)
+	int32 milo::Random::nextInt(int32 min, int32 max)
 	{
 		return min + (rand() % max);
 	}
 
-	float milo::math::Random::nextFloat(float min, float max)
+	float milo::Random::nextFloat(float min, float max)
 	{
 		return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX/(max - min)));
 	}
