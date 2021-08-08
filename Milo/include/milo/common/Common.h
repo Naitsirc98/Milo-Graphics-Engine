@@ -4,6 +4,7 @@
 #include "Collections.h"
 #include "Strings.h"
 #include "Memory.h"
+#include "Exceptions.h"
 
 #include <functional>
 

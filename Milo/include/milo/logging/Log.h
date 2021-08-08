@@ -3,11 +3,11 @@
 #include "milo/common/Common.h"
 #include <spdlog/spdlog.h>
 
-#define LOG_TRACE(message) milo::Log::trace(UTAD_DETAILED_MESSAGE((message))
-#define LOG_INFO(message) milo::Log::info(UTAD_DETAILED_MESSAGE((message))
-#define LOG_DEBUG(message) milo::Log::debug(UTAD_DETAILED_MESSAGE((message))
-#define LOG_WARN(message) milo::Log::warn(UTAD_DETAILED_MESSAGE((message))
-#define LOG_ERROR(message) milo::Log::error(UTAD_DETAILED_MESSAGE((message))
+#define LOG_TRACE(message) milo::Log::trace(MILO_DETAILED_MESSAGE((message))
+#define LOG_INFO(message) milo::Log::info(MILO_DETAILED_MESSAGE((message))
+#define LOG_DEBUG(message) milo::Log::debug(MILO_DETAILED_MESSAGE((message))
+#define LOG_WARN(message) milo::Log::warn(MILO_DETAILED_MESSAGE((message))
+#define LOG_ERROR(message) milo::Log::error(MILO_DETAILED_MESSAGE((message))
 
 namespace milo {
 
@@ -60,8 +60,6 @@ namespace milo {
 		{
 			s_Logger->error(fmt, std::forward<Args>(args)...);
 		}
-
-		static void init();
 
 	private:
 		static SharedPtr<spdlog::logger> s_Logger;

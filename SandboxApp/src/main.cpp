@@ -1,15 +1,11 @@
 #include <iostream>
 #include "milo/Milo.h"
 
+using namespace milo;
+
 int main()
 {
-#ifdef _DEBUG
-	std::cout << "Debug" << std::endl;
-#else
-	std::cout << "Release\n";
-#endif
-
-	milo::Log::info("Hola!");
+	LOG_INFO("Hola");
 
 	return 0;
 }

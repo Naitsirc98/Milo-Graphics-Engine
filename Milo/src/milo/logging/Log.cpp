@@ -41,10 +41,4 @@ namespace milo {
 	void Log::error(const String& message) {
 		milo::Log::s_Logger->error(message);
 	}
-
-	void Log::init() {
-		s_Logger = spdlog::stdout_color_mt("Milo");
-		s_Logger->set_pattern("[%D %H:%M:%S][%n]%^[%l]: %v%$");
-	}
-
 }
