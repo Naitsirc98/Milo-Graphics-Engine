@@ -5,6 +5,7 @@
 #include "Strings.h"
 #include "Memory.h"
 #include "Exceptions.h"
+#include "milo/math/Math.h"
 
 #include <functional>
 

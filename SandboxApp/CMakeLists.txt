@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 
 project("SandboxApp")
 
+set(CMAKE_CXX_STANDARD 17)
+
 # Add source files
 file(GLOB_RECURSE APPLICATION_SOURCE_FILES
         src/*.c

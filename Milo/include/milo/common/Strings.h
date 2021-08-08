@@ -1,10 +1,12 @@
 #pragma once
 
 #include <string>
+#include <sstream>
 
 namespace milo {
 
 	using String = std::string;
+	using StringStream = std::stringstream;
 
 	template<typename T>
 	inline String str(const T& value) {

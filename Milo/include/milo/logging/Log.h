@@ -3,9 +3,12 @@
 #include "milo/common/Common.h"
 #include <spdlog/spdlog.h>
 
-#define LOG_TRACE(message) milo::Log::trace(MILO_DETAILED_MESSAGE((message))
-#define LOG_INFO(message) milo::Log::info(MILO_DETAILED_MESSAGE((message))
+#ifdef _DEBUG
 #define LOG_DEBUG(message) milo::Log::debug(MILO_DETAILED_MESSAGE((message))
+#else
+#define LOG_DEBUG(message)
+#endif
+#define LOG_INFO(message) milo::Log::info(MILO_DETAILED_MESSAGE((message))
 #define LOG_WARN(message) milo::Log::warn(MILO_DETAILED_MESSAGE((message))
 #define LOG_ERROR(message) milo::Log::error(MILO_DETAILED_MESSAGE((message))
 
@@ -15,9 +18,10 @@ namespace milo {
 
 	public:
 		enum class Level {
-			Trace = spdlog::level::trace,
-			Info = spdlog::level::info,
+#ifdef _DEBUG
 			Debug = spdlog::level::debug,
+#endif
+			Info = spdlog::level::info,
 			Warning = spdlog::level::warn,
 			Error = spdlog::level::err
 		};
@@ -26,25 +30,24 @@ namespace milo {
 		static Log::Level level();
 		static void level(Log::Level level);
 
-		static void trace(const String& message);
+#ifdef _DEBUG
+		static void debug(const String& message);
 		template<typename... Args>
-		static void trace(fmt::format_string<Args...> fmt, Args &&...args)
+		static void debug(fmt::format_string<Args...> fmt, Args &&...args)
 		{
-			s_Logger->trace(fmt, std::forward<Args>(args)...);
+			s_Logger->debug(fmt, std::forward<Args>(args)...);
 		}
+#else
+		inline static void debug(const String& message) {}
+		template<typename... Args>
+		inline static void debug(fmt::format_string<Args...> fmt, Args &&...args) {}
+#endif
 
 		static void info(const String& message);
 		template<typename... Args>
 		static void info(fmt::format_string<Args...> fmt, Args &&...args)
 		{
 			s_Logger->info(fmt, std::forward<Args>(args)...);
-		}
-
-		static void debug(const String& message);
-		template<typename... Args>
-		static void debug(fmt::format_string<Args...> fmt, Args &&...args)
-		{
-			s_Logger->debug(fmt, std::forward<Args>(args)...);
 		}
 
 		static void warn(const String& message);
