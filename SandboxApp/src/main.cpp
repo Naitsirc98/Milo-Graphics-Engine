@@ -9,7 +9,7 @@ int main()
 	std::cout << "Release\n";
 #endif
 
-	std::cout << getPhysicalDeviceCount() << std::endl;
+	std::cout << milo::str(45) << std::endl;
 
 	return 0;
 }
