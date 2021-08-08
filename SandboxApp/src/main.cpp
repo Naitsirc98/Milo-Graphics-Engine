@@ -9,7 +9,7 @@ int main()
 	std::cout << "Release\n";
 #endif
 
-	std::cout << milo::str(45) << std::endl;
+	milo::Log::info("Hola!");
 
 	return 0;
 }

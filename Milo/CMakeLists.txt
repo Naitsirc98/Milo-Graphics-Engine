@@ -20,6 +20,7 @@ endif()
 
 file(GLOB_RECURSE ENGINE_SOURCE_FILES
         src/*.cpp
+        src/*.c
         ${VULKAN_SOURCE_FILES}
         dependencies/glad/*.c
         dependencies/stb/*.c
@@ -34,6 +35,7 @@ endif()
 
 file(GLOB_RECURSE ENGINE_HEADER_FILES
         include/*.h
+        include/*.hpp
         ${VULKAN_INCLUDE_FILES}
         )
 
