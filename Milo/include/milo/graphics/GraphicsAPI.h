@@ -8,4 +8,10 @@ namespace milo {
 		Vulkan,
 		Default = Vulkan
 	};
+
+	template<>
+	inline String str(const GraphicsAPI& graphicsApi) {
+		if(graphicsApi == GraphicsAPI::Vulkan) return "Vulkan";
+		return "Unknown GraphicsAPI";
+	}
 }
