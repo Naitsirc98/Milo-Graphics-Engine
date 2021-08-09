@@ -3,7 +3,7 @@
 
 namespace milo {
 
-	ArrayList<EventCallback> EventSystem::s_EventCallbacks[static_cast<size_t>(EventType::_MaxEnum)];
+	ArrayList<EventCallback> EventSystem::s_EventCallbacks[static_cast<size_t>(EventType::MaxEnumValue)];
 	EventAllocator EventSystem::s_Allocator1;
 	EventAllocator EventSystem::s_Allocator2;
 	EventAllocator* EventSystem::s_FrontEventQueue;

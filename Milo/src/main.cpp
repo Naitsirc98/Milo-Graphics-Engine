@@ -1,5 +1,16 @@
 #include "milo/Milo.h"
 
+using namespace milo;
+
+struct A {
+	int x;
+	virtual ~A() {}
+};
+
+struct B : public A {
+
+};
+
 int main() {
 
 	milo::AppConfiguration config;

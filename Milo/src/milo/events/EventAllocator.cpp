@@ -1,4 +1,5 @@
 #include "milo/events/EventAllocator.h"
+#include "milo/logging/Log.h"
 
 namespace milo {
 
@@ -16,7 +17,8 @@ namespace milo {
 
 	void* EventAllocator::allocate(size_t allocSize) {
 #ifdef _DEBUG
-		if(allocSize > EVENT_MAX_SIZE) throw MILO_RUNTIME_EXCEPTION("EventAllocator invalid allocSize: size > MAX_EVENT_SIZE");
+		if(allocSize > EVENT_MAX_SIZE)
+			throw MILO_RUNTIME_EXCEPTION(fmt::format("EventAllocator: invalid allocSize: {} > MAX_EVENT_SIZE", allocSize));
 		if(m_Pointer + allocSize > m_Capacity)
 			throw MILO_RUNTIME_EXCEPTION("EventAllocator out of memory");
 #endif

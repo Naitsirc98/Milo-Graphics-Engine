@@ -13,7 +13,7 @@ namespace milo {
 		friend class MiloEngine;
 		friend class MiloSubSystemManager;
 	private:
-		static ArrayList<EventCallback> s_EventCallbacks[static_cast<size_t>(EventType::_MaxEnum)];
+		static ArrayList<EventCallback> s_EventCallbacks[static_cast<size_t>(EventType::MaxEnumValue)];
 		static EventAllocator s_Allocator1;
 		static EventAllocator s_Allocator2;
 		static EventAllocator* s_FrontEventQueue;

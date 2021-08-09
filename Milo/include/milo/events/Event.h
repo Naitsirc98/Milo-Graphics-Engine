@@ -3,8 +3,6 @@
 
 namespace milo {
 
-	const size_t EVENT_MAX_SIZE = 16;
-
 	enum class EventType {
 		KeyRelease = 0,
 		KeyPress,
@@ -25,15 +23,20 @@ namespace milo {
 		WindowMaximized,
 		WindowMinimized,
 		ApplicationExit,
-		UserEvent,
-		_MaxEnum
+		MaxEnumValue
 	};
 
+	const int32 MAX_EVENT_SIZE = 32;
+
 	class Event {
+		friend class EventAllocator;
+	protected:
+		int8 const m_Data[MAX_EVENT_SIZE]{0};
+	protected:
+		explicit Event(EventType type);
 	public:
-		Event() = default;
 		virtual ~Event() = default;
-		[[nodiscard]] virtual EventType type() const = 0;
+		[[nodiscard]] EventType type() const;
 	};
 
 	using EventCallback = Function<void, Event&>;

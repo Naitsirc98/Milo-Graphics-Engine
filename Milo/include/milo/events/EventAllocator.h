@@ -5,8 +5,6 @@
 namespace milo {
 
 	class EventAllocator {
-	public:
-		inline static const size_t HEADER_SIZE = sizeof(uint8);
 	private:
 		int8* m_Memory = nullptr;
 		size_t m_Capacity = 0;
