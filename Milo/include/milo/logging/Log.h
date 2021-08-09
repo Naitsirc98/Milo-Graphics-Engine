@@ -15,6 +15,7 @@
 namespace milo {
 
 	class Log {
+		friend class MiloSubSystemManager;
 
 	public:
 		enum class Level {
@@ -63,6 +64,9 @@ namespace milo {
 		{
 			s_Logger->error(fmt, std::forward<Args>(args)...);
 		}
+
+	private:
+		static void init();
 
 	private:
 		static SharedPtr<spdlog::logger> s_Logger;

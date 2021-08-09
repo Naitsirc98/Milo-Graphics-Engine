@@ -20,21 +20,19 @@ namespace milo {
 
 	class MiloEngine {
 	private:
-		static MiloEngine* s_Instance;
+		static AtomicBool s_AlreadyLaunched;
 	public:
 		static MiloExitResult launch(Application& application);
 	private:
 		Application& m_Application;
+	public:
+		MiloEngine() = delete;
 	private:
-		MiloEngine(Application& application);
-		~MiloEngine() = default;
-	private:
-		void start();
-		void run();
-		void update();
-		void render();
-		void renderUI();
-		void init();
-		void shutdown();
+		static void run();
+		static void update();
+		static void render();
+		static void renderUI();
+		static void init();
+		static void shutdown();
 	};
 }

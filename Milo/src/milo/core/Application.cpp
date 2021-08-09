@@ -12,6 +12,10 @@ namespace milo {
 		return m_Configuration;
 	}
 
+	Application &Application::get() {
+		return *s_Instance;
+	}
+
 	void Application::exit() {
 		s_Instance->m_Running = false;
 	}

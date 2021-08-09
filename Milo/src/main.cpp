@@ -2,7 +2,12 @@
 
 int main() {
 
-	milo::Log::info("Hey!");
+	milo::AppConfiguration config;
+	config.applicationName = "Milo Engine";
 
-	return 0;
+	milo::Application app(config);
+
+	milo::MiloExitResult exitResult = milo::MiloEngine::launch(app);
+
+	return exitResult.exitCode;
 }

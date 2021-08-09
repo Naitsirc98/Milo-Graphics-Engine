@@ -15,10 +15,11 @@ namespace milo {
 		friend class MiloEngine;
 	private:
 		const AppConfiguration& m_Configuration;
-		volatile bool m_Running = false;
+		bool m_Running = false;
 	public:
 		explicit Application(const AppConfiguration& config);
 		virtual ~Application() = default;
+		[[nodiscard]] inline bool running() const {return m_Running;}
 		[[nodiscard]] const AppConfiguration& configuration() const;
 		virtual void onInit() {}
 		virtual void onStart() {}
@@ -29,6 +30,7 @@ namespace milo {
 		virtual void onShutdown() {}
 		virtual void onExit() {}
 	public:
+		static Application& get();
 		static void exit();
 	private:
 		static Application* s_Instance;

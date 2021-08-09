@@ -3,16 +3,7 @@
 
 namespace milo {
 
-	static inline SharedPtr<spdlog::logger> createLogger() noexcept {
-		SharedPtr<spdlog::logger> logger = spdlog::stdout_color_mt("Milo");
-		logger->set_pattern("%^[%D %H:%M:%S][%n][%l]: %v%$");
-#ifdef _DEBUG
-		logger->set_level(spdlog::level::debug);
-#endif
-		return logger;
-	}
-
-	SharedPtr<spdlog::logger> Log::s_Logger = createLogger();
+	SharedPtr<spdlog::logger> Log::s_Logger = nullptr;
 #ifdef _DEBUG
 	Log::Level Log::s_Level = Log::Level::Debug;
 #else
@@ -44,5 +35,13 @@ namespace milo {
 
 	void Log::error(const String& message) {
 		milo::Log::s_Logger->error(message);
+	}
+
+	void Log::init() {
+		s_Logger = spdlog::stdout_color_mt("Milo");
+		s_Logger->set_pattern("%^[%D %H:%M:%S][%n][%l]: %v%$");
+#ifdef _DEBUG
+		s_Logger->set_level(spdlog::level::debug);
+#endif
 	}
 }

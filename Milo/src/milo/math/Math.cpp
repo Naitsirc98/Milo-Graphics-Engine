@@ -41,7 +41,7 @@ namespace milo {
 
 	int32 milo::Random::nextInt(int32 min, int32 max)
 	{
-		return min + (rand() % max);
+		return rand() % (max - min + 1) + min;
 	}
 
 	float milo::Random::nextFloat(float min, float max)

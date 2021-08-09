@@ -1,6 +1,9 @@
 #pragma once
 
 #include "milo/common/Common.h"
+#include "milo/logging/Log.h"
+#include "milo/time/Time.h"
+#include "milo/events/EventSystem.h"
 
 namespace milo {
 
