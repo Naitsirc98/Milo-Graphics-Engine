@@ -2,6 +2,9 @@
 
 #include <memory>
 
+#define DELETE_PTR(ptr) {delete ptr; ptr = nullptr;}
+#define DELETE_ARRAY(arr) {delete arr; arr = nullptr;}
+
 namespace milo {
 
 	template<typename T>

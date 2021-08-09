@@ -2,11 +2,10 @@
 
 namespace milo {
 
+	Application* Application::s_Instance = nullptr;
+
 	Application::Application(const AppConfiguration& config) : m_Configuration(config) {
 
-	}
-
-	Application::~Application() {
 	}
 
 	const AppConfiguration& Application::configuration() const {

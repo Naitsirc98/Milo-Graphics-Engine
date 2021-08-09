@@ -5,6 +5,7 @@
 namespace milo {
 
 	class Time {
+		friend class MiloEngine;
 	private:
 		static float s_RawDeltaTime;
 		static float s_DeltaTime;
@@ -20,7 +21,7 @@ namespace milo {
 
 	struct Stopwatch {
 		const float startTime;
-		Stopwatch(float startTime) noexcept : startTime(startTime) {}
-		inline float elapsed() {return Time::now() - startTime;}
+		explicit Stopwatch(float startTime) noexcept : startTime(startTime) {}
+		[[nodiscard]] inline float elapsed() const {return Time::now() - startTime;}
 	};
 }

@@ -25,6 +25,7 @@ namespace milo {
 		virtual void onUpdate() {}
 		virtual void onLateUpdate() {}
 		virtual void onRender() {}
+		virtual void onUIRender() {}
 		virtual void onShutdown() {}
 		virtual void onExit() {}
 	public:

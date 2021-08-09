@@ -11,4 +11,4 @@ set(APPLICATION_PROJECT_NAME "SandboxApp")
 
 # Include sub-projects.
 add_subdirectory("Milo")
-add_subdirectory("SandboxApp")
+#add_subdirectory("SandboxApp")
