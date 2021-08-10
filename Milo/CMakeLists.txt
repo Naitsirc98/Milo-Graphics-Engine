@@ -30,7 +30,7 @@ file(GLOB_RECURSE ENGINE_HEADER_FILES
 # add_library(${PROJECT_NAME} STATIC ${ENGINE_HEADER_FILES} ${ENGINE_SOURCE_FILES} include/milo/core/MiloSubSystemManager.h src/milo/core/MiloSubSystemManager.cpp include/milo/common/Concurrency.h)
 
 # Build this project as an executable
-add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} src/milo/core/MemoryTracker.cpp)
+add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} include/milo/scenes/Entity.h)
 
 # DEPENDENCIES
 set(PROJECT_DEPENDENCIES_DIR ${PROJECT_SOURCE_DIR}/dependencies)
@@ -53,6 +53,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/sp
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/imgui)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/stb)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/json/single_include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/entt)
 
 # PRECOMPILED HEADERS
 #target_precompile_headers(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/include/public_headers/engine/core/Common.h")
@@ -63,3 +64,5 @@ target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} glm)
 target_link_libraries(${PROJECT_NAME} spdlog)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES})
+
+#target_precompile_headers(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/include/milo/common/Common.h)
