@@ -14,7 +14,6 @@ namespace milo {
 		static float s_DeltaTime;
 		static size_t s_Frame;
 		static TimePoint s_StartTimeSeconds;
-		static float s_UpdateDelay;
 		static size_t s_Ups;
 		static size_t s_Fps;
 	public:
@@ -24,7 +23,6 @@ namespace milo {
 		static size_t frame() noexcept;
 		static size_t ups() noexcept;
 		static size_t fps() noexcept;
-		static size_t updateDelay() noexcept;
 	private:
 		static void init();
 	public:

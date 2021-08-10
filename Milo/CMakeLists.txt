@@ -30,7 +30,7 @@ file(GLOB_RECURSE ENGINE_HEADER_FILES
 # add_library(${PROJECT_NAME} STATIC ${ENGINE_HEADER_FILES} ${ENGINE_SOURCE_FILES} include/milo/core/MiloSubSystemManager.h src/milo/core/MiloSubSystemManager.cpp include/milo/common/Concurrency.h)
 
 # Build this project as an executable
-add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} src/milo/core/MiloEngine.cpp include/milo/events/EventAllocator.h src/milo/events/EventAllocator.cpp src/milo/events/EventSystem.cpp)
+add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES})
 
 # DEPENDENCIES
 set(PROJECT_DEPENDENCIES_DIR ${PROJECT_SOURCE_DIR}/dependencies)

@@ -144,6 +144,8 @@ namespace milo {
 		Mod_Num_Lock        = 0x0020
 	};
 
+	using Scancode = int32;
+
 	using KeyModifiersBitMask = int32;
 	bool hasKeyModifier(const KeyModifiersBitMask& keyModifiers, KeyModifier modifier);
 	void addKeyModifier(KeyModifiersBitMask& keyModifiers, KeyModifier modifier);

@@ -1,11 +1,7 @@
 #pragma once
 #include "milo/common/Common.h"
 #include "milo/events/Event.h"
-#include "milo/events/KeyboardEvents.h"
-#include "milo/events/MouseEvents.h"
-#include "milo/events/WindowEvents.h"
-#include "milo/events/ApplicationEvents.h"
-#include "EventAllocator.h"
+#include "EventQueue.h"
 
 namespace milo {
 
@@ -14,18 +10,17 @@ namespace milo {
 		friend class MiloSubSystemManager;
 	private:
 		static ArrayList<EventCallback> s_EventCallbacks[static_cast<size_t>(EventType::MaxEnumValue)];
-		static EventAllocator s_Allocator1;
-		static EventAllocator s_Allocator2;
-		static EventAllocator* s_FrontEventQueue;
-		static EventAllocator* s_BackEventQueue;
+		static EventQueue s_Allocator1;
+		static EventQueue s_Allocator2;
+		static EventQueue* s_FrontEventQueue;
+		static EventQueue* s_BackEventQueue;
 
 	public:
 		static void addEventCallback(EventType type, const EventCallback& callback);
 
-		template<typename E, typename... Args>
-		static E* publishEvent(Args&&... args) {
-			E* event = s_FrontEventQueue->create<E>(std::forward<Args>(args)...);
-			return event;
+		template<typename E>
+		static void publishEvent(const E& event) {
+			s_FrontEventQueue->push<E>(event);
 		}
 
 		EventSystem() = delete;

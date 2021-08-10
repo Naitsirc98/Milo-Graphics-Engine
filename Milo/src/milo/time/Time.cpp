@@ -11,7 +11,6 @@ namespace milo {
 	float Time::s_DeltaTime = 0.0f;
 	size_t Time::s_Frame = 0;
 	TimePoint Time::s_StartTimeSeconds;
-	float Time::s_UpdateDelay = 0;
 	size_t Time::s_Ups = 0;
 	size_t Time::s_Fps = 0;
 
@@ -38,10 +37,6 @@ namespace milo {
 
 	size_t Time::fps() noexcept {
 		return s_Fps;
-	}
-
-	size_t Time::updateDelay() noexcept {
-		return s_UpdateDelay;
 	}
 
 	void Time::init() {

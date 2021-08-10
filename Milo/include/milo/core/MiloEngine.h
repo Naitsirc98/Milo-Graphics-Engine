@@ -29,7 +29,7 @@ namespace milo {
 		MiloEngine() = delete;
 	private:
 		static void run();
-		static void update();
+		static void update(float& updateDelay, float& lastUpdate);
 		static void render();
 		static void renderUI();
 		static void init();
