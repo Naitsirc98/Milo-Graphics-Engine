@@ -56,10 +56,6 @@ namespace milo {
 		init();
 		application.onStart();
 
-		EventSystem::addEventCallback(EventType::KeyPress, [&](const Event& e) {
-			const auto& event = static_cast<const KeyPressEvent&>(e);
-		});
-
 		float updateDelay = 0;
 
 		float lastFrame = Time::now();
@@ -79,8 +75,9 @@ namespace milo {
 			++Time::s_Frame;
 
 			if(Time::now() - debugTime >= DEBUG_MIN_TIME) {
-				Log::info("Frame: {}, Ups: {}, Fps: {}, DeltaTime: {}, FrameTime: {} ms",
-						  Time::frame(), Time::ups(), Time::fps(), Time::deltaTime(), Time::rawDeltaTime() * 1000.0f);
+				Log::info("Ups: {}, Fps: {}, Dt:{}, Ft: {} ms, Mem: {}",
+						  Time::ups(), Time::fps(), Time::deltaTime(), Time::rawDeltaTime() * 1000.0f,
+						  MemoryTracker::totalAllocationSizeStr());
 				Time::s_Ups = Time::s_Fps = 0;
 				debugTime = Time::now();
 			}

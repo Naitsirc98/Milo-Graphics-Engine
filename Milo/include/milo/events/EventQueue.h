@@ -14,8 +14,9 @@ namespace milo {
 		size_t m_Capacity = 0;
 		size_t m_Size = 0;
 	public:
-		explicit EventQueue(size_t capacity);
+		explicit EventQueue();
 		~EventQueue();
+		void reserve(size_t capacity);
 		void clear();
 		[[nodiscard]] size_t size() const;
 		[[nodiscard]] size_t capacity() const;

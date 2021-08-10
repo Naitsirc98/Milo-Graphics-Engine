@@ -10,8 +10,8 @@ namespace milo {
 		friend class MiloSubSystemManager;
 	private:
 		static ArrayList<EventCallback> s_EventCallbacks[static_cast<size_t>(EventType::MaxEnumValue)];
-		static EventQueue s_Allocator1;
-		static EventQueue s_Allocator2;
+		static EventQueue s_EventQueue1;
+		static EventQueue s_EventQueue2;
 		static EventQueue* s_FrontEventQueue;
 		static EventQueue* s_BackEventQueue;
 

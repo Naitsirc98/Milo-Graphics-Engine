@@ -3,9 +3,7 @@
 
 namespace milo {
 
-	EventQueue::EventQueue(size_t capacity) : m_Capacity(capacity) {
-		m_Events = new RawEvent[capacity]{0};
-	}
+	EventQueue::EventQueue() = default;
 
 	EventQueue::~EventQueue() {
 		DELETE_ARRAY(m_Events);
@@ -18,6 +16,13 @@ namespace milo {
 
 	size_t EventQueue::capacity() const {
 		return m_Capacity;
+	}
+
+	void EventQueue::reserve(size_t capacity) {
+		if(m_Capacity == capacity) return;
+		if(capacity < m_Capacity && m_Events != nullptr) DELETE_ARRAY(m_Events);
+		m_Events = NEW RawEvent[capacity]{0};
+		m_Capacity = capacity;
 	}
 
 	void EventQueue::clear() {

@@ -6,8 +6,8 @@
 namespace milo {
 
 	ArrayList<EventCallback> EventSystem::s_EventCallbacks[static_cast<size_t>(EventType::MaxEnumValue)];
-	EventQueue EventSystem::s_Allocator1(MAX_EVENT_COUNT);
-	EventQueue EventSystem::s_Allocator2(MAX_EVENT_COUNT);
+	EventQueue EventSystem::s_EventQueue1;
+	EventQueue EventSystem::s_EventQueue2;
 	EventQueue* EventSystem::s_FrontEventQueue;
 	EventQueue* EventSystem::s_BackEventQueue;
 
@@ -47,18 +47,21 @@ namespace milo {
 			callbackList.reserve(4);
 		}
 
-		s_FrontEventQueue = &s_Allocator1;
-		s_BackEventQueue = &s_Allocator2;
+		s_EventQueue1.reserve(MAX_EVENT_COUNT);
+		s_EventQueue2.reserve(MAX_EVENT_COUNT);
+
+		s_FrontEventQueue = &s_EventQueue1;
+		s_BackEventQueue = &s_EventQueue2;
 	}
 
 	void EventSystem::shutdown() {
-		for(size_t i = 0;i < s_Allocator1.size(); ++i) {
-			Event& event = s_Allocator1[i];
+		for(size_t i = 0; i < s_EventQueue1.size(); ++i) {
+			Event& event = s_EventQueue1[i];
 			event.~Event();
 		}
 
-		for(size_t i = 0;i < s_Allocator2.size(); ++i) {
-			Event& event = s_Allocator2[i];
+		for(size_t i = 0; i < s_EventQueue2.size(); ++i) {
+			Event& event = s_EventQueue2[i];
 			event.~Event();
 		}
 
