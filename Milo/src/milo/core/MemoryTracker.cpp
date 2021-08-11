@@ -49,7 +49,9 @@ namespace milo {
 		s_Allocations[address] = allocation;
 		++s_TotalAllocations;
 		s_TotalAllocationSize += size;
-		Log::warn("Milo Allocation: size={}, file={}({})", byteSize(allocation.size), allocation.file, allocation.line);
+		String filename = String(allocation.file);
+		filename.erase(0, filename.find_last_of("milo")-3);
+		Log::warn("Milo Allocation: size={}, file={}({})", byteSize(allocation.size), filename, allocation.line);
 	}
 
 	void MemoryTracker::add(uint64_t address, size_t size) {

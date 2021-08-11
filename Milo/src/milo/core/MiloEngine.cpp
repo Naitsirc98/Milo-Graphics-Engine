@@ -1,5 +1,6 @@
 #include "milo/core/MiloEngine.h"
-#include <milo/events/EventSystem.h>
+#include "milo/events/EventSystem.h"
+#include "milo/scenes/SceneManager.h"
 
 namespace milo {
 
@@ -75,9 +76,13 @@ namespace milo {
 			++Time::s_Frame;
 
 			if(Time::now() - debugTime >= DEBUG_MIN_TIME) {
+#ifdef _DEBUG
 				Log::info("Ups: {}, Fps: {}, Dt:{}, Ft: {} ms, Mem: {}",
 						  Time::ups(), Time::fps(), Time::deltaTime(), Time::rawDeltaTime() * 1000.0f,
 						  MemoryTracker::totalAllocationSizeStr());
+#else
+				Log::info("Ups: {}, Fps: {}, Dt:{}, Ft: {} ms", Time::ups(), Time::fps(), Time::deltaTime(), Time::rawDeltaTime() * 1000.0f);
+#endif
 				Time::s_Ups = Time::s_Fps = 0;
 				debugTime = Time::now();
 			}
@@ -98,34 +103,8 @@ namespace milo {
 			lastUpdate = now;
 
 			EventSystem::update();
-			// TODO...
-			// debug purposes
-			if(Random::nextInt() % 5 == 0) {
-				int32 count = Random::nextInt(1500, 8192);
-				//Log::warn("Publishing {} events...", count);
-				for(size_t i = 0; i < count; ++i) {
-					if(i % 2 == 0) {
-						KeyPressEvent event = {};
-						event.key = Key::Key_X;
-						event.scancode = Random::nextInt(0, 1000);
-						event.modifiers = Random::nextInt(0, 80);
-						EventSystem::publishEvent(event);
-					} else if(i % 3 == 0) {
-						MouseMoveEvent event = {};
-						event.position = {i, i};
-						EventSystem::publishEvent(event);
-					} else if(i % 5 == 0) {
-						MouseButtonRepeatEvent event = {};
-						event.modifiers = i;
-						event.button = MouseButton::Mouse_Button_1;
-						EventSystem::publishEvent(event);
-					} else {
-						WindowResizeEvent event = {};
-						event.size = {i, i};
-						EventSystem::publishEvent(event);
-					}
-				}
-			}
+
+			SceneManager::update();
 
 			++Time::s_Ups;
 			updateDelay -= TARGET_UPDATE_DELAY;
@@ -133,16 +112,21 @@ namespace milo {
 		}
 
 		if(wasUpdated) {
-			// TODO...
-			if(Time::s_Ups >= TARGET_UPS) updateDelay = 0;
+
+			SceneManager::lateUpdate();
+
+			//if(Time::s_Ups >= TARGET_UPS) updateDelay = 0;
 		}
 	}
 
 	void MiloEngine::render() {
-		// TODO: render scene
-		// debug purposes
-		sleep_for(std::chrono::nanoseconds (1000));
+		// TODO: quit this
+		sleep_for(std::chrono::nanoseconds (100));
+
+		SceneManager::render();
+
 		renderUI();
+
 		++Time::s_Fps;
 	}
 

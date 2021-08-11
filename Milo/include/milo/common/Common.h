@@ -7,6 +7,7 @@
 #include "Concurrency.h"
 #include "milo/math/Math.h"
 #include <typeinfo>
+#include <optional>
 
 #include <functional>
 
@@ -23,4 +24,7 @@ namespace milo {
 	inline constexpr TypeHash typeHash(const T& value) noexcept {
 		return static_cast<TypeHash>(typeid(value).hash_code());
 	}
+
+	template<typename T>
+	using Optional = std::optional<T>;
 }

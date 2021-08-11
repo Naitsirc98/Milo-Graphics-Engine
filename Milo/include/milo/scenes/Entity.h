@@ -1,12 +1,9 @@
 #pragma once
 
 #include "milo/common/Common.h"
-
-#include <entt.hpp>
+#include "milo/scenes/Scene.h"
 
 namespace milo {
-
-	using EntityId = entt::entity;
 
 	class Entity {
 		friend class Scene;
@@ -16,8 +13,24 @@ namespace milo {
 	private:
 		Entity(EntityId id, Scene& scene);
 	public:
-		EntityId id() const noexcept;
-		Scene& scene() const noexcept;
-	};
+		[[nodiscard]] EntityId id() const noexcept;
+		[[nodiscard]] Scene& scene() const noexcept;
+		[[nodiscard]] bool valid() const noexcept;
+		void destroy() noexcept;
 
+		template<typename T>
+		[[nodiscard]] bool hasComponent() const noexcept {
+			return getComponent<T>() != nullptr;
+		}
+
+		template<typename T>
+		T* getComponent() const noexcept {
+			return m_Scene.m_Registry.try_get<T>(m_Id);
+		}
+
+		template<typename T, typename ...Args>
+		T* addComponent(Args&& ...args) {
+			return m_Scene.registry().get_or_emplace<T>(std::forward<>(args)...);
+		}
+	};
 }
