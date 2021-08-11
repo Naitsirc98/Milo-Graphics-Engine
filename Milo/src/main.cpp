@@ -9,6 +9,8 @@ int main() {
 
 	milo::Application app(config);
 
+	Tag tag = "";
+
 	milo::MiloExitResult exitResult = milo::MiloEngine::launch(app);
 
 	return exitResult.exitCode;

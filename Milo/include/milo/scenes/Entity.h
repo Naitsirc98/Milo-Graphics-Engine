@@ -2,6 +2,8 @@
 
 #include "milo/common/Common.h"
 #include "milo/scenes/Scene.h"
+#include "milo/scenes/components/Tag.h"
+#include "milo/scenes/components/Transform.h"
 
 namespace milo {
 
