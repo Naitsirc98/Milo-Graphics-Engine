@@ -10,8 +10,8 @@ namespace milo {
 	};
 
 	template<>
-	inline String str(const GraphicsAPI& graphicsApi) {
-		if(graphicsApi == GraphicsAPI::Vulkan) return "Vulkan";
+	inline String str(const GraphicsAPI& value) {
+		if(value == GraphicsAPI::Vulkan) return "Vulkan";
 		return "Unknown GraphicsAPI";
 	}
 }

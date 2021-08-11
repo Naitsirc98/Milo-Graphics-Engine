@@ -43,7 +43,7 @@ add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/spdlog)
 
 # INCLUDE DIRECTORIES
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS})
-target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_DEPENDENCIES_DIR}/VulkanMemoryAllocator)
+target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_DEPENDENCIES_DIR}/VulkanMemoryAllocator/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_DEPENDENCIES_DIR}/glad)
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_DEPENDENCIES_DIR}/KHR)
