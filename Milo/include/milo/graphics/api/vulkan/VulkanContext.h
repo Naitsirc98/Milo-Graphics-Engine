@@ -7,11 +7,14 @@
 
 namespace milo {
 
+	class VulkanDebugMessenger;
+
 	class VulkanContext : public GraphicsContext {
 		friend class Graphics;
 	private:
 		VkInstance m_VkInstance = VK_NULL_HANDLE;
 		VulkanDevice* m_Device = nullptr;
+		VulkanDebugMessenger* m_DebugMessenger = nullptr;
 	private:
 		VulkanContext();
 		~VulkanContext() override;
@@ -23,6 +26,7 @@ namespace milo {
 		void init() override;
 	private:
 		void createVkInstance();
+		void createDebugMessenger();
 		void createMainVulkanDevice();
 	private:
 		static VkApplicationInfo getApplicationInfo();

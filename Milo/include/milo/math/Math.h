@@ -36,12 +36,10 @@ namespace milo {
 		}
 
 		struct Size {
-
-				uint32 width;
-				uint32 height;
-
+				size_t width;
+				size_t height;
 				Size() : Size(0, 0) {}
-				Size(uint32 width, uint32 height) : width(width), height(height) {}
+				Size(size_t width, size_t height) : width(width), height(height) {}
 
 				[[nodiscard]] float aspect() const {return height == 0 ? 0.0f : (float)width / (float)height;}
 		};

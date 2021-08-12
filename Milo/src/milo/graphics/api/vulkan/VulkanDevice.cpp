@@ -162,10 +162,10 @@ namespace milo {
 		ArrayList<VkDeviceQueueCreateInfo> queues;
 		queues.reserve(4);
 
-		if((info.usageFlags & DeviceUsageGraphicsBit) != 0) tryGetQueue(VK_QUEUE_GRAPHICS_BIT, info, queueFamilies, queues);
-		if((info.usageFlags & DeviceUsageTransferBit) != 0) tryGetQueue(VK_QUEUE_TRANSFER_BIT, info, queueFamilies, queues);
-		if((info.usageFlags & DeviceUsageComputeBit) != 0) tryGetQueue(VK_QUEUE_COMPUTE_BIT, info, queueFamilies, queues);
-		tryGetPresentationQueue(info, queueFamilies, queues);
+		if((info.usageFlags & DeviceUsageGraphicsBit) != 0)     tryGetQueue(VK_QUEUE_GRAPHICS_BIT, info, queueFamilies, queues);
+		if((info.usageFlags & DeviceUsageTransferBit) != 0)     tryGetQueue(VK_QUEUE_TRANSFER_BIT, info, queueFamilies, queues);
+		if((info.usageFlags & DeviceUsageComputeBit) != 0)      tryGetQueue(VK_QUEUE_COMPUTE_BIT, info, queueFamilies, queues);
+		if((info.usageFlags & DeviceUsagePresentationBit) != 0) tryGetPresentationQueue(info, queueFamilies, queues);
 
 		return queues;
 	}
@@ -193,6 +193,38 @@ namespace milo {
 											   const ArrayList<VkQueueFamilyProperties> &queueFamilies,
 											   ArrayList<VkDeviceQueueCreateInfo> &queues) {
 
+		VkSurfaceKHR surface; // FIXME: create surface before calling this function
+
+		uint32_t bestQueueFamily = UINT32_MAX;
+		uint32_t numQueues = UINT32_MAX;
+
+		for(uint32_t i = 0;i < queueFamilies.size();++i) {
+			const VkQueueFamilyProperties& queueFamily = queueFamilies[i];
+
+			VkBool32 supportsPresentation;
+			vkGetPhysicalDeviceSurfaceSupportKHR(info.physicalDevice, i, surface, &supportsPresentation);
+
+			if(supportsPresentation) {
+				if(queueFamily.queueFlags == VK_QUEUE_GRAPHICS_BIT) {
+					bestQueueFamily = i;
+				} else if((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0 && queueFamily.queueCount < numQueues) {
+					bestQueueFamily = i;
+					numQueues = queueFamily.queueCount;
+				}
+			}
+		}
+
+		if(bestQueueFamily == UINT32_MAX) {
+			throw MILO_RUNTIME_EXCEPTION("Device has no queueFamilies supporting a presentation capable queue");
+		}
+
+		VkDeviceQueueCreateInfo queueInfo = {};
+		queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueInfo.queueCount = 1;
+		queueInfo.pQueuePriorities = &QUEUE_PRIORITY;
+		queueInfo.queueFamilyIndex = bestQueueFamily;
+
+		queues.push_back(queueInfo);
 	}
 
 	uint32_t VulkanDevice::findBestQueueFamilyOf(VkQueueFlagBits queueType,

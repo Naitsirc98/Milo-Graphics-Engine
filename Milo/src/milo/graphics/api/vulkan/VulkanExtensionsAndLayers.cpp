@@ -8,15 +8,16 @@ namespace milo {
 		uint32_t count;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
 
-		ArrayList<const char*> extensions;
-		extensions.reserve(count + 1);
-		for(uint32_t i = 0;i < count;++i) extensions.push_back(glfwExtensions[i]);
+		ArrayList<const char*> extensions(glfwExtensions, glfwExtensions + count);
+
+		extensions.push_back("VK_KHR_surface");
 
 #ifdef _DEBUG
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		extensions.push_back("VK_EXT_debug_report");
 #endif
 
-return extensions;
+		return extensions;
 	}
 
 	ArrayList<const char *> VulkanExtensions::getDeviceExtensions(DeviceUsageFlags usageFlags) {

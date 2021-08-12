@@ -1,13 +1,15 @@
 #include "milo/graphics/api/vulkan/VulkanContext.h"
 #include "milo/graphics/api/vulkan/VulkanExtensionsAndLayers.h"
+#include "milo/graphics/api/vulkan/debug/VulkanDebugMessenger.h"
 
 namespace milo {
 
-	VulkanContext::VulkanContext() {
-	}
+	VulkanContext::VulkanContext() = default;
 
 	VulkanContext::~VulkanContext() {
 		DELETE_PTR(m_Device);
+
+		DELETE_PTR(m_DebugMessenger);
 
 		vkDestroyInstance(m_VkInstance, nullptr);
 		m_VkInstance = VK_NULL_HANDLE;
@@ -32,8 +34,11 @@ namespace milo {
 	}
 
 	void VulkanContext::init() {
+		Log::info("Initializing Vulkan Context...");
 		createVkInstance();
+		createDebugMessenger();
 		createMainVulkanDevice();
+		Log::info("Vulkan Context initialized");
 	}
 
 	void VulkanContext::createVkInstance() {
@@ -50,9 +55,16 @@ namespace milo {
 		createInfo.enabledLayerCount = layers.size();
 		createInfo.ppEnabledLayerNames = layers.data();
 
-		VK_CALL(vkCreateInstance(&createInfo, nullptr, &m_VkInstance));
+#ifdef _DEBUG
+		VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = VulkanDebugMessenger::getDebugMessengerCreateInfo();
+		createInfo.pNext = &debugMessengerCreateInfo;
+#endif
 
-		Log::debug("VkInstance created");
+		VK_CALL(vkCreateInstance(&createInfo, nullptr, &m_VkInstance));
+	}
+
+	void VulkanContext::createDebugMessenger() {
+		m_DebugMessenger = new VulkanDebugMessenger(this);
 	}
 
 	void VulkanContext::createMainVulkanDevice() {
@@ -72,7 +84,7 @@ namespace milo {
 		m_Device = NEW VulkanDevice(*this);
 		m_Device->init(deviceInfo);
 
-		Log::info(m_Device->name() + " chosen as the preferred Vulkan Device with a score of " + str(bestDevice.score));
+		Log::info(m_Device->name() + " chosen as the preferred GPU with a score of " + str(bestDevice.score));
 	}
 
 	VkApplicationInfo VulkanContext::getApplicationInfo() {

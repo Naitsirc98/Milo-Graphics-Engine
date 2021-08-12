@@ -5,23 +5,23 @@
 #include "Exceptions.h"
 #include "Collections.h"
 
-#define DELETE_PTR(ptr) {delete ptr; ptr = nullptr;}
-#define DELETE_ARRAY(arr) {delete arr; arr = nullptr;}
-
 #ifdef _DEBUG
 #define NEW new(__FILE__, __LINE__)
-#define DELETE delete(__FILE__, __LINE__)
+#define DELETE delete
 #else
 #define NEW new
-#define DELETE new
+#define DELETE delete
 #endif
+
+#define DELETE_PTR(ptr) {DELETE ptr; ptr = nullptr;}
+#define DELETE_ARRAY(arr) {DELETE[] arr; arr = nullptr;}
 
 #ifdef _DEBUG
 
 void* operator new(size_t size, const char* file, size_t line);
 void* operator new[](size_t size, const char* file, size_t line);
-void operator delete(void* ptr, const char* file, size_t line) noexcept;
-void operator delete[](void* ptr, const char* file, size_t line) noexcept;
+void operator delete(void* ptr);
+void operator delete[](void* ptr);
 
 #endif
 
