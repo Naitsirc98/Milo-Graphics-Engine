@@ -16,12 +16,12 @@ void *operator new[](size_t size, const char *file, size_t line) {
 	return ptr;
 }
 
-void operator delete(void *ptr) noexcept {
+void operator delete(void *ptr, const char* file, size_t line) noexcept {
 	milo::MemoryTracker::remove((uint64_t)ptr);
 	free(ptr);
 }
 
-void operator delete[](void *ptr) noexcept {
+void operator delete[](void *ptr, const char* file, size_t line) noexcept {
 	milo::MemoryTracker::remove((uint64_t)ptr);
 	free(ptr);
 }
@@ -50,7 +50,8 @@ namespace milo {
 		++s_TotalAllocations;
 		s_TotalAllocationSize += size;
 		String filename = String(allocation.file);
-		filename.erase(0, filename.find_last_of("milo")-3);
+		unsigned int indexOfMilo = filename.find("milo");
+		filename.erase(0, indexOfMilo);
 		Log::warn("Milo Allocation: size={}, file={}({})", byteSize(allocation.size), filename, allocation.line);
 	}
 

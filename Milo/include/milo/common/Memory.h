@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <milo/time/Time.h>
+#include "Exceptions.h"
 #include "Collections.h"
 
 #define DELETE_PTR(ptr) {delete ptr; ptr = nullptr;}
@@ -9,7 +10,7 @@
 
 #ifdef _DEBUG
 #define NEW new(__FILE__, __LINE__)
-#define DELETE delete
+#define DELETE delete(__FILE__, __LINE__)
 #else
 #define NEW new
 #define DELETE new
@@ -19,8 +20,8 @@
 
 void* operator new(size_t size, const char* file, size_t line);
 void* operator new[](size_t size, const char* file, size_t line);
-void operator delete(void* ptr) noexcept;
-void operator delete[](void* ptr) noexcept;
+void operator delete(void* ptr, const char* file, size_t line) noexcept;
+void operator delete[](void* ptr, const char* file, size_t line) noexcept;
 
 #endif
 

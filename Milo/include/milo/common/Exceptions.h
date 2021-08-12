@@ -19,4 +19,6 @@ namespace milo {
 	using RuntimeException = std::runtime_error;
 
 	using InvalidArgumentException = std::invalid_argument;
+
+	using BadAllocationException = std::bad_alloc;
 }

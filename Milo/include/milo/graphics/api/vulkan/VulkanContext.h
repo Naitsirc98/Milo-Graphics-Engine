@@ -24,6 +24,8 @@ namespace milo {
 	private:
 		void createVkInstance();
 		void createMainVulkanDevice();
+	private:
+		static VkApplicationInfo getApplicationInfo();
 	};
 
 }

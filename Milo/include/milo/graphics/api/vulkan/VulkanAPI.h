@@ -53,7 +53,7 @@ namespace milo {
 	}
 }
 
-#define VK_CALL(func) {VkResult vkResult = func; if(vkResult != VK_SUCCESS) throw MILO_RUNTIME_ERROR(milo::str("Error when invoking ").append(#func).append(": ").append(milo::vulkanErrorName(vkResult)));}
+#define VK_CALL(func) {VkResult vkResult = func; if(vkResult != VK_SUCCESS) throw MILO_RUNTIME_EXCEPTION(milo::str("Error when invoking ").append(#func).append(": ").append(milo::vulkanErrorName(vkResult)));}
 
 #else
 #define VK_CALL(func) func
