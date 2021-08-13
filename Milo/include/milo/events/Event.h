@@ -75,9 +75,9 @@ namespace milo {
 	// === MOUSE EVENTS ===
 
 	struct MouseButtonEvent : public Event {
-		MouseButtonAction action{0};
-		MouseButton button{0};
-		KeyModifiersBitMask modifiers{0};
+		MouseButtonAction action;
+		MouseButton button;
+		KeyModifiersBitMask modifiers;
 	};
 
 	struct MouseButtonPressEvent : public MouseButtonEvent {

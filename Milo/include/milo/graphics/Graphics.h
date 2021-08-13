@@ -2,6 +2,7 @@
 
 #include <milo/graphics/api/GraphicsContext.h>
 #include "GraphicsAPI.h"
+#include "Window.h"
 
 namespace milo {
 

@@ -8,6 +8,10 @@ namespace milo {
 
 	}
 
+	bool Application::running() const {
+		return m_Running;
+	}
+
 	const AppConfiguration& Application::configuration() const {
 		return m_Configuration;
 	}

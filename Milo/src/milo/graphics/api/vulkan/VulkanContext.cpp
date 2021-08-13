@@ -33,10 +33,15 @@ namespace milo {
 		return *m_Device;
 	}
 
-	void VulkanContext::init() {
+	const VulkanWindowSurface &VulkanContext::windowSurface() const {
+		return *m_WindowSurface;
+	}
+
+	void VulkanContext::init(Window& mainWindow) {
 		Log::info("Initializing Vulkan Context...");
 		createVkInstance();
 		createDebugMessenger();
+		createWindowSurface(mainWindow);
 		createMainVulkanDevice();
 		Log::info("Vulkan Context initialized");
 	}
@@ -65,6 +70,10 @@ namespace milo {
 
 	void VulkanContext::createDebugMessenger() {
 		m_DebugMessenger = new VulkanDebugMessenger(this);
+	}
+
+	void VulkanContext::createWindowSurface(Window& mainWindow) {
+		m_WindowSurface = new VulkanWindowSurface(*this, &mainWindow);
 	}
 
 	void VulkanContext::createMainVulkanDevice() {

@@ -1,6 +1,7 @@
 #include "milo/core/MiloEngine.h"
 #include "milo/events/EventSystem.h"
 #include "milo/scenes/SceneManager.h"
+#include "milo/graphics/Window.h"
 
 namespace milo {
 
@@ -136,6 +137,10 @@ namespace milo {
 
 	void MiloEngine::init() {
 		MiloSubSystemManager::init();
+
+		EventSystem::addEventCallback(EventType::WindowClose, [&](const Event& event) {Application::exit();});
+
+		Window::get().show();
 	}
 
 	void MiloEngine::shutdown() {

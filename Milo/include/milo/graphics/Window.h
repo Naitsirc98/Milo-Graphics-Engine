@@ -22,8 +22,8 @@ namespace milo {
 
 	struct WindowInfo {
 		String title = "";
-		size_t width = 1280;
-		size_t height = 720;
+		int32_t width = 1280;
+		int32_t height = 720;
 		WindowState state = WindowState::Windowed;
 		CursorMode cursorMode = CursorMode::Normal;
 		GraphicsAPI graphicsAPI = GraphicsAPI::Default;
@@ -44,19 +44,24 @@ namespace milo {
 		[[nodiscard]] GLFWwindow* handle() const;
 		[[nodiscard]] Size size() const;
 		Window& size(const Size& size);
-		Window& size(size_t width, size_t height);
+		Window& size(int32_t width, int32_t height);
 		[[nodiscard]] Vector2i position() const;
 		Window& position(const Vector2i& position);
-		Window& position(size_t x, size_t y);
+		Window& position(int32_t x, int32_t y);
 		[[nodiscard]] WindowState state() const;
 		Window& state(WindowState state);
 		[[nodiscard]] CursorMode cursorMode() const;
 		Window& cursorMode(CursorMode cursorMode);
+		void show();
+	private:
+		void setEventCallbacks();
 	private:
 		static Window* s_MainWindow;
 	public:
 		static Window& getMainWindow();
+		static Window& get();
 	private:
 		static GLFWwindow* createWindow(const WindowInfo& info);
+		static void setWindowHints(const WindowInfo& info);
 	};
 }

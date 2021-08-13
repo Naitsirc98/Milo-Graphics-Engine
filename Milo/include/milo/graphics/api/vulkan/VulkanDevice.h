@@ -70,9 +70,8 @@ namespace milo {
 		VulkanDeviceQueue m_TransferQueue = {};
 		VulkanDeviceQueue m_PresentationQueue = {};
 	private:
-		VulkanDevice(VulkanContext& m_Context);
+		explicit VulkanDevice(VulkanContext& m_Context);
 		~VulkanDevice();
-
 		void init(const VulkanDevice::Info& info);
 	public:
 		void waitFor();
@@ -87,6 +86,10 @@ namespace milo {
 		[[nodiscard]] const VulkanDeviceQueue& presentationQueue() const;
 		[[nodiscard]] VulkanPhysicalDeviceInfo pDeviceInfo() const;
 		[[nodiscard]] String name() const;
+	private:
+		ArrayList <VkDeviceQueueCreateInfo> inferQueueCreateInfos(const VulkanDevice::Info &info);
+		void tryGetQueue(VkQueueFlagBits queueType, const Info &info, const ArrayList<VkQueueFamilyProperties> &queueFamilies, ArrayList<VkDeviceQueueCreateInfo> &queues);
+		void tryGetPresentationQueue(const Info &info, const ArrayList<VkQueueFamilyProperties> &queueFamilies, ArrayList<VkDeviceQueueCreateInfo> &queues);
 	public:
 		static ArrayList<VkPhysicalDevice> listAllPhysicalDevices(VkInstance vkInstance);
 		static ArrayList<RankedDevice> rankAllPhysicalDevices(VkInstance vkInstance);
@@ -94,13 +97,6 @@ namespace milo {
 		static void rankDeviceFeatures(const VulkanPhysicalDeviceInfo &info, DeviceScore &score);
 		static void rankDeviceMemory(const VulkanPhysicalDeviceInfo &info, DeviceScore &score);
 		static void rankDeviceQueueFamilies(const VulkanPhysicalDeviceInfo &info, DeviceScore &score);
-		static ArrayList <VkDeviceQueueCreateInfo> inferQueueCreateInfos(const VulkanDevice::Info &info);
-
-		static void tryGetQueue(VkQueueFlagBits queueType,
-								const Info &info,
-								const ArrayList<VkQueueFamilyProperties> &queueFamilies, ArrayList<VkDeviceQueueCreateInfo> &queues);
-		static void tryGetPresentationQueue(const Info &info, const ArrayList<VkQueueFamilyProperties> &queueFamilies, ArrayList<VkDeviceQueueCreateInfo> &queues);
-
 		static uint32_t findBestQueueFamilyOf(VkQueueFlagBits queueType, const ArrayList<VkQueueFamilyProperties> &queueFamilies);
 	};
 }

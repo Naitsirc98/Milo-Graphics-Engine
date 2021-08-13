@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Event.h"
+#include "milo/logging/Log.h"
 
 namespace milo {
 

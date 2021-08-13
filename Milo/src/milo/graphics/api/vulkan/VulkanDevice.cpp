@@ -1,4 +1,5 @@
 #include "milo/graphics/api/vulkan/VulkanDevice.h"
+#include "milo/graphics/api/vulkan/VulkanContext.h"
 #include <algorithm>
 
 namespace milo {
@@ -116,7 +117,7 @@ namespace milo {
 
 	void VulkanDevice::rankDeviceProperties(const VulkanPhysicalDeviceInfo &info, DeviceScore &score) {
 		VkPhysicalDeviceProperties properties = info.properties();
-		score += properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ? 1000 : 0;
+		score += properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ? 10000000 : 0;
 		score += properties.limits.bufferImageGranularity;
 		score += properties.limits.framebufferColorSampleCounts;
 		score += properties.limits.framebufferDepthSampleCounts;
@@ -128,7 +129,6 @@ namespace milo {
 		score += properties.limits.maxColorAttachments;
 		score += properties.limits.maxComputeSharedMemorySize;
 		score += properties.limits.maxDescriptorSetStorageBuffers;
-		score += properties.limits.maxUniformBufferRange;
 		score += properties.limits.maxPushConstantsSize;
 		score += properties.limits.maxDescriptorSetUniformBuffersDynamic;
 		score += properties.limits.maxDescriptorSetUniformBuffers;
@@ -174,17 +174,23 @@ namespace milo {
 										   const ArrayList<VkQueueFamilyProperties> &queueFamilies,
 										   ArrayList<VkDeviceQueueCreateInfo> &queues) {
 
-		uint32_t queueFamily = findBestQueueFamilyOf(queueType, queueFamilies);
+		uint32_t bestQueueFamily = findBestQueueFamilyOf(queueType, queueFamilies);
 
-		if(queueFamily == UINT32_MAX) {
+		if(bestQueueFamily == UINT32_MAX) {
 			throw MILO_RUNTIME_EXCEPTION(str("Device has no queueFamilies supporting queue type ") + str(queueType));
 		}
+
+		const auto alreadyFound = std::find_if(queues.begin(), queues.end(), [&](const auto& queueInfo) {
+			return queueInfo.queueFamilyIndex == bestQueueFamily;
+		});
+
+		if(alreadyFound != queues.end()) return;
 
 		VkDeviceQueueCreateInfo queueInfo = {};
 		queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueInfo.queueCount = 1;
 		queueInfo.pQueuePriorities = &QUEUE_PRIORITY;
-		queueInfo.queueFamilyIndex = queueFamily;
+		queueInfo.queueFamilyIndex = bestQueueFamily;
 
 		queues.push_back(queueInfo);
 	}
@@ -193,7 +199,7 @@ namespace milo {
 											   const ArrayList<VkQueueFamilyProperties> &queueFamilies,
 											   ArrayList<VkDeviceQueueCreateInfo> &queues) {
 
-		VkSurfaceKHR surface; // FIXME: create surface before calling this function
+		VkSurfaceKHR surface = m_Context.windowSurface().vkSurface();
 
 		uint32_t bestQueueFamily = UINT32_MAX;
 		uint32_t numQueues = UINT32_MAX;
@@ -218,6 +224,12 @@ namespace milo {
 			throw MILO_RUNTIME_EXCEPTION("Device has no queueFamilies supporting a presentation capable queue");
 		}
 
+		const auto alreadyFound = std::find_if(queues.begin(), queues.end(), [&](const auto& queueInfo) {
+			return queueInfo.queueFamilyIndex == bestQueueFamily;
+		});
+
+		if(alreadyFound != queues.end()) return;
+
 		VkDeviceQueueCreateInfo queueInfo = {};
 		queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueInfo.queueCount = 1;
@@ -227,8 +239,7 @@ namespace milo {
 		queues.push_back(queueInfo);
 	}
 
-	uint32_t VulkanDevice::findBestQueueFamilyOf(VkQueueFlagBits queueType,
-																const ArrayList<VkQueueFamilyProperties> &queueFamilies) {
+	uint32_t VulkanDevice::findBestQueueFamilyOf(VkQueueFlagBits queueType, const ArrayList<VkQueueFamilyProperties> &queueFamilies) {
 
 		uint32_t bestQueueFamily = UINT32_MAX;
 		uint32_t numQueues = UINT32_MAX;

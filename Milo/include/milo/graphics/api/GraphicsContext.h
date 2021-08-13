@@ -5,6 +5,8 @@
 
 namespace milo {
 
+	class Window;
+
 	using Handle = void*;
 
 	class GraphicsContext {
@@ -13,6 +15,6 @@ namespace milo {
 		virtual ~GraphicsContext() = default;
 		[[nodiscard]] virtual Handle handle() const = 0;
 	protected:
-		virtual void init() = 0;
+		virtual void init(Window& mainWindow) = 0;
 	};
 }

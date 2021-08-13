@@ -18,13 +18,20 @@ namespace milo {
 	}
 
 	void Graphics::init() {
+
+		WindowInfo windowInfo = {};
+		windowInfo.title = "Milo Engine";
+		windowInfo.graphicsAPI = graphicsAPI();
+
+		Window::s_MainWindow = new Window(windowInfo);
+
 		if(graphicsAPI() == GraphicsAPI::Vulkan) {
 			s_GraphicsContext = NEW VulkanContext();
 		} else {
 			// TODO
 			throw MILO_RUNTIME_EXCEPTION("Not implemented");
 		}
-		s_GraphicsContext->init();
+		s_GraphicsContext->init(Window::getMainWindow());
 	}
 
 	void Graphics::shutdown() {
