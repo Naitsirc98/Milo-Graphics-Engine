@@ -24,10 +24,12 @@ namespace milo {
 		}
 
 		EventSystem() = delete;
+
+		static void waitEvents(float timeout = 0.0f);
+
 	private:
 		static void update();
 		static void pollEvents();
-		static void waitEvents(float timeout = 0.0f);
 
 		static void init();
 		static void shutdown();

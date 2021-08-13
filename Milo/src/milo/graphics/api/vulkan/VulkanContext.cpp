@@ -7,6 +7,7 @@ namespace milo {
 	VulkanContext::VulkanContext() = default;
 
 	VulkanContext::~VulkanContext() {
+		DELETE_PTR(m_Swapchain);
 		DELETE_PTR(m_Device);
 		DELETE_PTR(m_WindowSurface);
 		DELETE_PTR(m_DebugMessenger);
@@ -33,16 +34,23 @@ namespace milo {
 		return *m_Device;
 	}
 
-	const VulkanWindowSurface &VulkanContext::windowSurface() const {
+	VulkanWindowSurface &VulkanContext::windowSurface() const {
 		return *m_WindowSurface;
+	}
+
+	VulkanSwapchain& VulkanContext::swapchain() const {
+		return *m_Swapchain;
 	}
 
 	void VulkanContext::init(Window& mainWindow) {
 		Log::info("Initializing Vulkan Context...");
-		createVkInstance();
-		createDebugMessenger();
-		createWindowSurface(mainWindow);
-		createMainVulkanDevice();
+		{
+			createVkInstance();
+			createDebugMessenger();
+			createWindowSurface(mainWindow);
+			createMainVulkanDevice();
+			createSwapchain();
+		}
 		Log::info("Vulkan Context initialized");
 	}
 
@@ -94,6 +102,10 @@ namespace milo {
 		m_Device->init(deviceInfo);
 
 		Log::info(m_Device->name() + " chosen as the preferred GPU with a score of " + str(bestDevice.score));
+	}
+
+	void VulkanContext::createSwapchain() {
+		m_Swapchain = new VulkanSwapchain(*this);
 	}
 
 	VkApplicationInfo VulkanContext::getApplicationInfo() {

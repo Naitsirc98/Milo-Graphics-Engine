@@ -7,7 +7,7 @@ namespace milo {
 
 	Window* Window::s_MainWindow = nullptr;
 
-	Window::Window(const WindowInfo& info) {
+	Window::Window(const WindowInfo& info) : m_Title(info.title) {
 		m_Handle = createWindow(info);
 		setEventCallbacks();
 	}
@@ -19,6 +19,28 @@ namespace milo {
 
 	GLFWwindow* Window::handle() const {
 		return m_Handle;
+	}
+
+	const String& Window::title() const {
+		return m_Title;
+	}
+
+	Window& Window::title(const String& title) {
+		m_Title = title;
+		glfwSetWindowTitle(m_Handle, m_Title.c_str());
+		return *this;
+	}
+
+	Window& Window::title(String&& title) {
+		m_Title = std::move(title);
+		glfwSetWindowTitle(m_Handle, m_Title.c_str());
+		return *this;
+	}
+
+	Size Window::framebufferSize() const {
+		Size size;
+		glfwGetFramebufferSize(m_Handle, &size.width, &size.height);
+		return size;
 	}
 
 	Size Window::size() const {
@@ -34,6 +56,10 @@ namespace milo {
 	Window& Window::size(int32_t width, int32_t height) {
 		glfwSetWindowSize(m_Handle, width, height);
 		return *this;
+	}
+
+	float Window::aspectRatio() const {
+		return size().aspect();
 	}
 
 	Vector2i Window::position() const {
@@ -55,24 +81,89 @@ namespace milo {
 		return m_State;
 	}
 
+	inline Vector2i center(const Size& windowSize, const GLFWvidmode* vidmode) {
+		const int32_t x = (vidmode->width - windowSize.width) / 2;
+		const int32_t y = (vidmode->height - windowSize.height) / 2;
+		return {x, y};
+	}
+
 	Window& Window::state(WindowState state) {
-		// TODO
+		if(m_State == state) return *this;
+
 		m_State = state;
+
+		glfwRestoreWindow(m_Handle);
+
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
+		const Size& size = state == WindowState::Windowed ? WINDOW_DEFAULT_SIZE : Size(vidmode->width, vidmode->height);
+		const Vector2i position = state == WindowState::Fullscreen ? Vector2i(0, 0) : center(size, vidmode);
+
+		glfwSetWindowMonitor(
+				m_Handle,
+				state == WindowState::Fullscreen ? monitor : nullptr,
+				position.x, position.y,
+				size.width, size.height,
+				vidmode->refreshRate);
+
 		return *this;
 	}
 
 	CursorMode Window::cursorMode() const {
-		return m_CursorMode;
+		switch (glfwGetInputMode(m_Handle, GLFW_CURSOR)) {
+			case GLFW_CURSOR_HIDDEN: return CursorMode::Hidden;
+			case GLFW_CURSOR_DISABLED: return CursorMode::Captured;
+			case GLFW_CURSOR_NORMAL: default: return CursorMode::Normal;
+		}
 	}
 
 	Window& Window::cursorMode(CursorMode cursorMode) {
-		m_CursorMode = cursorMode;
+		int glfwMode = GLFW_CURSOR_NORMAL;
+		switch (cursorMode) {
+			case CursorMode::Normal:
+				glfwMode = GLFW_CURSOR_NORMAL;
+				break;
+			case CursorMode::Hidden:
+				glfwMode = GLFW_CURSOR_HIDDEN;
+				break;
+			case CursorMode::Captured:
+				glfwMode = GLFW_CURSOR_DISABLED;
+				break;
+		}
+		glfwSetInputMode(m_Handle, GLFW_CURSOR, glfwMode);
 		return *this;
 	}
 
+	bool Window::shouldClose() const {
+		return glfwWindowShouldClose(m_Handle);
+	}
+
+	void Window::close() {
+		glfwSetWindowShouldClose(m_Handle, GLFW_TRUE);
+	}
+
+	void Window::hide() {
+		m_State = WindowState::Minimized;
+		glfwHideWindow(m_Handle);
+	}
+
+	void Window::restore() {
+		m_State = WindowState::Windowed;
+		glfwRestoreWindow(m_Handle);
+	}
+
 	void Window::show() {
+		if(m_State == WindowState::Minimized) m_State = WindowState::Windowed;
 		glfwShowWindow(m_Handle);
 	}
+
+	void Window::focus() {
+		glfwFocusWindow(m_Handle);
+	}
+
+
+	// ======
+
 
 	Window& Window::getMainWindow() {
 		return *s_MainWindow;
@@ -147,7 +238,7 @@ namespace milo {
 
 		EventSystem::addEventCallback(EventType::WindowResize, [&](const Event& e){
 			const auto& event = static_cast<const WindowResizeEvent&>(e);
-			if(m_State == WindowState::Minimized && (event.size.x > 0 || event.size.y > 0))
+			if(m_State == WindowState::Minimized && (event.size.width > 0 || event.size.height > 0))
 				m_State = WindowState::Windowed;
 		});
 

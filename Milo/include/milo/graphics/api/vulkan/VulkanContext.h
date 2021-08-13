@@ -1,10 +1,8 @@
 #pragma once
 
-#include "VulkanAPI.h"
-
 #include "milo/graphics/api/GraphicsContext.h"
 #include "milo/graphics/api/vulkan/VulkanDevice.h"
-#include "milo/graphics/api/vulkan/VulkanWindowSurface.h"
+#include "milo/graphics/api/vulkan/presentation/VulkanSwapchain.h"
 
 namespace milo {
 
@@ -17,6 +15,7 @@ namespace milo {
 		VulkanDevice* m_Device = nullptr;
 		VulkanWindowSurface* m_WindowSurface = nullptr;
 		VulkanDebugMessenger* m_DebugMessenger = nullptr;
+		VulkanSwapchain* m_Swapchain = nullptr;
 	private:
 		VulkanContext();
 		~VulkanContext() override;
@@ -24,7 +23,8 @@ namespace milo {
 		[[nodiscard]] Handle handle() const override;
 		[[nodiscard]] VkInstance vkInstance() const;
 		[[nodiscard]] VulkanDevice& device() const;
-		[[nodiscard]] const VulkanWindowSurface& windowSurface() const;
+		[[nodiscard]] VulkanWindowSurface& windowSurface() const;
+		[[nodiscard]] VulkanSwapchain& swapchain() const;
 	protected:
 		void init(Window& mainWindow) override;
 	private:
@@ -32,8 +32,8 @@ namespace milo {
 		void createDebugMessenger();
 		void createWindowSurface(Window& mainWindow);
 		void createMainVulkanDevice();
+		void createSwapchain();
 	private:
 		static VkApplicationInfo getApplicationInfo();
 	};
-
 }

@@ -168,7 +168,7 @@ namespace milo {
 	};
 
 	struct WindowResizeEvent : public Event {
-		Vector2i size{0};
+		Size size{0, 0};
 
 		WindowResizeEvent() : Event() {
 			type = EventType::WindowResize;

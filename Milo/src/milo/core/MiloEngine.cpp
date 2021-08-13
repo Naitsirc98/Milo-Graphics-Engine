@@ -9,7 +9,7 @@ namespace milo {
 	const float TARGET_UPDATE_DELAY = 1.0f / TARGET_UPS;
 	const float DEBUG_MIN_TIME = 1.0f;
 
-	//static Mutex g_LaunchMutex;
+	static Mutex g_LaunchMutex;
 
 	AtomicBool MiloEngine::s_AlreadyLaunched = false;
 
@@ -18,7 +18,7 @@ namespace milo {
 
 		MiloExitResult exitResult;
 
-		//g_LaunchMutex.lock();
+		g_LaunchMutex.lock();
 		{
 			Application::s_Instance = &application;
 			try {
@@ -43,7 +43,7 @@ namespace milo {
 
 			Application::s_Instance = nullptr;
 		}
-		//g_LaunchMutex.unlock();
+		g_LaunchMutex.unlock();
 
 		s_AlreadyLaunched = false;
 
@@ -76,23 +76,13 @@ namespace milo {
 
 			++Time::s_Frame;
 
-			if(Time::now() - debugTime >= DEBUG_MIN_TIME) {
-#ifdef _DEBUG
-				Log::info("Ups: {}, Fps: {}, Dt:{}, Ft: {} ms, Mem: {}",
-						  Time::ups(), Time::fps(), Time::deltaTime(), Time::rawDeltaTime() * 1000.0f,
-						  MemoryTracker::totalAllocationSizeStr());
-#else
-				Log::info("Ups: {}, Fps: {}, Dt:{}, Ft: {} ms", Time::ups(), Time::fps(), Time::deltaTime(), Time::rawDeltaTime() * 1000.0f);
-#endif
-				Time::s_Ups = Time::s_Fps = 0;
-				debugTime = Time::now();
-			}
+			showDebugInfo(debugTime);
 		}
 
 		application.m_Running = false;
 	}
 
-	void MiloEngine::update(float& updateDelay, float& lastUpdate) {
+	inline void MiloEngine::update(float& updateDelay, float& lastUpdate) {
 
 		updateDelay += Time::s_RawDeltaTime;
 		bool wasUpdated = false;
@@ -120,7 +110,7 @@ namespace milo {
 		}
 	}
 
-	void MiloEngine::render() {
+	inline void MiloEngine::render() {
 		// TODO: quit this
 		sleep_for(std::chrono::nanoseconds (100));
 
@@ -131,7 +121,7 @@ namespace milo {
 		++Time::s_Fps;
 	}
 
-	void MiloEngine::renderUI() {
+	inline void MiloEngine::renderUI() {
 		// TODO
 	}
 
@@ -145,5 +135,20 @@ namespace milo {
 
 	void MiloEngine::shutdown() {
 		MiloSubSystemManager::shutdown();
+	}
+
+	inline void MiloEngine::showDebugInfo(float& debugTime) {
+		if(Time::now() - debugTime >= DEBUG_MIN_TIME) {
+#ifdef _DEBUG
+			String message = fmt::format("Ups: {}, Fps: {}, Dt:{}, Ft: {} ms, Mem: {}",Time::ups(), Time::fps(), Time::deltaTime(), Time::rawDeltaTime() * 1000.0f, MemoryTracker::totalAllocationSizeStr());
+#else
+			String message = fmt::format("Ups: {}, Fps: {}, Dt:{}, Ft: {} ms", Time::ups(), Time::fps(), Time::deltaTime(), Time::rawDeltaTime() * 1000.0f);
+#endif
+			Log::info(message);
+			Window::get().title("Milo Engine  " + std::move(message));
+
+			Time::s_Ups = Time::s_Fps = 0;
+			debugTime = Time::now();
+		}
 	}
 }

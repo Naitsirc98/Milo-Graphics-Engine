@@ -20,10 +20,14 @@ namespace milo {
 		Fullscreen
 	};
 
+	static const int32_t WINDOW_DEFAULT_WIDTH = 1280;
+	static const int32_t WINDOW_DEFAULT_HEIGHT = 720;
+	static const Size WINDOW_DEFAULT_SIZE = {WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT};
+
 	struct WindowInfo {
-		String title = "";
-		int32_t width = 1280;
-		int32_t height = 720;
+		String title;
+		int32_t width = WINDOW_DEFAULT_WIDTH;
+		int32_t height = WINDOW_DEFAULT_HEIGHT;
 		WindowState state = WindowState::Windowed;
 		CursorMode cursorMode = CursorMode::Normal;
 		GraphicsAPI graphicsAPI = GraphicsAPI::Default;
@@ -34,7 +38,7 @@ namespace milo {
 	private:
 		GLFWwindow* m_Handle = nullptr;
 		WindowState m_State = WindowState::Windowed;
-		CursorMode m_CursorMode = CursorMode::Normal;
+		String m_Title;
 	private:
 		explicit Window(const WindowInfo& info);
 		~Window();
@@ -42,9 +46,14 @@ namespace milo {
 		explicit Window(const Window& other) = delete;
 		Window& operator=(const Window& other) = delete;
 		[[nodiscard]] GLFWwindow* handle() const;
+		[[nodiscard]] const String& title() const;
+		Window& title(const String& title);
+		Window& title(String&& title);
+		[[nodiscard]] Size framebufferSize() const;
 		[[nodiscard]] Size size() const;
 		Window& size(const Size& size);
 		Window& size(int32_t width, int32_t height);
+		[[nodiscard]] float aspectRatio() const;
 		[[nodiscard]] Vector2i position() const;
 		Window& position(const Vector2i& position);
 		Window& position(int32_t x, int32_t y);
@@ -52,7 +61,12 @@ namespace milo {
 		Window& state(WindowState state);
 		[[nodiscard]] CursorMode cursorMode() const;
 		Window& cursorMode(CursorMode cursorMode);
+		bool shouldClose() const;
+		void close();
+		void hide();
+		void restore();
 		void show();
+		void focus();
 	private:
 		void setEventCallbacks();
 	private:

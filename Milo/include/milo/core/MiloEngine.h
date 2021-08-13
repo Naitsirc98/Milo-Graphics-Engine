@@ -12,10 +12,10 @@
 namespace milo {
 
 	struct MiloExitResult {
-		int32 exitCode;
+		int32_t exitCode;
 		String message;
 
-		inline bool success() noexcept {return exitCode == MILO_SUCCESS;}
+		[[nodiscard]] inline bool success() const noexcept {return exitCode == MILO_SUCCESS;}
 	};
 
 	class MiloEngine {
@@ -34,5 +34,6 @@ namespace milo {
 		static void renderUI();
 		static void init();
 		static void shutdown();
+		static void showDebugInfo(float& debugTime);
 	};
 }

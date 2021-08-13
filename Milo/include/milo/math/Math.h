@@ -41,7 +41,17 @@ namespace milo {
 		Size() : Size(0, 0) {}
 		Size(int32_t width, int32_t height) : width(width), height(height) {}
 
-		[[nodiscard]] float aspect() const {return height == 0 ? 0.0f : (float)width / (float)height;}
+		[[nodiscard]] inline float aspect() const noexcept {return height == 0 ? 0.0f : (float)width / (float)height;}
+
+		inline bool isZero() const noexcept {return width == 0 || height == 0;}
+
+		inline bool operator==(const Size& rhs) const noexcept {
+			return width == rhs.width && height == rhs.height;
+		}
+
+		inline bool operator!=(const Size& rhs) const noexcept {
+			return ! (rhs == *this);
+		}
 	};
 
 	template<typename T>
