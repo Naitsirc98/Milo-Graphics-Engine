@@ -39,6 +39,8 @@ namespace milo {
 		createInfo.queueCreateInfoCount = queueCreateInfos.size();
 
 		VK_CALL(vkCreateDevice(m_Pdevice, &createInfo, nullptr, &m_Ldevice));
+
+		getQueues();
 	}
 
 	void VulkanDevice::waitFor() {
@@ -61,19 +63,19 @@ namespace milo {
 		return m_Ldevice;
 	}
 
-	const VulkanDeviceQueue& VulkanDevice::graphicsQueue() const {
+	const VulkanQueue& VulkanDevice::graphicsQueue() const {
 		return m_GraphicsQueue;
 	}
 
-	const VulkanDeviceQueue& VulkanDevice::computeQueue() const {
+	const VulkanQueue& VulkanDevice::computeQueue() const {
 		return m_ComputeQueue;
 	}
 
-	const VulkanDeviceQueue& VulkanDevice::transferQueue() const {
+	const VulkanQueue& VulkanDevice::transferQueue() const {
 		return m_TransferQueue;
 	}
 
-	const VulkanDeviceQueue& VulkanDevice::presentationQueue() const {
+	const VulkanQueue& VulkanDevice::presentationQueue() const {
 		return m_PresentationQueue;
 	}
 
@@ -180,10 +182,33 @@ namespace milo {
 			throw MILO_RUNTIME_EXCEPTION(str("Device has no queueFamilies supporting queue type ") + str(queueType));
 		}
 
+		VulkanQueue* queue;
+
+		switch(queueType) {
+			case VK_QUEUE_GRAPHICS_BIT:
+				queue = &m_GraphicsQueue;
+				queue->name = "GraphicsQueue";
+				queue->type = VK_QUEUE_GRAPHICS_BIT;
+				break;
+			case VK_QUEUE_COMPUTE_BIT:
+				queue = &m_ComputeQueue;
+				queue->name = "ComputeQueue";
+				queue->type = VK_QUEUE_COMPUTE_BIT;
+				break;
+			case VK_QUEUE_TRANSFER_BIT:
+				queue = &m_TransferQueue;
+				queue->name = "TransferQueue";
+				queue->type = VK_QUEUE_TRANSFER_BIT;
+				break;
+		}
+
+		queue->device = this;
+		queue->family = bestQueueFamily;
+		queue->index = 0;
+
 		const auto alreadyFound = std::find_if(queues.begin(), queues.end(), [&](const auto& queueInfo) {
 			return queueInfo.queueFamilyIndex == bestQueueFamily;
 		});
-
 		if(alreadyFound != queues.end()) return;
 
 		VkDeviceQueueCreateInfo queueInfo = {};
@@ -224,10 +249,15 @@ namespace milo {
 			throw MILO_RUNTIME_EXCEPTION("Device has no queueFamilies supporting a presentation capable queue");
 		}
 
+		m_PresentationQueue.name = "PresentationQueue";
+		m_PresentationQueue.type = VK_QUEUE_GRAPHICS_BIT;
+		m_PresentationQueue.device = this;
+		m_PresentationQueue.family = bestQueueFamily;
+		m_PresentationQueue.index = 0;
+
 		const auto alreadyFound = std::find_if(queues.begin(), queues.end(), [&](const auto& queueInfo) {
 			return queueInfo.queueFamilyIndex == bestQueueFamily;
 		});
-
 		if(alreadyFound != queues.end()) return;
 
 		VkDeviceQueueCreateInfo queueInfo = {};
@@ -237,6 +267,13 @@ namespace milo {
 		queueInfo.queueFamilyIndex = bestQueueFamily;
 
 		queues.push_back(queueInfo);
+	}
+
+	void VulkanDevice::getQueues() {
+		VK_CALL(vkGetDeviceQueue(m_Ldevice, m_GraphicsQueue.family, m_GraphicsQueue.index, &m_GraphicsQueue.vkQueue));
+		VK_CALL(vkGetDeviceQueue(m_Ldevice, m_TransferQueue.family, m_TransferQueue.index, &m_TransferQueue.vkQueue));
+		VK_CALL(vkGetDeviceQueue(m_Ldevice, m_ComputeQueue.family, m_ComputeQueue.index, &m_ComputeQueue.vkQueue));
+		VK_CALL(vkGetDeviceQueue(m_Ldevice, m_PresentationQueue.family, m_PresentationQueue.index, &m_PresentationQueue.vkQueue));
 	}
 
 	uint32_t VulkanDevice::findBestQueueFamilyOf(VkQueueFlagBits queueType, const ArrayList<VkQueueFamilyProperties> &queueFamilies) {

@@ -40,16 +40,21 @@ namespace milo {
 		bool operator>=(const RankedDevice &rhs) const;
 	};
 
-	struct VulkanDeviceQueue {
+	class VulkanDevice;
+
+	struct VulkanQueue {
+		VulkanDevice* device = nullptr;
+		const char* name = "";
 		VkQueue vkQueue = VK_NULL_HANDLE;
+		VkQueueFlags type = VK_QUEUE_FLAG_BITS_MAX_ENUM;
 		uint32_t family = UINT32_MAX;
 		uint32_t index = 0;
 
-		inline bool operator==(const VulkanDeviceQueue &rhs) const {
-			return family == rhs.family && index == rhs.index;
+		inline bool operator==(const VulkanQueue &rhs) const {
+			return device == rhs.device && family == rhs.family && index == rhs.index;
 		}
 
-		inline bool operator!=(const VulkanDeviceQueue &rhs) const {
+		inline bool operator!=(const VulkanQueue &rhs) const {
 			return !(rhs == *this);
 		}
 	};
@@ -65,18 +70,14 @@ namespace milo {
 		};
 	private:
 		inline static const float QUEUE_PRIORITY = 1.0f;
-		inline static const float GRAPHICS_QUEUE_PRIORITY = 1.0f;
-		inline static const float TRANSFER_QUEUE_PRIORITY = 1.0f;
-		inline static const float COMPUTE_QUEUE_PRIORITY = 1.0f;
-		inline static const float PRESENTATION_QUEUE_PRIORITY = 1.0f;
 	private:
 		VulkanContext& m_Context;
 		VkPhysicalDevice m_Pdevice = VK_NULL_HANDLE;
 		VkDevice m_Ldevice = VK_NULL_HANDLE;
-		VulkanDeviceQueue m_GraphicsQueue = {};
-		VulkanDeviceQueue m_ComputeQueue = {};
-		VulkanDeviceQueue m_TransferQueue = {};
-		VulkanDeviceQueue m_PresentationQueue = {};
+		VulkanQueue m_GraphicsQueue = {};
+		VulkanQueue m_ComputeQueue = {};
+		VulkanQueue m_TransferQueue = {};
+		VulkanQueue m_PresentationQueue = {};
 	private:
 		explicit VulkanDevice(VulkanContext& m_Context);
 		~VulkanDevice();
@@ -84,20 +85,20 @@ namespace milo {
 	public:
 		void waitFor();
 		void waitFor(VkQueue queue);
-
 		[[nodiscard]] VulkanContext& context() const;
 		[[nodiscard]] VkPhysicalDevice pdevice() const;
 		[[nodiscard]] VkDevice ldevice() const;
-		[[nodiscard]] const VulkanDeviceQueue& graphicsQueue() const;
-		[[nodiscard]] const VulkanDeviceQueue& computeQueue() const;
-		[[nodiscard]] const VulkanDeviceQueue& transferQueue() const;
-		[[nodiscard]] const VulkanDeviceQueue& presentationQueue() const;
+		[[nodiscard]] const VulkanQueue& graphicsQueue() const;
+		[[nodiscard]] const VulkanQueue& computeQueue() const;
+		[[nodiscard]] const VulkanQueue& transferQueue() const;
+		[[nodiscard]] const VulkanQueue& presentationQueue() const;
 		[[nodiscard]] VulkanPhysicalDeviceInfo pDeviceInfo() const;
 		[[nodiscard]] String name() const;
 	private:
 		ArrayList <VkDeviceQueueCreateInfo> inferQueueCreateInfos(const VulkanDevice::Info &info);
 		void tryGetQueue(VkQueueFlagBits queueType, const Info &info, const ArrayList<VkQueueFamilyProperties> &queueFamilies, ArrayList<VkDeviceQueueCreateInfo> &queues);
 		void tryGetPresentationQueue(const Info &info, const ArrayList<VkQueueFamilyProperties> &queueFamilies, ArrayList<VkDeviceQueueCreateInfo> &queues);
+		void getQueues();
 	public:
 		static ArrayList<VkPhysicalDevice> listAllPhysicalDevices(VkInstance vkInstance);
 		static ArrayList<RankedDevice> rankAllPhysicalDevices(VkInstance vkInstance);

@@ -81,8 +81,8 @@ namespace milo {
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		const VulkanDeviceQueue& graphicsQueue = m_Context.device().graphicsQueue();
-		const VulkanDeviceQueue& presentationQueue = m_Context.device().presentationQueue();
+		const VulkanQueue& graphicsQueue = m_Context.device().graphicsQueue();
+		const VulkanQueue& presentationQueue = m_Context.device().presentationQueue();
 
 		const uint32_t queueFamilies[2] = {presentationQueue.family, graphicsQueue.family};
 
