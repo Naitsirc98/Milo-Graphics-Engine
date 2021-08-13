@@ -9,7 +9,7 @@ namespace milo {
 	const float TARGET_UPDATE_DELAY = 1.0f / TARGET_UPS;
 	const float DEBUG_MIN_TIME = 1.0f;
 
-	static Mutex g_LaunchMutex;
+	//static Mutex g_LaunchMutex;
 
 	AtomicBool MiloEngine::s_AlreadyLaunched = false;
 
@@ -18,7 +18,7 @@ namespace milo {
 
 		MiloExitResult exitResult;
 
-		g_LaunchMutex.lock();
+		//g_LaunchMutex.lock();
 		{
 			Application::s_Instance = &application;
 			try {
@@ -43,7 +43,7 @@ namespace milo {
 
 			Application::s_Instance = nullptr;
 		}
-		g_LaunchMutex.unlock();
+		//g_LaunchMutex.unlock();
 
 		s_AlreadyLaunched = false;
 

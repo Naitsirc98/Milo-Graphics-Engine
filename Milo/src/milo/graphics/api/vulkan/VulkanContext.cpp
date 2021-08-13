@@ -8,7 +8,7 @@ namespace milo {
 
 	VulkanContext::~VulkanContext() {
 		DELETE_PTR(m_Device);
-
+		DELETE_PTR(m_WindowSurface);
 		DELETE_PTR(m_DebugMessenger);
 
 		vkDestroyInstance(m_VkInstance, nullptr);

@@ -4,6 +4,7 @@
 #include <milo/time/Time.h>
 #include "Exceptions.h"
 #include "Collections.h"
+#include "Concurrency.h"
 
 #ifdef _DEBUG
 #define NEW new(__FILE__, __LINE__)
@@ -39,16 +40,18 @@ namespace milo {
 	using WeakPtr = std::weak_ptr<T>;
 
 	struct Allocation {
-		const char* file;
-		size_t line;
-		uint64_t address;
-		size_t size;
+		const char* file = "";
+		size_t line = 0;
+		uint64_t address = 0;
+		size_t size = 0;
 		TimePoint timePoint;
 	};
 
+	// TODO: make this thread safe
 	class MemoryTracker {
 		friend class MiloSubSystemManager;
 	private:
+		static AtomicBool s_Active;
 		static SortedMap<uint64_t, Allocation> s_Allocations;
 		static uint64_t s_TotalAllocations;
 		static uint64_t s_TotalAllocationSize;

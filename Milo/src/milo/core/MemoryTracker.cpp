@@ -40,11 +40,13 @@ namespace milo {
 		return fmt::format("{} GB", bytes / (float)GB);
 	}
 
+	AtomicBool MemoryTracker::s_Active = false;
 	SortedMap<uint64_t, Allocation> MemoryTracker::s_Allocations;
 	uint64_t MemoryTracker::s_TotalAllocations = 0;
 	uint64_t MemoryTracker::s_TotalAllocationSize = 0;
 
 	void MemoryTracker::add(const char *file, size_t line, uint64_t address, size_t size) {
+		if(!s_Active) return;
 		Allocation allocation = {file, line, address, size, std::chrono::high_resolution_clock::now()};
 		s_Allocations[address] = allocation;
 		++s_TotalAllocations;
@@ -56,6 +58,7 @@ namespace milo {
 	}
 
 	void MemoryTracker::add(uint64_t address, size_t size) {
+		if(!s_Active) return;
 		Allocation allocation = {"EXTERNAL", 0, address, size, std::chrono::high_resolution_clock::now()};
 		s_Allocations[address] = allocation;
 		++s_TotalAllocations;
@@ -63,6 +66,7 @@ namespace milo {
 	}
 
 	void MemoryTracker::remove(uint64_t address) {
+		if(!s_Active) return;
 		if(s_Allocations.find(address) == s_Allocations.end()) return;
 		const size_t size = s_Allocations[address].size;
 		s_Allocations.erase(address);

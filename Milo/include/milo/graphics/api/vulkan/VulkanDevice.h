@@ -44,6 +44,14 @@ namespace milo {
 		VkQueue vkQueue = VK_NULL_HANDLE;
 		uint32_t family = UINT32_MAX;
 		uint32_t index = 0;
+
+		inline bool operator==(const VulkanDeviceQueue &rhs) const {
+			return family == rhs.family && index == rhs.index;
+		}
+
+		inline bool operator!=(const VulkanDeviceQueue &rhs) const {
+			return !(rhs == *this);
+		}
 	};
 
 	class VulkanDevice {

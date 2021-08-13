@@ -11,7 +11,7 @@ namespace milo {
 	}
 
 	size_t EventQueue::size() const {
-		return m_Size / MAX_EVENT_SIZE;
+		return m_Size;
 	}
 
 	size_t EventQueue::capacity() const {

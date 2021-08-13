@@ -36,5 +36,6 @@ namespace milo {
 
 	void Graphics::shutdown() {
 		DELETE_PTR(s_GraphicsContext);
+		DELETE_PTR(Window::s_MainWindow);
 	}
 }
