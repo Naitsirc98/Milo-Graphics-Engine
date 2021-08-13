@@ -37,6 +37,6 @@ namespace milo {
 	}
 
 	void VulkanCommandPool::free(uint32_t count, VkCommandBuffer* commandBuffers) {
-		VK_CALL(vkFreeCommandBuffers(m_Queue.device->ldevice(), m_VkCommandPool, count, commandBuffers));
+		vkFreeCommandBuffers(m_Queue.device->ldevice(), m_VkCommandPool, count, commandBuffers);
 	}
 }

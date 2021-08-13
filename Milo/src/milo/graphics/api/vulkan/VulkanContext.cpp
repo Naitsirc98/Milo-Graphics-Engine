@@ -7,6 +7,7 @@ namespace milo {
 	VulkanContext::VulkanContext() = default;
 
 	VulkanContext::~VulkanContext() {
+		DELETE_PTR(m_Allocator);
 		DELETE_PTR(m_Swapchain);
 		DELETE_PTR(m_Device);
 		DELETE_PTR(m_WindowSurface);
@@ -42,6 +43,10 @@ namespace milo {
 		return *m_Swapchain;
 	}
 
+	VulkanAllocator& VulkanContext::allocator() const {
+		return *m_Allocator;
+	}
+
 	void VulkanContext::init(Window& mainWindow) {
 		Log::info("Initializing Vulkan Context...");
 		{
@@ -50,6 +55,7 @@ namespace milo {
 			createWindowSurface(mainWindow);
 			createMainVulkanDevice();
 			createSwapchain();
+			createAllocator();
 		}
 		Log::info("Vulkan Context initialized");
 	}
@@ -106,6 +112,10 @@ namespace milo {
 
 	void VulkanContext::createSwapchain() {
 		m_Swapchain = new VulkanSwapchain(*this);
+	}
+
+	void VulkanContext::createAllocator() {
+		m_Allocator = new VulkanAllocator(*this);
 	}
 
 	VkApplicationInfo VulkanContext::getApplicationInfo() {

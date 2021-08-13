@@ -270,10 +270,10 @@ namespace milo {
 	}
 
 	void VulkanDevice::getQueues() {
-		VK_CALL(vkGetDeviceQueue(m_Ldevice, m_GraphicsQueue.family, m_GraphicsQueue.index, &m_GraphicsQueue.vkQueue));
-		VK_CALL(vkGetDeviceQueue(m_Ldevice, m_TransferQueue.family, m_TransferQueue.index, &m_TransferQueue.vkQueue));
-		VK_CALL(vkGetDeviceQueue(m_Ldevice, m_ComputeQueue.family, m_ComputeQueue.index, &m_ComputeQueue.vkQueue));
-		VK_CALL(vkGetDeviceQueue(m_Ldevice, m_PresentationQueue.family, m_PresentationQueue.index, &m_PresentationQueue.vkQueue));
+		vkGetDeviceQueue(m_Ldevice, m_GraphicsQueue.family, m_GraphicsQueue.index, &m_GraphicsQueue.vkQueue);
+		vkGetDeviceQueue(m_Ldevice, m_TransferQueue.family, m_TransferQueue.index, &m_TransferQueue.vkQueue);
+		vkGetDeviceQueue(m_Ldevice, m_ComputeQueue.family, m_ComputeQueue.index, &m_ComputeQueue.vkQueue);
+		vkGetDeviceQueue(m_Ldevice, m_PresentationQueue.family, m_PresentationQueue.index, &m_PresentationQueue.vkQueue);
 	}
 
 	uint32_t VulkanDevice::findBestQueueFamilyOf(VkQueueFlagBits queueType, const ArrayList<VkQueueFamilyProperties> &queueFamilies) {
