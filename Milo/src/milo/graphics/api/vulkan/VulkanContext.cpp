@@ -7,6 +7,7 @@ namespace milo {
 	VulkanContext::VulkanContext() = default;
 
 	VulkanContext::~VulkanContext() {
+		DELETE_PTR(m_Presenter);
 		DELETE_PTR(m_Allocator);
 		DELETE_PTR(m_Swapchain);
 		DELETE_PTR(m_Device);
@@ -22,16 +23,10 @@ namespace milo {
 	}
 
 	VkInstance VulkanContext::vkInstance() const {
-#ifdef _DEBUG
-		if(m_VkInstance == VK_NULL_HANDLE) throw MILO_RUNTIME_EXCEPTION("VkInstance has not been initialized!");
-#endif
 		return m_VkInstance;
 	}
 
 	VulkanDevice& VulkanContext::device() const {
-#ifdef _DEBUG
-		if(m_Device == nullptr) throw MILO_RUNTIME_EXCEPTION("Device has not been initialized!");
-#endif
 		return *m_Device;
 	}
 
@@ -47,6 +42,14 @@ namespace milo {
 		return *m_Allocator;
 	}
 
+	GraphicsPresenter& VulkanContext::presenter() const {
+		return *m_Presenter;
+	}
+
+	VulkanPresenter& VulkanContext::vulkanPresenter() const {
+		return *m_Presenter;
+	}
+
 	void VulkanContext::init(Window& mainWindow) {
 		Log::info("Initializing Vulkan Context...");
 		{
@@ -56,6 +59,7 @@ namespace milo {
 			createMainVulkanDevice();
 			createSwapchain();
 			createAllocator();
+			createPresenter();
 		}
 		Log::info("Vulkan Context initialized");
 	}
@@ -111,11 +115,15 @@ namespace milo {
 	}
 
 	void VulkanContext::createSwapchain() {
-		m_Swapchain = new VulkanSwapchain(*this);
+		m_Swapchain = NEW VulkanSwapchain(*this);
 	}
 
 	void VulkanContext::createAllocator() {
-		m_Allocator = new VulkanAllocator(*this);
+		m_Allocator = NEW VulkanAllocator(*this);
+	}
+
+	void VulkanContext::createPresenter() {
+		m_Presenter = NEW VulkanPresenter(*this);
 	}
 
 	VkApplicationInfo VulkanContext::getApplicationInfo() {

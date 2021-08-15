@@ -26,12 +26,15 @@ namespace milo {
 		[[nodiscard]] VkBuffer vkBuffer() const;
 		[[nodiscard]] const VkBufferCreateInfo& info() const;
 		[[nodiscard]] VulkanDevice& device() const;
+		[[nodiscard]] VmaAllocation& allocation();
 		[[nodiscard]] uint64_t size() const;
 		[[nodiscard]] bool valid() const;
 
 		void allocate(const VulkanBufferAllocInfo& allocInfo);
 		void reallocate(const VulkanBufferAllocInfo& allocInfo);
 		void destroy();
+
+		VulkanMappedMemory map(uint64_t size);
 
 		bool operator==(const VulkanBuffer& rhs) const;
 		bool operator!=(const VulkanBuffer& rhs) const;

@@ -30,6 +30,10 @@ namespace milo {
 		return m_Device;
 	}
 
+	VmaAllocation& VulkanBuffer::allocation() {
+		return m_Allocation;
+	}
+
 	uint64_t VulkanBuffer::size() const {
 		return m_Info.size;
 	}
@@ -50,6 +54,10 @@ namespace milo {
 
 	void VulkanBuffer::destroy() {
 		m_Device.context().allocator().freeBuffer(*this);
+	}
+
+	VulkanMappedMemory VulkanBuffer::map(uint64_t size) {
+		return VulkanMappedMemory(m_Device.context().allocator(), m_Allocation, size);
 	}
 
 	bool VulkanBuffer::operator==(const VulkanBuffer& rhs) const {

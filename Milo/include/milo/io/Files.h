@@ -15,6 +15,7 @@ namespace milo {
 	public:
 		static bool exists(const String& filename);
 		static void create(const String& filename);
+		static void createDirectory(const String& filename);
 		static uint64 length(const String& filename);
 		static ArrayList<int8> readAllBytes(const String& filename);
 		static String readAllText(const String& filename);

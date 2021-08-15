@@ -26,7 +26,7 @@ namespace milo {
 		return m_Context;
 	}
 
-	const VkSwapchainKHR_T* VulkanSwapchain::vkSwapchain() const {
+	VkSwapchainKHR VulkanSwapchain::vkSwapchain() const {
 		return m_VkSwapchain;
 	}
 
@@ -42,7 +42,7 @@ namespace milo {
 		return m_Extent;
 	}
 
-	const VkImage* VulkanSwapchain::images() const {
+	const VulkanSwapchainImage* VulkanSwapchain::images() const {
 		return m_Images;
 	}
 
@@ -50,8 +50,8 @@ namespace milo {
 		return m_ImageCount;
 	}
 
-	void VulkanSwapchain::addSwapchainResetCallback(SwapchainResetCallback resetCallback) {
-		m_OnResetCallbacks.push_back(std::move(resetCallback));
+	void VulkanSwapchain::addSwapchainRecreateCallback(SwapchainResetCallback callback) {
+		m_OnRecreateCallbacks.push_back(std::move(callback));
 	}
 
 	void VulkanSwapchain::create() {
@@ -111,9 +111,11 @@ namespace milo {
 	}
 
 	void VulkanSwapchain::destroy() {
-		DELETE_ARRAY(m_Images);
+		for(uint32_t i = 0;i < m_ImageCount;++i) {
+			destroySwapchainImage(m_Images[i]);
+		}
 
-		m_OnResetCallbacks.clear();
+		m_OnRecreateCallbacks.clear();
 
 		vkDestroySwapchainKHR(m_Context.device().ldevice(), m_VkSwapchain, nullptr);
 		m_VkSwapchain = VK_NULL_HANDLE;
@@ -126,12 +128,41 @@ namespace milo {
 #endif
 		destroy();
 		create();
-		for(auto& callback : m_OnResetCallbacks) callback();
+		for(auto& callback : m_OnRecreateCallbacks) callback();
 	}
 
 	void VulkanSwapchain::getSwapchainImages() {
-		if(m_Images != nullptr) DELETE_ARRAY(m_Images);
-		m_Images = new VkImage[m_ImageCount];
-		vkGetSwapchainImagesKHR(m_Context.device().ldevice(), m_VkSwapchain, &m_ImageCount, m_Images);
+		VkImage images[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
+		vkGetSwapchainImagesKHR(m_Context.device().ldevice(), m_VkSwapchain, &m_ImageCount, images);
+
+		for(uint32_t i = 0;i < m_ImageCount;++i) {
+			createSwapchainImage(i, m_Images[i], images[i]);
+		}
+	}
+
+	void VulkanSwapchain::createSwapchainImage(uint32_t index, VulkanSwapchainImage& image, VkImage vkImage) {
+		image.index = index;
+		image.vkImage = vkImage;
+
+		VkImageViewCreateInfo viewInfo = {};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = vkImage;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_Format;
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		VK_CALL(vkCreateImageView(m_Context.device().ldevice(), &viewInfo, nullptr, &image.vkImageView));
+		image.vkImageViewInfo = viewInfo;
+	}
+
+	void VulkanSwapchain::destroySwapchainImage(VulkanSwapchainImage& image) {
+		vkDestroyImageView(m_Context.device().ldevice(), image.vkImageView, nullptr);
+		image.vkImageView = VK_NULL_HANDLE;
+		image.vkImage = VK_NULL_HANDLE;
+		image.index = 0;
 	}
 }

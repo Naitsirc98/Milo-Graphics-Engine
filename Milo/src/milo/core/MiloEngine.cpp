@@ -2,6 +2,7 @@
 #include "milo/events/EventSystem.h"
 #include "milo/scenes/SceneManager.h"
 #include "milo/graphics/Window.h"
+#include "milo/graphics/Graphics.h"
 
 namespace milo {
 
@@ -103,20 +104,18 @@ namespace milo {
 		}
 
 		if(wasUpdated) {
-
 			SceneManager::lateUpdate();
-
-			//if(Time::s_Ups >= TARGET_UPS) updateDelay = 0;
 		}
 	}
 
 	inline void MiloEngine::render() {
-		// TODO: quit this
-		sleep_for(std::chrono::nanoseconds (100));
+		GraphicsPresenter& presenter = Graphics::graphicsContext().presenter();
 
-		SceneManager::render();
-
-		renderUI();
+		if(presenter.begin()) {
+			SceneManager::render();
+			renderUI();
+		}
+		presenter.end();
 
 		++Time::s_Fps;
 	}

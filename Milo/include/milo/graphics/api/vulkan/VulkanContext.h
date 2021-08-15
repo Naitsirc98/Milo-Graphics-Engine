@@ -1,9 +1,11 @@
 #pragma once
 
 #include "milo/graphics/api/GraphicsContext.h"
+#include "milo/graphics/api/vulkan/VulkanAPI.h"
 #include "milo/graphics/api/vulkan/VulkanDevice.h"
 #include "milo/graphics/api/vulkan/presentation/VulkanSwapchain.h"
-#include "VulkanAllocator.h"
+#include "milo/graphics/api/vulkan/VulkanAllocator.h"
+#include "milo/graphics/api/vulkan/presentation/VulkanPresenter.h"
 
 namespace milo {
 
@@ -18,6 +20,7 @@ namespace milo {
 		VulkanDebugMessenger* m_DebugMessenger = nullptr;
 		VulkanSwapchain* m_Swapchain = nullptr;
 		VulkanAllocator* m_Allocator = nullptr;
+		VulkanPresenter* m_Presenter = nullptr;
 	private:
 		VulkanContext();
 		~VulkanContext() override;
@@ -28,6 +31,8 @@ namespace milo {
 		[[nodiscard]] VulkanWindowSurface& windowSurface() const;
 		[[nodiscard]] VulkanSwapchain& swapchain() const;
 		[[nodiscard]] VulkanAllocator& allocator() const;
+		[[nodiscard]] GraphicsPresenter& presenter() const override;
+		[[nodiscard]] VulkanPresenter& vulkanPresenter() const;
 	protected:
 		void init(Window& mainWindow) override;
 	private:
@@ -37,6 +42,7 @@ namespace milo {
 		void createMainVulkanDevice();
 		void createSwapchain();
 		void createAllocator();
+		void createPresenter();
 	private:
 		static VkApplicationInfo getApplicationInfo();
 

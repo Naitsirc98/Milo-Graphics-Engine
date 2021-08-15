@@ -7,9 +7,13 @@ namespace milo {
 	}
 
 	void Files::create(const String& filename) {
-		Path path = std::filesystem::path(filename);
+		Path path = Path(filename);
 		std::filesystem::create_directories(path.parent_path());
 		OutputStream output(filename);
+	}
+
+	void Files::createDirectory(const String& filename) {
+		std::filesystem::create_directories(Path(filename));
 	}
 
 	uint64 Files::length(const String& filename) {

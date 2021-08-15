@@ -85,6 +85,8 @@ namespace milo {
 
 		actualExtent.width = std::clamp(actualExtent.width, minExtent.width, maxExtent.width);
 		actualExtent.height = std::clamp(actualExtent.height, minExtent.height, maxExtent.height);
+
+		return actualExtent;
 	}
 
 	uint32_t VulkanWindowSurfaceDetails::getSwapchainImageCount() const {

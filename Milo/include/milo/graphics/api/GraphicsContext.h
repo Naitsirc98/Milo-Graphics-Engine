@@ -1,6 +1,7 @@
 #pragma once
 
 #include "milo/common/Common.h"
+#include "milo/graphics/api/rendering/GraphicsPresenter.h"
 #include "milo/logging/Log.h"
 
 namespace milo {
@@ -14,6 +15,7 @@ namespace milo {
 	public:
 		virtual ~GraphicsContext() = default;
 		[[nodiscard]] virtual Handle handle() const = 0;
+		virtual GraphicsPresenter& presenter() const = 0;
 	protected:
 		virtual void init(Window& mainWindow) = 0;
 	};

@@ -7,6 +7,13 @@ namespace milo {
 
 	using SwapchainResetCallback = Function<void>;
 
+	struct VulkanSwapchainImage {
+		uint32_t index = 0;
+		VkImage vkImage = VK_NULL_HANDLE;
+		VkImageView vkImageView = VK_NULL_HANDLE;
+		VkImageViewCreateInfo vkImageViewInfo = {};
+	};
+
 	class VulkanSwapchain {
 		friend class VulkanContext;
 	private:
@@ -15,25 +22,28 @@ namespace milo {
 		VkPresentModeKHR m_PresentMode = VK_PRESENT_MODE_FIFO_KHR;
 		VkFormat m_Format = VK_FORMAT_MAX_ENUM;
 		VkExtent2D m_Extent = {0, 0};
-		VkImage* m_Images = nullptr;
+		VulkanSwapchainImage m_Images[MAX_SWAPCHAIN_IMAGE_COUNT]{};
 		uint32_t m_ImageCount = 0;
-		ArrayList<SwapchainResetCallback> m_OnResetCallbacks;
+		ArrayList<SwapchainResetCallback> m_OnRecreateCallbacks;
 	public:
 		explicit VulkanSwapchain(VulkanContext& context);
 		~VulkanSwapchain();
 		[[nodiscard]] VulkanContext& context() const;
-		[[nodiscard]] const VkSwapchainKHR_T* vkSwapchain() const;
+		[[nodiscard]] VkSwapchainKHR vkSwapchain() const;
 		[[nodiscard]] VkPresentModeKHR presentMode() const;
 		[[nodiscard]] VkFormat format() const;
 		[[nodiscard]] const VkExtent2D& extent() const;
-		[[nodiscard]] const VkImage* images() const;
+		[[nodiscard]] const VulkanSwapchainImage* images() const;
 		[[nodiscard]] uint32_t imageCount() const;
-		void addSwapchainResetCallback(SwapchainResetCallback resetCallback);
+		void addSwapchainRecreateCallback(SwapchainResetCallback callback);
+		void recreate();
 	private:
 		void create();
 		void createSwapchain();
 		void destroy();
-		void recreate();
 		void getSwapchainImages();
+		void destroySwapchainImage(VulkanSwapchainImage& image);
+
+		void createSwapchainImage(uint32_t index, VulkanSwapchainImage& image, VkImage vkImage);
 	};
 }

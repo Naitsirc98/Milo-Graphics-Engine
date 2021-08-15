@@ -30,7 +30,7 @@ file(GLOB_RECURSE ENGINE_HEADER_FILES
 # add_library(${PROJECT_NAME} STATIC ${ENGINE_HEADER_FILES} ${ENGINE_SOURCE_FILES} include/milo/core/MiloSubSystemManager.h src/milo/core/MiloSubSystemManager.cpp include/milo/common/Concurrency.h)
 
 # Build this project as an executable
-add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} include/milo/scenes/Entity.h src/milo/scenes/Entity.cpp include/milo/scenes/SceneManager.h src/milo/scenes/SceneManager.cpp src/milo/scenes/Scene.cpp include/milo/graphics/api/vulkan/VulkanExtensionsAndLayers.h src/milo/graphics/api/vulkan/VulkanExtensionsAndLayers.cpp include/milo/graphics/WindowCallbacks.h src/milo/graphics/WindowCallbacks.cpp include/milo/graphics/api/vulkan/presentation/VulkanWindowSurface.h src/milo/graphics/api/vulkan/presentation/VulkanWindowSurface.cpp)
+add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES})
 
 # DEPENDENCIES
 set(PROJECT_DEPENDENCIES_DIR ${PROJECT_SOURCE_DIR}/dependencies)
