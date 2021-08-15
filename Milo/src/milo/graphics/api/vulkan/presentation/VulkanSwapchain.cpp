@@ -89,8 +89,7 @@ namespace milo {
 		if(graphicsQueue != presentationQueue) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			createInfo.queueFamilyIndexCount = 2;
-		}
-		else {
+		} else {
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 1;
 		}

@@ -20,6 +20,7 @@ namespace milo {
 		VmaAllocation m_Allocation = VK_NULL_HANDLE;
 	public:
 		explicit VulkanBuffer(VulkanDevice& device);
+		explicit VulkanBuffer(const VulkanBuffer& other) = delete;
 		~VulkanBuffer();
 
 		[[nodiscard]] ResourceHandle handle() const;
@@ -35,6 +36,8 @@ namespace milo {
 		void destroy();
 
 		VulkanMappedMemory map(uint64_t size);
+
+		VulkanBuffer& operator=(const VulkanBuffer& other) = delete;
 
 		bool operator==(const VulkanBuffer& rhs) const;
 		bool operator!=(const VulkanBuffer& rhs) const;

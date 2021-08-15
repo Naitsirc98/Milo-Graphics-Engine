@@ -1,7 +1,7 @@
 #pragma once
 
 #include "milo/graphics/api/rendering/GraphicsPresenter.h"
-#include "milo/graphics/api/vulkan/images/VulkanImage.h"
+#include "milo/graphics/api/vulkan/images/VulkanTexture.h"
 #include "milo/graphics/api/vulkan/commands/VulkanCommandPool.h"
 #include "VulkanSwapchain.h"
 

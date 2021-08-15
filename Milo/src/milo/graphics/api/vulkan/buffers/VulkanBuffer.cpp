@@ -3,7 +3,7 @@
 
 namespace milo {
 
-	static Atomic<ResourceHandle> g_BufferHandleProvider = 1;
+	static Atomic<ResourceHandle> g_BufferHandleProvider = 1; // TODO: graphics factory
 
 	VulkanBuffer::VulkanBuffer(VulkanDevice& device) : m_Device(device) {
 		m_Handle = g_BufferHandleProvider++;

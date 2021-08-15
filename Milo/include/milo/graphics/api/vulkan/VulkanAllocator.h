@@ -6,7 +6,7 @@ namespace milo {
 
 	class VulkanContext;
 	class VulkanBuffer;
-	class VulkanImage;
+	class VulkanTexture;
 
 	class VulkanAllocator {
 	private:
@@ -22,6 +22,9 @@ namespace milo {
 
 		void allocateBuffer(VulkanBuffer& buffer, const VkBufferCreateInfo& bufferInfo, VmaMemoryUsage usage);
 		void freeBuffer(VulkanBuffer& buffer);
+
+		void allocateImage(VulkanTexture& texture, const VkImageCreateInfo& imageInfo, VmaMemoryUsage usage);
+		void freeImage(VulkanTexture& texture);
 	};
 
 	struct VulkanMappedMemory {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "VulkanWindowSurface.h"
-#include "milo/graphics/api/vulkan/images/VulkanImage.h"
+#include "milo/graphics/api/vulkan/images/VulkanTexture.h"
 
 namespace milo {
 
