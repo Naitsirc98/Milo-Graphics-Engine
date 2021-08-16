@@ -1,5 +1,6 @@
 #include "milo/graphics/api/vulkan/VulkanDevice.h"
 #include "milo/graphics/api/vulkan/VulkanContext.h"
+#include "milo/graphics/api/vulkan/VulkanFormats.h"
 #include <algorithm>
 
 namespace milo {
@@ -85,6 +86,10 @@ namespace milo {
 
 	String VulkanDevice::name() const {
 		return pDeviceInfo().properties().deviceName;
+	}
+
+	VkFormat VulkanDevice::depthFormat() const {
+		return VulkanFormats::findDepthFormat(m_Pdevice);
 	}
 
 	ArrayList<VkPhysicalDevice> VulkanDevice::listAllPhysicalDevices(VkInstance vkInstance) {

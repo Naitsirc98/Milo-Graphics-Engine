@@ -41,6 +41,7 @@ namespace milo {
 		allocInfo.usage = usage;
 		VK_CALL(vmaCreateBuffer(m_VmaAllocator, &bufferInfo, &allocInfo, &buffer.m_VkBuffer, &buffer.m_Allocation, nullptr));
 		buffer.m_Info = bufferInfo;
+		buffer.m_Usage = usage;
 	}
 
 	void VulkanAllocator::freeBuffer(VulkanBuffer& buffer) {

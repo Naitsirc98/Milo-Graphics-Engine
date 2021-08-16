@@ -10,6 +10,8 @@ namespace milo {
 		VkImageViewCreateInfo viewInfo = {};
 		VkSamplerCreateInfo samplerInfo = {};
 		VmaMemoryUsage usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		VulkanTextureAllocInfo();
 	};
 
 	class VulkanTexture {
@@ -50,4 +52,20 @@ namespace milo {
 		bool operator==(const VulkanTexture& rhs) const;
 		bool operator!=(const VulkanTexture& rhs) const;
 	};
+
+	namespace VulkanImageInfos {
+		VkImageCreateInfo create() noexcept;
+		VkImageCreateInfo colorAttachment() noexcept;
+		VkImageCreateInfo depthStencilAttachment() noexcept;
+	}
+
+	namespace VulkanImageViewInfos {
+		VkImageViewCreateInfo create(VkImage image = VK_NULL_HANDLE, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT, uint32_t levelCount = 1) noexcept;
+		VkImageViewCreateInfo colorAttachment(VkImage image = VK_NULL_HANDLE, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT, uint32_t levelCount = 1) noexcept;
+		VkImageViewCreateInfo depthStencilAttachment(VkImage image = VK_NULL_HANDLE, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT, uint32_t levelCount = 1) noexcept;
+	}
+
+	namespace VulkanSamplerInfos {
+		VkSamplerCreateInfo create();
+	}
 }

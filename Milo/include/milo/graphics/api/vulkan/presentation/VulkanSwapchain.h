@@ -29,6 +29,7 @@ namespace milo {
 		explicit VulkanSwapchain(VulkanContext& context);
 		~VulkanSwapchain();
 		[[nodiscard]] VulkanContext& context() const;
+		[[nodiscard]] VulkanDevice& device() const;
 		[[nodiscard]] VkSwapchainKHR vkSwapchain() const;
 		[[nodiscard]] VkPresentModeKHR presentMode() const;
 		[[nodiscard]] VkFormat format() const;
@@ -43,7 +44,6 @@ namespace milo {
 		void destroy();
 		void getSwapchainImages();
 		void destroySwapchainImage(VulkanSwapchainImage& image);
-
 		void createSwapchainImage(uint32_t index, VulkanSwapchainImage& image, VkImage vkImage);
 	};
 }

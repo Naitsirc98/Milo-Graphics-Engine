@@ -26,6 +26,10 @@ namespace milo {
 		return m_Context;
 	}
 
+	VulkanDevice& VulkanSwapchain::device() const {
+		return m_Context.device();
+	}
+
 	VkSwapchainKHR VulkanSwapchain::vkSwapchain() const {
 		return m_VkSwapchain;
 	}

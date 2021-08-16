@@ -6,6 +6,12 @@
 
 namespace milo {
 
+	struct Vertex3D {
+		Vector3 position = {0, 0, 0};
+		Vector3 normal = {0, 0, 0};
+		Vector2 texCoords = {0, 0};
+	};
+
 	class Graphics {
 		friend class MiloEngine;
 		friend class MiloSubSystemManager;

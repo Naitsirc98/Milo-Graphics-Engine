@@ -94,6 +94,7 @@ namespace milo {
 		[[nodiscard]] const VulkanQueue& presentationQueue() const;
 		[[nodiscard]] VulkanPhysicalDeviceInfo pDeviceInfo() const;
 		[[nodiscard]] String name() const;
+		VkFormat depthFormat() const;
 	private:
 		ArrayList <VkDeviceQueueCreateInfo> inferQueueCreateInfos(const VulkanDevice::Info &info);
 		void tryGetQueue(VkQueueFlagBits queueType, const Info &info, const ArrayList<VkQueueFamilyProperties> &queueFamilies, ArrayList<VkDeviceQueueCreateInfo> &queues);

@@ -1,5 +1,6 @@
 #include "milo/graphics/api/vulkan/buffers/VulkanBuffer.h"
 #include "milo/graphics/api/vulkan/VulkanContext.h"
+#include "milo/graphics/api/vulkan/VulkanCopy.h"
 
 namespace milo {
 
@@ -28,6 +29,10 @@ namespace milo {
 
 	VulkanDevice& VulkanBuffer::device() const {
 		return m_Device;
+	}
+
+	VmaMemoryUsage VulkanBuffer::usage() const {
+		return m_Usage;
 	}
 
 	VmaAllocation& VulkanBuffer::allocation() {
@@ -66,5 +71,10 @@ namespace milo {
 
 	bool VulkanBuffer::operator!=(const VulkanBuffer& rhs) const {
 		return ! (rhs == *this);
+	}
+
+
+	VulkanBufferAllocInfo::VulkanBufferAllocInfo() {
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	}
 }

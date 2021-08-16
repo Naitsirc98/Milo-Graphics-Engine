@@ -40,6 +40,8 @@ message("Handling Milo Engine dependencies...")
 add_subdirectory("${PROJECT_DEPENDENCIES_DIR}/glfw")
 add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/glm)
 add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/spdlog)
+set(SHADERC_SKIP_TESTS ON)
+add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/shaderc)
 
 # INCLUDE DIRECTORIES
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS})
@@ -54,6 +56,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/im
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/stb)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/json/single_include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/entt)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/shaderc/libshaderc/include)
 
 # PRECOMPILED HEADERS
 #target_precompile_headers(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/include/public_headers/engine/core/Common.h")
@@ -64,5 +67,6 @@ target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} glm)
 target_link_libraries(${PROJECT_NAME} spdlog)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} shaderc)
 
 #target_precompile_headers(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/include/milo/common/Common.h)

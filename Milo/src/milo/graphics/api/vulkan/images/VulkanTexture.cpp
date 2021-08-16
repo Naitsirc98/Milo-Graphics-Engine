@@ -22,7 +22,7 @@ namespace milo {
 		return m_Handle;
 	}
 
-	const VkImage_T* VulkanTexture::vkImage() const {
+	VkImage VulkanTexture::vkImage() const {
 		return m_VkImage;
 	}
 
@@ -30,7 +30,7 @@ namespace milo {
 		return m_VkImageInfo;
 	}
 
-	const VkImageView_T* VulkanTexture::vkImageView() const {
+	VkImageView VulkanTexture::vkImageView() const {
 		return m_VkImageView;
 	}
 
@@ -38,7 +38,7 @@ namespace milo {
 		return m_VkImageViewInfo;
 	}
 
-	const VkSampler_T* VulkanTexture::vkSampler() const {
+	VkSampler VulkanTexture::vkSampler() const {
 		return m_VkSampler;
 	}
 
@@ -57,10 +57,12 @@ namespace milo {
 	void VulkanTexture::allocate(const VulkanTextureAllocInfo& allocInfo) {
 		m_Device.context().allocator().allocateImage(*this, allocInfo.imageInfo, allocInfo.usage);
 
+
 		VK_CALL(vkCreateImageView(m_Device.ldevice(), &allocInfo.viewInfo, nullptr, &m_VkImageView));
 		VK_CALL(vkCreateSampler(m_Device.ldevice(), &allocInfo.samplerInfo, nullptr, &m_VkSampler));
 
 		m_VkImageViewInfo = allocInfo.viewInfo;
+		m_VkImageViewInfo.image = m_VkImage;
 		m_VkSamplerInfo = allocInfo.samplerInfo;
 	}
 
@@ -89,5 +91,92 @@ namespace milo {
 
 	bool VulkanTexture::operator!=(const VulkanTexture& rhs) const {
 		return ! (rhs == *this);
+	}
+
+	VulkanTextureAllocInfo::VulkanTextureAllocInfo() {
+		imageInfo = VulkanImageInfos::create();
+		viewInfo = VulkanImageViewInfos::create();
+		samplerInfo = VulkanSamplerInfos::create();
+	}
+
+
+	// ======
+
+
+	VkImageCreateInfo VulkanImageInfos::create() noexcept {
+		VkImageCreateInfo imageInfo = {};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.arrayLayers = 1;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.mipLevels = 1;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		return imageInfo;
+	}
+
+	VkImageCreateInfo VulkanImageInfos::colorAttachment() noexcept {
+		VkImageCreateInfo imageInfo = create();
+		imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		return imageInfo;
+	}
+
+	VkImageCreateInfo VulkanImageInfos::depthStencilAttachment() noexcept {
+		VkImageCreateInfo imageInfo = create();
+		imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		return imageInfo;
+	}
+
+
+	// ====
+
+
+	VkImageViewCreateInfo VulkanImageViewInfos::create(VkImage image, VkFormat format, uint32_t levelCount) noexcept {
+		VkImageViewCreateInfo viewInfo = {};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.image = image;
+		viewInfo.format = format;
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = levelCount;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+		return viewInfo;
+	}
+
+	VkImageViewCreateInfo VulkanImageViewInfos::colorAttachment(VkImage image, VkFormat format, uint32_t levelCount) noexcept {
+		return create(image, format, levelCount);
+	}
+
+	VkImageViewCreateInfo VulkanImageViewInfos::depthStencilAttachment(VkImage image, VkFormat format, uint32_t levelCount) noexcept {
+		VkImageViewCreateInfo viewInfo = create(image, format, levelCount);
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		return viewInfo;
+	}
+
+
+	//  ====
+
+
+	VkSamplerCreateInfo VulkanSamplerInfos::create() {
+		VkSamplerCreateInfo samplerInfo = {};
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.anisotropyEnable = VK_TRUE;
+		samplerInfo.maxAnisotropy = 16.0f;
+		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = VK_FALSE;
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.minLod = 0;
+		samplerInfo.maxLod = 1.0f;
+		samplerInfo.mipLodBias = 0;
+		return samplerInfo;
 	}
 }
