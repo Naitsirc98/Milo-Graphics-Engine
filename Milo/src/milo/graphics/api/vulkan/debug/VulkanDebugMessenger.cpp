@@ -43,11 +43,15 @@ namespace milo {
 
 		if(messageSeverity != VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT && isLoaderMessage(callbackData->pMessageIdName)) return VK_FALSE;
 
+		VulkanAPICall apiCall = VulkanAPICallManager::getLastAPICall();
+
 		String message = String("[VULKAN][")
 				.append(messageTypeToString(messageType))
 				.append("]: (")
 				.append(callbackData->pMessageIdName).append("): ")
-				.append(callbackData->pMessage);
+				.append(callbackData->pMessage)
+				.append("\n\tWhen calling function ").append(apiCall.function)
+				.append("\n\tat ").append(apiCall.file).append("(").append(str(apiCall.line)).append(")");
 
 		switch(messageSeverity) {
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:

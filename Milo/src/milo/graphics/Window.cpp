@@ -248,7 +248,7 @@ namespace milo {
 
 		glfwDefaultWindowHints();
 
-		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+		glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 		glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
 

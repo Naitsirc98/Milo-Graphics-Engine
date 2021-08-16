@@ -8,6 +8,15 @@
 namespace milo {
 
 	class VulkanSimpleRenderPass {
+	public:
+		struct ExecuteInfo {
+			uint32_t swapchainImageIndex = UINT32_MAX;
+			VkSemaphore* waitSemaphores = nullptr;
+			uint32_t waitSemaphoresCount = 0;
+			VkSemaphore* signalSemaphores = nullptr;
+			uint32_t signalSemaphoresCount = 0;
+			VkFence fence = VK_NULL_HANDLE;
+		};
 	private:
 		VulkanSwapchain& m_Swapchain;
 		VkRenderPass m_VkRenderPass = VK_NULL_HANDLE;
@@ -22,7 +31,7 @@ namespace milo {
 	public:
 		explicit VulkanSimpleRenderPass(VulkanSwapchain& swapchain);
 		~VulkanSimpleRenderPass();
-		void execute(uint32_t swapchainImageIndex);
+		void execute(const ExecuteInfo& input);
 	private:
 		void create();
 		void destroy();

@@ -16,23 +16,27 @@ namespace milo {
 
 		createSyncObjects();
 
+		m_SimpleRenderPass = NEW VulkanSimpleRenderPass(m_Swapchain);
+
 		m_Swapchain.addSwapchainRecreateCallback([&]() {
 			m_MaxImageCount = m_Swapchain.imageCount();
 			m_CurrentImageIndex = 0;
 			m_CurrentFrame = 0;
 
+			DELETE_PTR(m_SimpleRenderPass);
 			destroySyncObjects();
+
 			createSyncObjects();
+			m_SimpleRenderPass = NEW VulkanSimpleRenderPass(m_Swapchain);
 		});
 	}
 
 	VulkanPresenter::~VulkanPresenter() {
+		DELETE_PTR(m_SimpleRenderPass);
 		destroySyncObjects();
 	}
 
 	bool VulkanPresenter::begin() {
-
-		/*
 
 		if(Window::get().size().isZero()) return false;
 
@@ -43,7 +47,6 @@ namespace milo {
 		if(!tryGetNextSwapchainImage()) return false;
 
 		setCurrentFrameInFlight();
-		*/
 
 		return true;
 	}
@@ -92,14 +95,20 @@ namespace milo {
 	}
 
 	void VulkanPresenter::end() {
-		/*
 
-		VkSemaphore waitSemaphores[] = {m_RenderFinishedSemaphore[m_CurrentFrame]};
+		VulkanSimpleRenderPass::ExecuteInfo executeInfo = {};
+		executeInfo.waitSemaphores = &m_ImageAvailableSemaphore[m_CurrentImageIndex];
+		executeInfo.waitSemaphoresCount = 1;
+		executeInfo.signalSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
+		executeInfo.signalSemaphoresCount = 1;
+		executeInfo.fence = m_FramesInFlightFences[m_CurrentFrame];
+
+		m_SimpleRenderPass->execute(executeInfo);
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-		presentInfo.pWaitSemaphores = waitSemaphores;
+		presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
 		presentInfo.waitSemaphoreCount = 1;
 
 		VkSwapchainKHR swapchains = m_Swapchain.vkSwapchain();
@@ -120,7 +129,6 @@ namespace milo {
 			default:
 				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + vulkanErrorName(result));
 		}
-		*/
 	}
 
 	uint32_t VulkanPresenter::currentImageIndex() const {

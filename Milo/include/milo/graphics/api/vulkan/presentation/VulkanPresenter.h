@@ -1,5 +1,6 @@
 #pragma once
 
+#include <milo/graphics/api/vulkan/rendering/VulkanSimpleRenderPass.h>
 #include "milo/graphics/api/rendering/GraphicsPresenter.h"
 #include "milo/graphics/api/vulkan/images/VulkanTexture.h"
 #include "milo/graphics/api/vulkan/commands/VulkanCommandPool.h"
@@ -26,6 +27,8 @@ namespace milo {
 		uint32_t m_MaxImageCount = 0;
 		uint32_t m_CurrentImageIndex = 0;
 		uint32_t m_CurrentFrame = 0;
+		// TMP
+		VulkanSimpleRenderPass* m_SimpleRenderPass = nullptr;
 	private:
 		explicit VulkanPresenter(VulkanContext& context);
 		~VulkanPresenter();

@@ -1,5 +1,4 @@
 #include "milo/graphics/api/vulkan/rendering/VulkanSimpleRenderPass.h"
-#include "milo/graphics/api/vulkan/VulkanDevice.h"
 #include "milo/graphics/api/vulkan/VulkanContext.h"
 #include "milo/graphics/api/vulkan/rendering/VulkanGraphicsPipeline.h"
 
@@ -20,7 +19,9 @@ namespace milo {
 		destroy();
 	}
 
-	void VulkanSimpleRenderPass::execute(uint32_t swapchainImageIndex) {
+	void VulkanSimpleRenderPass::execute(const VulkanSimpleRenderPass::ExecuteInfo& executeInfo) {
+
+		uint32_t swapchainImageIndex = executeInfo.swapchainImageIndex;
 
 		Matrix4 view = lookAt(Vector3(0, 0, -3), Vector3(0, 0, 0), Vector3(0, 0, 1));
 		Matrix4 proj = perspective(radians(45.0f), Window::get().aspectRatio(), 0.1f, 1000.0f);
@@ -63,7 +64,16 @@ namespace milo {
 		}
 		VK_CALL(vkEndCommandBuffer(commandBuffer));
 
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitSemaphores = executeInfo.waitSemaphores;
+		submitInfo.waitSemaphoreCount = executeInfo.waitSemaphoresCount;
+		submitInfo.pSignalSemaphores = executeInfo.signalSemaphores;
+		submitInfo.signalSemaphoreCount = executeInfo.signalSemaphoresCount;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.commandBufferCount = 1;
 
+		VK_CALL(vkQueueSubmit(m_Swapchain.device().graphicsQueue().vkQueue, 1, &submitInfo, executeInfo.fence));
 	}
 
 	void VulkanSimpleRenderPass::updatePushConstants(VkCommandBuffer commandBuffer, const Matrix4& mvp) {
@@ -114,36 +124,36 @@ namespace milo {
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 		VkAttachmentDescription depthAttachment = {};
-		colorAttachment.format = m_Swapchain.device().depthFormat();
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		depthAttachment.format = m_Swapchain.device().depthFormat();
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentReference colorAttachmentRef = {};
 		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference depthAttachmentRef = {};
+		VkAttachmentReference depthAttachmentRef{};
 		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.pColorAttachments = &colorAttachmentRef;
 		subpass.colorAttachmentCount = 1;
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 		VkAttachmentDescription attachments[] = {colorAttachment, depthAttachment};
 
@@ -169,10 +179,12 @@ namespace milo {
 
 		VulkanTextureAllocInfo allocInfo = {};
 		allocInfo.imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		allocInfo.imageInfo.format = m_Swapchain.device().depthFormat();
 		allocInfo.imageInfo.extent = extent;
 		allocInfo.imageInfo.pQueueFamilyIndices = queueFamilies;
 		allocInfo.imageInfo.queueFamilyIndexCount = queueFamilies[0] == queueFamilies[1] ? 1 : 2;
 		allocInfo.viewInfo.format = format;
+		allocInfo.viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 			auto* texture = NEW VulkanTexture(m_Swapchain.device());
@@ -182,11 +194,16 @@ namespace milo {
 	}
 
 	void VulkanSimpleRenderPass::createFramebuffers() {
+
+		Size size = Window::get().size();
+
 		VkFramebufferCreateInfo framebufferInfo = {};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.attachmentCount = 2;
 		framebufferInfo.renderPass = m_VkRenderPass;
 		framebufferInfo.layers = 1;
+		framebufferInfo.width = size.width;
+		framebufferInfo.height = size.height;
 
 		const VulkanSwapchainImage* swapchainImages = m_Swapchain.images();
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {

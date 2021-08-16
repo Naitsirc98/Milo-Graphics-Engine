@@ -126,10 +126,7 @@ namespace milo {
 
 	void MiloEngine::init() {
 		MiloSubSystemManager::init();
-
 		EventSystem::addEventCallback(EventType::WindowClose, [&](const Event& event) {Application::exit();});
-
-		Window::get().show();
 	}
 
 	void MiloEngine::shutdown() {

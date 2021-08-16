@@ -45,4 +45,21 @@ namespace milo {
 		}
 		return "Unknown Error";
 	}
+
+	VulkanAPICall VulkanAPICallManager::s_LastVulkanAPICall;
+	Mutex VulkanAPICallManager::s_Mutex;
+
+	VulkanAPICall VulkanAPICallManager::getLastAPICall() {
+		return s_LastVulkanAPICall;
+	}
+
+	void VulkanAPICallManager::registerAPICall(const char* function, const char* file, uint32_t line) {
+		s_Mutex.lock();
+		{
+			s_LastVulkanAPICall.function = function;
+			s_LastVulkanAPICall.file = file;
+			s_LastVulkanAPICall.line = line;
+		}
+		s_Mutex.unlock();
+	}
 }

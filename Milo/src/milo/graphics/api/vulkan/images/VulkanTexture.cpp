@@ -57,13 +57,13 @@ namespace milo {
 	void VulkanTexture::allocate(const VulkanTextureAllocInfo& allocInfo) {
 		m_Device.context().allocator().allocateImage(*this, allocInfo.imageInfo, allocInfo.usage);
 
-
-		VK_CALL(vkCreateImageView(m_Device.ldevice(), &allocInfo.viewInfo, nullptr, &m_VkImageView));
-		VK_CALL(vkCreateSampler(m_Device.ldevice(), &allocInfo.samplerInfo, nullptr, &m_VkSampler));
-
 		m_VkImageViewInfo = allocInfo.viewInfo;
 		m_VkImageViewInfo.image = m_VkImage;
+
 		m_VkSamplerInfo = allocInfo.samplerInfo;
+
+		VK_CALL(vkCreateImageView(m_Device.ldevice(), &m_VkImageViewInfo, nullptr, &m_VkImageView));
+		VK_CALL(vkCreateSampler(m_Device.ldevice(), &m_VkSamplerInfo, nullptr, &m_VkSampler));
 	}
 
 	void VulkanTexture::reallocate(const VulkanTextureAllocInfo& allocInfo) {
@@ -112,6 +112,7 @@ namespace milo {
 		imageInfo.mipLevels = 1;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		return imageInfo;
 	}
 
