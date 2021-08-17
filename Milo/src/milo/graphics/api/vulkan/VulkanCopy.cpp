@@ -2,7 +2,7 @@
 
 namespace milo {
 
-	void VulkanCopy::copy(VulkanCommandPool* commandPool, VulkanBuffer* buffer, void* data, uint64_t size) {
+	void VulkanCopy::copy(VulkanCommandPool* commandPool, VulkanBuffer* buffer, const void* data, uint64_t size) {
 		VmaMemoryUsage usage = buffer->usage();
 
 		switch(usage) {
@@ -28,19 +28,21 @@ namespace milo {
 			copy.srcOffset = 0;
 			copy.dstOffset = 0;
 			copy.size = size;
-			vkCmdCopyBuffer(vkCommandBuffer, src->vkBuffer(), dst->vkBuffer(), 1, &copy);
+			VK_CALLV(vkCmdCopyBuffer(vkCommandBuffer, src->vkBuffer(), dst->vkBuffer(), 1, &copy));
 		};
 		commandPool->execute(task);
 	}
 
-	void VulkanCopy::copyByStagingBufferToGPU(VulkanCommandPool* commandPool, VulkanBuffer* buffer, void* data, uint64_t size) {
-		auto* stagingBuffer = NEW VulkanBuffer(buffer->device());
-		copyByMemoryMapping(stagingBuffer, data, size);
+	void VulkanCopy::copyByStagingBufferToGPU(VulkanCommandPool* commandPool, VulkanBuffer* buffer, const void* data, uint64_t size) {
+
+		VulkanBuffer* stagingBuffer = VulkanBuffer::createStagingBuffer(data, size);
+
 		copy(commandPool, stagingBuffer, buffer, size);
+
 		DELETE_PTR(stagingBuffer);
 	}
 
-	void VulkanCopy::copyByMemoryMapping(VulkanBuffer* buffer, void* data, uint64_t size) {
+	void VulkanCopy::copyByMemoryMapping(VulkanBuffer* buffer, const void* data, uint64_t size) {
 		VulkanMappedMemory memory = buffer->map(size);
 		memcpy(memory.data, data, size);
 	}

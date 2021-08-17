@@ -6,21 +6,13 @@
 #include "Collections.h"
 #include "Concurrency.h"
 
-#ifdef _DEBUG
-#define NEW new(__FILE__, __LINE__)
-#define DELETE delete
-#else
-#define NEW new
-#define DELETE delete
-#endif
-
-#define DELETE_PTR(ptr) {DELETE ptr; ptr = nullptr;}
-#define DELETE_ARRAY(arr) {DELETE[] arr; arr = nullptr;}
+#define DELETE_PTR(ptr) {delete ptr; ptr = nullptr;}
+#define DELETE_ARRAY(arr) {delete[] arr; arr = nullptr;}
 
 #ifdef _DEBUG
 
-void* operator new(size_t size, const char* file, size_t line);
-void* operator new[](size_t size, const char* file, size_t line);
+void* operator new(size_t size);
+void* operator new[](size_t size);
 void operator delete(void* ptr);
 void operator delete[](void* ptr);
 
@@ -39,27 +31,17 @@ namespace milo {
 	template<typename T>
 	using WeakPtr = std::weak_ptr<T>;
 
-	struct Allocation {
-		const char* file = "";
-		size_t line = 0;
-		uint64_t address = 0;
-		size_t size = 0;
-		TimePoint timePoint;
-	};
-
 	// TODO: make this thread safe
 	class MemoryTracker {
 		friend class MiloSubSystemManager;
 	private:
 		static AtomicBool s_Active;
-		static SortedMap<uint64_t, Allocation> s_Allocations;
-		static uint64_t s_TotalAllocations;
-		static uint64_t s_TotalAllocationSize;
+		static HashMap<uint64_t, size_t>* s_Allocations;
+		static AtomicULong s_TotalAllocations;
+		static AtomicULong s_TotalAllocationSize;
 	public:
-		static void add(const char *file, size_t line, uint64_t address, size_t size);
 		static void add(uint64_t address, size_t size);
 		static void remove(uint64_t address);
-		static const SortedMap<uint64_t, Allocation>& allocations();
 		static uint64_t aliveAllocationsCount();
 		static uint64_t totalAllocations();
 		static uint64_t totalAllocationSize();
@@ -67,5 +49,6 @@ namespace milo {
 	private:
 		static void init();
 		static void shutdown();
+		static HashMap<uint64_t, size_t>& allocations();
 	};
 }

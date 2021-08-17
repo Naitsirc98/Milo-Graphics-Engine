@@ -1,11 +1,15 @@
 #include "milo/graphics/api/vulkan/VulkanAllocator.h"
 #include "milo/graphics/api/vulkan/VulkanContext.h"
-#include "milo/graphics/api/vulkan/buffers/VulkanBuffer.h"
-#include "milo/graphics/api/vulkan/images/VulkanTexture.h"
+#include "milo/graphics/Graphics.h"
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 
 namespace milo {
+
+	VulkanAllocator& VulkanAllocator::get() {
+		auto& context = dynamic_cast<VulkanContext&>(Graphics::graphicsContext());
+		return context.allocator();
+	}
 
 	VulkanAllocator::VulkanAllocator(VulkanContext& context) : m_Context(context) {
 
@@ -20,7 +24,7 @@ namespace milo {
 	}
 
 	VulkanAllocator::~VulkanAllocator() {
-		vmaDestroyAllocator(m_VmaAllocator);
+		VK_CALLV(vmaDestroyAllocator(m_VmaAllocator));
 		m_VmaAllocator = nullptr;
 	}
 
@@ -33,7 +37,7 @@ namespace milo {
 	}
 
 	void VulkanAllocator::unmapMemory(VmaAllocation allocation) {
-		vmaUnmapMemory(m_VmaAllocator, allocation);
+		VK_CALLV(vmaUnmapMemory(m_VmaAllocator, allocation));
 	}
 
 	void VulkanAllocator::allocateBuffer(VulkanBuffer& buffer, const VkBufferCreateInfo& bufferInfo, VmaMemoryUsage usage) {
@@ -45,7 +49,8 @@ namespace milo {
 	}
 
 	void VulkanAllocator::freeBuffer(VulkanBuffer& buffer) {
-		vmaDestroyBuffer(m_VmaAllocator, buffer.m_VkBuffer, buffer.m_Allocation);
+		if(buffer.vkBuffer() == VK_NULL_HANDLE || buffer.allocation()  == VK_NULL_HANDLE) return;
+		VK_CALLV(vmaDestroyBuffer(m_VmaAllocator, buffer.m_VkBuffer, buffer.m_Allocation));
 		buffer.m_VkBuffer = VK_NULL_HANDLE;
 		buffer.m_Allocation = VK_NULL_HANDLE;
 	}
@@ -59,7 +64,8 @@ namespace milo {
 	}
 
 	void VulkanAllocator::freeImage(VulkanTexture& texture) {
-		vmaDestroyImage(m_VmaAllocator, texture.m_VkImage, texture.m_Allocation);
+		if(texture.vkImage() == VK_NULL_HANDLE || texture.allocation() == VK_NULL_HANDLE) return;
+		VK_CALLV(vmaDestroyImage(m_VmaAllocator, texture.m_VkImage, texture.m_Allocation));
 		texture.m_VkImage = VK_NULL_HANDLE;
 		texture.m_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		texture.m_Allocation = VK_NULL_HANDLE;
@@ -68,7 +74,7 @@ namespace milo {
 	VulkanMappedMemory::VulkanMappedMemory(VulkanAllocator& allocator, VmaAllocation allocation, uint64_t size)
 		: allocator(allocator), allocation(allocation), size(size) {
 
-		data = NEW int8_t[size]{0};
+		data = new int8_t[size]{0};
 		allocator.mapMemory(allocation, data);
 	}
 

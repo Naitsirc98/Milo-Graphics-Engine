@@ -6,9 +6,9 @@
 
 namespace milo::VulkanCopy {
 
-	void copy(VulkanCommandPool* commandPool, VulkanBuffer* buffer, void* data, uint64_t size);
+	void copy(VulkanCommandPool* commandPool, VulkanBuffer* buffer, const void* data, uint64_t size);
 	void copy(VulkanCommandPool* commandPool, VulkanBuffer* src, VulkanBuffer* dst, uint64_t size = UINT64_MAX);
 
-	void copyByStagingBufferToGPU(VulkanCommandPool* commandPool, VulkanBuffer* buffer, void* data, uint64_t size);
-	void copyByMemoryMapping(VulkanBuffer* buffer, void* data, uint64_t size);
+	void copyByStagingBufferToGPU(VulkanCommandPool* commandPool, VulkanBuffer* buffer, const void* data, uint64_t size);
+	void copyByMemoryMapping(VulkanBuffer* buffer, const void* data, uint64_t size);
 }

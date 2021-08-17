@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <stdexcept>
+#include <boost/stacktrace.hpp>
 
 #define MILO_DETAILED_MESSAGE(message) milo::str(message).append("\n\tat ").append(__FILE__).append("(").append(milo::str(__LINE__)).append(")"))
 #define MILO_RUNTIME_EXCEPTION(message) RuntimeException(MILO_DETAILED_MESSAGE((message))
@@ -21,4 +22,23 @@ namespace milo {
 	using InvalidArgumentException = std::invalid_argument;
 
 	using BadAllocationException = std::bad_alloc;
+
+	using StackTrace = boost::stacktrace::basic_stacktrace<>;
+
+#define MILO_STACKTRACE_OFFSET 3
+
+	inline StackTrace getStackTrace(size_t skip = 0, size_t maxDepth = 10) {
+		return boost::stacktrace::stacktrace(MILO_STACKTRACE_OFFSET + skip, maxDepth);
+	}
+
+	template<>
+	inline String str(const StackTrace& value) {
+		StringStream ss;
+		for(size_t i = 0;i < value.size();++i) {
+			const auto& frame = value[i];
+			const String& file = frame.source_file();
+			ss << "  #" << i << " " << frame.name() << "\n    at " << file << ":" << frame.source_line() << "\n";
+		}
+		return ss.str();
+	}
 }

@@ -5,11 +5,17 @@
 
 namespace milo {
 
+	void VulkanQueue::awaitTermination() {
+		device->awaitTermination(vkQueue);
+	}
+
 	VulkanDevice::VulkanDevice(VulkanContext& context) : m_Context(context) {
 	}
 
 	VulkanDevice::~VulkanDevice() {
-		waitFor();
+		awaitTermination();
+
+		DELETE_PTR(m_TransferCommandPool);
 
 		m_GraphicsQueue.vkQueue = VK_NULL_HANDLE;
 		m_ComputeQueue.vkQueue = VK_NULL_HANDLE;
@@ -42,13 +48,15 @@ namespace milo {
 		VK_CALL(vkCreateDevice(m_Pdevice, &createInfo, nullptr, &m_Ldevice));
 
 		getQueues();
+
+		m_TransferCommandPool = new VulkanCommandPool(m_TransferQueue);
 	}
 
-	void VulkanDevice::waitFor() {
+	void VulkanDevice::awaitTermination() {
 		vkDeviceWaitIdle(m_Ldevice);
 	}
 
-	void VulkanDevice::waitFor(VkQueue queue) {
+	void VulkanDevice::awaitTermination(VkQueue queue) {
 		vkQueueWaitIdle(queue);
 	}
 
@@ -90,6 +98,10 @@ namespace milo {
 
 	VkFormat VulkanDevice::depthFormat() const {
 		return VulkanFormats::findDepthFormat(m_Pdevice);
+	}
+
+	VulkanCommandPool* VulkanDevice::transferCommandPool() const {
+		return m_TransferCommandPool;
 	}
 
 	ArrayList<VkPhysicalDevice> VulkanDevice::listAllPhysicalDevices(VkInstance vkInstance) {

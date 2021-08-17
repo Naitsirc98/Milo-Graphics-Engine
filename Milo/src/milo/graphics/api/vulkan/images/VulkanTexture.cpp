@@ -74,8 +74,8 @@ namespace milo {
 	void VulkanTexture::destroy() {
 		m_Device.context().allocator().freeImage(*this);
 
-		vkDestroyImageView(m_Device.ldevice(), m_VkImageView, nullptr);
-		vkDestroySampler(m_Device.ldevice(), m_VkSampler, nullptr);
+		VK_CALLV(vkDestroyImageView(m_Device.ldevice(), m_VkImageView, nullptr));
+		VK_CALLV(vkDestroySampler(m_Device.ldevice(), m_VkSampler, nullptr));
 
 		m_VkImageView = VK_NULL_HANDLE;
 		m_VkSampler = VK_NULL_HANDLE;

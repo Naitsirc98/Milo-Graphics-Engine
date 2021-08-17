@@ -7,12 +7,7 @@ namespace milo {
 	static const ArrayList<float>& getCubeVertexData();
 
 	VulkanSimpleRenderPass::VulkanSimpleRenderPass(VulkanSwapchain& swapchain) : m_Swapchain(swapchain) {
-
 		create();
-
-		m_Swapchain.addSwapchainRecreateCallback([&](){
-			recreate();
-		});
 	}
 
 	VulkanSimpleRenderPass::~VulkanSimpleRenderPass() {
@@ -26,7 +21,7 @@ namespace milo {
 		Matrix4 view = lookAt(Vector3(0, 0, -3), Vector3(0, 0, 0), Vector3(0, 0, 1));
 		Matrix4 proj = perspective(radians(45.0f), Window::get().aspectRatio(), 0.1f, 1000.0f);
 
-		Matrix4 viewProj = proj * view;
+		Matrix4 viewProj(1.0f);// = proj * view;
 
 		VkCommandBuffer commandBuffer = m_VkCommandBuffers[swapchainImageIndex];
 
@@ -35,32 +30,35 @@ namespace milo {
 
 		VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 		{
-			VkRenderPassBeginInfo renderPassInfo{};
+			VkRenderPassBeginInfo renderPassInfo = {};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			renderPassInfo.renderPass = m_VkRenderPass;
 			renderPassInfo.framebuffer = m_VkFramebuffers[swapchainImageIndex];
 			renderPassInfo.renderArea.offset = {0, 0};
 			renderPassInfo.renderArea.extent = m_Swapchain.extent();
 
-			VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clearColor;
+			VkClearValue clearValues[2];
+			clearValues[0].color = {{0.1f, 0.1f, 0.1f, 1.0f}};
+			clearValues[1].depthStencil = {1.0f, 0};
 
-			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			renderPassInfo.clearValueCount = 2;
+			renderPassInfo.pClearValues = clearValues;
+
+			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 			{
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline);
+				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline));
 
 				VkBuffer vertexBuffers[] = {m_VertexBuffer->vkBuffer()};
 				VkDeviceSize offsets[] = {0};
-				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+				VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
 
-				for(uint32_t i = 0;i < 100;++i) {
-					Matrix4 model = translate(Vector3(Random::nextInt(0, 100), Random::nextInt(0, 100), Random::nextInt(0, 100)));
+				for(uint32_t i = 0;i < 1;++i) {
+					Matrix4 model(1.0f);// = translate(Vector3(Random::nextInt(0, 100), Random::nextInt(0, 100), Random::nextInt(0, 100)));
 					updatePushConstants(commandBuffer, viewProj * model);
-					vkCmdDraw(commandBuffer, static_cast<uint32_t>(getCubeVertexData().size()), 1, 0, 0);
+					VK_CALLV(vkCmdDraw(commandBuffer, static_cast<uint32_t>(getCubeVertexData().size()), 1, 0, 0));
 				}
 			}
-			vkCmdEndRenderPass(commandBuffer);
+			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
 		}
 		VK_CALL(vkEndCommandBuffer(commandBuffer));
 
@@ -72,43 +70,59 @@ namespace milo {
 		submitInfo.signalSemaphoreCount = executeInfo.signalSemaphoresCount;
 		submitInfo.pCommandBuffers = &commandBuffer;
 		submitInfo.commandBufferCount = 1;
+		submitInfo.pWaitDstStageMask = executeInfo.waitDstStageMask;
 
 		VK_CALL(vkQueueSubmit(m_Swapchain.device().graphicsQueue().vkQueue, 1, &submitInfo, executeInfo.fence));
 	}
 
 	void VulkanSimpleRenderPass::updatePushConstants(VkCommandBuffer commandBuffer, const Matrix4& mvp) {
-		vkCmdPushConstants(commandBuffer, m_VkPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp), value_ptr(mvp));
+		VK_CALLV(vkCmdPushConstants(commandBuffer, m_VkPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp), value_ptr(mvp)));
 	}
 
 	void VulkanSimpleRenderPass::create() {
 		createRenderPass();
-		createDepthTextures();
-		createFramebuffers();
+		createRenderAreaDependentComponents();
 		createPipelineLayout();
 		createGraphicsPipeline();
 		createCommandPool();
 		allocateCommandBuffers();
+		createVertexBuffer();
 	}
 
 	void VulkanSimpleRenderPass::destroy() {
 		VkDevice device = m_Swapchain.device().ldevice();
 
+		DELETE_PTR(m_VertexBuffer);
+
+		destroyRenderAreaDependentComponents();
+
 		m_CommandPool->free(MAX_SWAPCHAIN_IMAGE_COUNT, m_VkCommandBuffers);
 		DELETE_PTR(m_CommandPool);
 
-		vkDestroyPipeline(device, m_VkGraphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(device, m_VkPipelineLayout, nullptr);
+		VK_CALLV(vkDestroyPipeline(device, m_VkGraphicsPipeline, nullptr));
+		VK_CALLV(vkDestroyPipelineLayout(device, m_VkPipelineLayout, nullptr));
 
-		for(auto & m_VkFramebuffer : m_VkFramebuffers) {
-			vkDestroyFramebuffer(device, m_VkFramebuffer, nullptr);
+		VK_CALLV(vkDestroyRenderPass(device, m_VkRenderPass, nullptr));
+	}
+
+	void VulkanSimpleRenderPass::createRenderAreaDependentComponents() {
+		createDepthTextures();
+		createFramebuffers();
+	}
+
+	void VulkanSimpleRenderPass::destroyRenderAreaDependentComponents() {
+		for(auto& framebuffer : m_VkFramebuffers) {
+			VK_CALLV(vkDestroyFramebuffer(m_Swapchain.device().ldevice(), framebuffer, nullptr));
 		}
 
-		vkDestroyRenderPass(device, m_VkRenderPass, nullptr);
+		for(auto& depthTexture : m_DepthTextures) {
+			DELETE_PTR(depthTexture);
+		}
 	}
 
 	void VulkanSimpleRenderPass::recreate() {
-		destroy();
-		create();
+		destroyRenderAreaDependentComponents();
+		createRenderAreaDependentComponents();
 	}
 
 	void VulkanSimpleRenderPass::createRenderPass() {
@@ -137,7 +151,7 @@ namespace milo {
 		colorAttachmentRef.attachment = 0;
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference depthAttachmentRef{};
+		VkAttachmentReference depthAttachmentRef = {};
 		depthAttachmentRef.attachment = 1;
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -187,7 +201,7 @@ namespace milo {
 		allocInfo.viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			auto* texture = NEW VulkanTexture(m_Swapchain.device());
+			auto* texture = new VulkanTexture(m_Swapchain.device());
 			texture->allocate(allocInfo);
 			m_DepthTextures[i] = texture;
 		}
@@ -195,15 +209,13 @@ namespace milo {
 
 	void VulkanSimpleRenderPass::createFramebuffers() {
 
-		Size size = Window::get().size();
-
 		VkFramebufferCreateInfo framebufferInfo = {};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.attachmentCount = 2;
 		framebufferInfo.renderPass = m_VkRenderPass;
 		framebufferInfo.layers = 1;
-		framebufferInfo.width = size.width;
-		framebufferInfo.height = size.height;
+		framebufferInfo.width = m_Swapchain.extent().width;
+		framebufferInfo.height = m_Swapchain.extent().height;
 
 		const VulkanSwapchainImage* swapchainImages = m_Swapchain.images();
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
@@ -226,7 +238,8 @@ namespace milo {
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstants;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 
-		VK_CALL(vkCreatePipelineLayout(m_Swapchain.device().ldevice(), &pipelineLayoutInfo, nullptr, &m_VkPipelineLayout));
+		VK_CALL(vkCreatePipelineLayout(m_Swapchain.device().ldevice(), &pipelineLayoutInfo, nullptr,
+									   &m_VkPipelineLayout));
 	}
 
 	void VulkanSimpleRenderPass::createGraphicsPipeline() {
@@ -236,14 +249,14 @@ namespace milo {
 		pipelineInfo.vkRenderPass = m_VkRenderPass;
 		pipelineInfo.vkPipelineCache = m_VkPipelineCache;
 
-		pipelineInfo.shaderInfos.push_back({"shaders/simple/simple.vert", VK_SHADER_STAGE_VERTEX_BIT});
-		pipelineInfo.shaderInfos.push_back({"shaders/simple/simple.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.vert", VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
-		m_VkGraphicsPipeline = VulkanGraphicsPipeline::create(m_Swapchain.device().ldevice(), pipelineInfo);
+		m_VkGraphicsPipeline = VulkanGraphicsPipeline::create("VulkanSimpleGraphicsPipeline", m_Swapchain.device().ldevice(), pipelineInfo);
 	}
 
 	void VulkanSimpleRenderPass::createCommandPool() {
-		m_CommandPool = NEW VulkanCommandPool(m_Swapchain.device().graphicsQueue());
+		m_CommandPool = new VulkanCommandPool(m_Swapchain.device().graphicsQueue(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 	}
 
 	void VulkanSimpleRenderPass::allocateCommandBuffers() {
@@ -251,24 +264,28 @@ namespace milo {
 	}
 
 	void VulkanSimpleRenderPass::createVertexBuffer() {
-		m_VertexBuffer = NEW VulkanBuffer(m_Swapchain.device());
+		VulkanDevice& device = m_Swapchain.device();
+		m_VertexBuffer = new VulkanBuffer(device);
+
+		uint32_t queueFamilies[] = {device.graphicsQueue().family, device.transferQueue().family};
 
 		const ArrayList<float>& cubeVertexData = getCubeVertexData();
 
 		VulkanBufferAllocInfo allocInfo = {};
-		allocInfo.bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		allocInfo.bufferInfo.queueFamilyIndexCount = 1;
-		allocInfo.bufferInfo.pQueueFamilyIndices = &m_Swapchain.device().graphicsQueue().family;
-		allocInfo.bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		allocInfo.bufferInfo.size = cubeVertexData.size();
-		allocInfo.data = cubeVertexData.data();
+		allocInfo.bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		allocInfo.bufferInfo.queueFamilyIndexCount = 2;
+		allocInfo.bufferInfo.pQueueFamilyIndices = queueFamilies;
+		allocInfo.bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
+		allocInfo.bufferInfo.size = cubeVertexData.size() * sizeof(float);
+		allocInfo.dataInfo.data = cubeVertexData.data();
+		allocInfo.dataInfo.commandPool = m_CommandPool;
 
 		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
 		m_VertexBuffer->allocate(allocInfo);
 	}
 
-	const ArrayList<float> CUBE_VERTEX_DATA = {
+	static const ArrayList<float> CUBE_VERTEX_DATA = {
 			// back face
 			-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
 			1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right

@@ -57,7 +57,11 @@ namespace milo {
 		inline bool operator!=(const VulkanQueue &rhs) const {
 			return !(rhs == *this);
 		}
+
+		void awaitTermination();
 	};
+
+	class VulkanCommandPool;
 
 	class VulkanDevice {
 		friend class VulkanContext;
@@ -78,13 +82,14 @@ namespace milo {
 		VulkanQueue m_ComputeQueue = {};
 		VulkanQueue m_TransferQueue = {};
 		VulkanQueue m_PresentationQueue = {};
+		VulkanCommandPool* m_TransferCommandPool = nullptr;
 	private:
 		explicit VulkanDevice(VulkanContext& m_Context);
 		~VulkanDevice();
 		void init(const VulkanDevice::Info& info);
 	public:
-		void waitFor();
-		void waitFor(VkQueue queue);
+		void awaitTermination();
+		void awaitTermination(VkQueue queue);
 		[[nodiscard]] VulkanContext& context() const;
 		[[nodiscard]] VkPhysicalDevice pdevice() const;
 		[[nodiscard]] VkDevice ldevice() const;
@@ -94,7 +99,8 @@ namespace milo {
 		[[nodiscard]] const VulkanQueue& presentationQueue() const;
 		[[nodiscard]] VulkanPhysicalDeviceInfo pDeviceInfo() const;
 		[[nodiscard]] String name() const;
-		VkFormat depthFormat() const;
+		[[nodiscard]] VkFormat depthFormat() const;
+		[[nodiscard]] VulkanCommandPool* transferCommandPool() const;
 	private:
 		ArrayList <VkDeviceQueueCreateInfo> inferQueueCreateInfos(const VulkanDevice::Info &info);
 		void tryGetQueue(VkQueueFlagBits queueType, const Info &info, const ArrayList<VkQueueFamilyProperties> &queueFamilies, ArrayList<VkDeviceQueueCreateInfo> &queues);

@@ -11,7 +11,7 @@ namespace milo {
 		Size lastWindowSize = Window::get().size();
 
 		EventSystem::addEventCallback(EventType::WindowResize, [&](const Event& e) {
-			const Size& size = Window::get().size();//static_cast<const WindowResizeEvent&>(e).size;
+			const Size& size = Window::get().size();
 			if(size == lastWindowSize || size.aspect() == 0.0f) return;
 			recreate();
 			lastWindowSize = size;
@@ -20,6 +20,7 @@ namespace milo {
 
 	VulkanSwapchain::~VulkanSwapchain() {
 		destroy();
+		m_OnRecreateCallbacks.clear();
 	}
 
 	VulkanContext& VulkanSwapchain::context() const {
@@ -114,11 +115,12 @@ namespace milo {
 	}
 
 	void VulkanSwapchain::destroy() {
+
+		device().awaitTermination();
+
 		for(uint32_t i = 0;i < m_ImageCount;++i) {
 			destroySwapchainImage(m_Images[i]);
 		}
-
-		m_OnRecreateCallbacks.clear();
 
 		vkDestroySwapchainKHR(m_Context.device().ldevice(), m_VkSwapchain, nullptr);
 		m_VkSwapchain = VK_NULL_HANDLE;
@@ -128,10 +130,14 @@ namespace milo {
 #ifdef _DEBUG
 		Size size = Window::get().size();
 		Log::debug("Recreating Swapchain (Size = {} x {})", size.width, size.height);
+		float startMillis = Time::millis();
 #endif
 		destroy();
 		create();
 		for(auto& callback : m_OnRecreateCallbacks) callback();
+#ifdef _DEBUG
+		Log::debug("Swapchain (Size = {} x {}) recreated after {} ms", size.width, size.height, Time::millis() - startMillis);
+#endif
 	}
 
 	void VulkanSwapchain::getSwapchainImages() {

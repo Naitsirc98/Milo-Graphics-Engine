@@ -7,7 +7,7 @@
 namespace milo {
 
 	void MiloSubSystemManager::init() {
-		MemoryTracker::s_Active = true;
+		MemoryTracker::init();
 		Log::init();
 		Time::init();
 		EventSystem::init();
@@ -19,6 +19,6 @@ namespace milo {
 		SceneManager::shutdown();
 		Graphics::shutdown();
 		EventSystem::shutdown();
-		MemoryTracker::s_Active = false;
+		MemoryTracker::shutdown();
 	}
 }

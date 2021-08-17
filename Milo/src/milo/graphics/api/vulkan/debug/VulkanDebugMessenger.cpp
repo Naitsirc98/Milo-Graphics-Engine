@@ -1,5 +1,6 @@
 #include "milo/graphics/api/vulkan/debug/VulkanDebugMessenger.h"
 #include "milo/graphics/api/vulkan/VulkanContext.h"
+#include <regex>
 
 #ifdef _DEBUG
 #define THROW_EXCEPTION_ON_ERROR
@@ -43,22 +44,22 @@ namespace milo {
 
 		if(messageSeverity != VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT && isLoaderMessage(callbackData->pMessageIdName)) return VK_FALSE;
 
-		VulkanAPICall apiCall = VulkanAPICallManager::getLastAPICall();
+		VulkanAPICall apiCall = VulkanAPICallManager::popVkCall();
 
 		String message = String("[VULKAN][")
 				.append(messageTypeToString(messageType))
 				.append("]: (")
 				.append(callbackData->pMessageIdName).append("): ")
 				.append(callbackData->pMessage)
-				.append("\n\tWhen calling function ").append(apiCall.function)
-				.append("\n\tat ").append(apiCall.file).append("(").append(str(apiCall.line)).append(")");
+				.append("\n\tVulkan call: ").append(apiCall.function)
+				.append("\nStackTrace:\n").append(str(apiCall.stacktrace));
 
 		switch(messageSeverity) {
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
 				//Log::trace(message);
 				break;
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-				Log::debug(message);
+				//Log::debug(message);
 				break;
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
 				Log::warn(message);

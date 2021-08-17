@@ -7,6 +7,9 @@ namespace milo {
 	VulkanContext::VulkanContext() = default;
 
 	VulkanContext::~VulkanContext() {
+
+		m_Device->awaitTermination();
+
 		DELETE_PTR(m_Presenter);
 		DELETE_PTR(m_Allocator);
 		DELETE_PTR(m_Swapchain);
@@ -108,22 +111,22 @@ namespace milo {
 		deviceInfo.extensionNames = VulkanExtensions::getDeviceExtensions(deviceInfo.usageFlags);
 		deviceInfo.layerNames = VulkanLayers::getDeviceLayers(deviceInfo.usageFlags);
 
-		m_Device = NEW VulkanDevice(*this);
+		m_Device = new VulkanDevice(*this);
 		m_Device->init(deviceInfo);
 
 		Log::info(m_Device->name() + " chosen as the preferred GPU with a score of " + str(bestDevice.score));
 	}
 
 	void VulkanContext::createSwapchain() {
-		m_Swapchain = NEW VulkanSwapchain(*this);
+		m_Swapchain = new VulkanSwapchain(*this);
 	}
 
 	void VulkanContext::createAllocator() {
-		m_Allocator = NEW VulkanAllocator(*this);
+		m_Allocator = new VulkanAllocator(*this);
 	}
 
 	void VulkanContext::createPresenter() {
-		m_Presenter = NEW VulkanPresenter(*this);
+		m_Presenter = new VulkanPresenter(*this);
 	}
 
 	VkApplicationInfo VulkanContext::getApplicationInfo() {

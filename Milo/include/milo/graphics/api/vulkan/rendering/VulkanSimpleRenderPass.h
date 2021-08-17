@@ -16,6 +16,7 @@ namespace milo {
 			VkSemaphore* signalSemaphores = nullptr;
 			uint32_t signalSemaphoresCount = 0;
 			VkFence fence = VK_NULL_HANDLE;
+			VkPipelineStageFlags* waitDstStageMask = nullptr;
 		};
 	private:
 		VulkanSwapchain& m_Swapchain;
@@ -32,10 +33,12 @@ namespace milo {
 		explicit VulkanSimpleRenderPass(VulkanSwapchain& swapchain);
 		~VulkanSimpleRenderPass();
 		void execute(const ExecuteInfo& input);
+		void recreate();
 	private:
 		void create();
 		void destroy();
-		void recreate();
+		void createRenderAreaDependentComponents();
+		void destroyRenderAreaDependentComponents();
 		void updatePushConstants(VkCommandBuffer commandBuffer, const Matrix4& mvp);
 		void createRenderPass();
 		void createDepthTextures();

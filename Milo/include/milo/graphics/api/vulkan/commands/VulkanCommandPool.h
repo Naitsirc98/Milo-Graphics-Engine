@@ -8,6 +8,7 @@ namespace milo {
 	struct VulkanTask {
 		VkSemaphore* waitSemaphores = nullptr;
 		uint32_t waitSemaphoresCount = 0;
+		VkPipelineStageFlags* waitDstStageMask = nullptr;
 		VkSemaphore* signalSemaphores = nullptr;
 		uint32_t signalSemaphoresCount = 0;
 		VkFence fence = VK_NULL_HANDLE;
@@ -20,7 +21,7 @@ namespace milo {
 		VkCommandPool m_VkCommandPool;
 		VulkanQueue m_Queue;
 	public:
-		explicit VulkanCommandPool(const VulkanQueue& queue);
+		explicit VulkanCommandPool(const VulkanQueue& queue, VkCommandPoolResetFlags flags = 0);
 		~VulkanCommandPool();
 		[[nodiscard]] VkCommandPool vkCommandPool() const;
 		[[nodiscard]] const VulkanQueue& queue() const;

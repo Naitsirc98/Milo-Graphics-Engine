@@ -25,6 +25,8 @@ namespace milo {
 
 		void allocateImage(VulkanTexture& texture, const VkImageCreateInfo& imageInfo, VmaMemoryUsage usage);
 		void freeImage(VulkanTexture& texture);
+	public:
+		static VulkanAllocator& get();
 	};
 
 	struct VulkanMappedMemory {

@@ -57,6 +57,8 @@ namespace milo {
 
 		application.onInit();
 		init();
+		Log::info("Starting Milo Application...");
+		Window::get().show();
 		application.onStart();
 
 		float updateDelay = 0;

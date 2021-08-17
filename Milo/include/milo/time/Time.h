@@ -58,6 +58,9 @@ namespace milo {
 		static size_t s_Fps;
 	public:
 		static float now() noexcept;
+		static float seconds() noexcept;
+		static float millis() noexcept;
+		static float nanos() noexcept;
 		static float rawDeltaTime() noexcept;
 		static float deltaTime() noexcept;
 		static size_t frame() noexcept;

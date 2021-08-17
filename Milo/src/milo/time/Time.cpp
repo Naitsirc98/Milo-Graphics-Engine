@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #define NANOS_TO_SECONDS 1e-9f
+#define NANOS_TO_MILLIS 1e-6f
 
 namespace milo {
 
@@ -17,6 +18,20 @@ namespace milo {
 	float Time::now() noexcept {
 		const TimePoint now = std::chrono::high_resolution_clock::now();
 		return static_cast<float>(duration_cast<nanoseconds>(now - s_StartTimeSeconds).count() * NANOS_TO_SECONDS);
+	}
+
+	float Time::seconds() noexcept {
+		return now();
+	}
+
+	float Time::millis() noexcept {
+		const TimePoint now = std::chrono::high_resolution_clock::now();
+		return static_cast<float>(duration_cast<nanoseconds>(now - s_StartTimeSeconds).count() * NANOS_TO_MILLIS);
+	}
+
+	float Time::nanos() noexcept {
+		const TimePoint now = std::chrono::high_resolution_clock::now();
+		return static_cast<float>(duration_cast<nanoseconds>(now - s_StartTimeSeconds).count());
 	}
 
 	float Time::rawDeltaTime() noexcept {

@@ -26,7 +26,7 @@ namespace milo {
 		Window::s_MainWindow = new Window(windowInfo);
 
 		if(graphicsAPI() == GraphicsAPI::Vulkan) {
-			s_GraphicsContext = NEW VulkanContext();
+			s_GraphicsContext = new VulkanContext();
 		} else {
 			// TODO
 			throw MILO_RUNTIME_EXCEPTION("Not implemented");

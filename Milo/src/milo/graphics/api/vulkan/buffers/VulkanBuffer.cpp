@@ -1,6 +1,7 @@
 #include "milo/graphics/api/vulkan/buffers/VulkanBuffer.h"
 #include "milo/graphics/api/vulkan/VulkanContext.h"
 #include "milo/graphics/api/vulkan/VulkanCopy.h"
+#include "milo/graphics/Graphics.h"
 
 namespace milo {
 
@@ -47,9 +48,18 @@ namespace milo {
 		return m_Allocation != VK_NULL_HANDLE;
 	}
 
+	bool VulkanBuffer::isCPUAllocated() const {
+		return m_Usage == VMA_MEMORY_USAGE_CPU_ONLY || m_Usage == VMA_MEMORY_USAGE_CPU_TO_GPU
+			|| m_Usage == VMA_MEMORY_USAGE_CPU_ONLY || m_Usage == VMA_MEMORY_USAGE_CPU_COPY;
+	}
+
 	void VulkanBuffer::allocate(const VulkanBufferAllocInfo& allocInfo) {
 		if(m_Allocation != VK_NULL_HANDLE) destroy();
-		m_Device.context().allocator().allocateBuffer(*this, allocInfo.bufferInfo, allocInfo.usage);
+		VulkanAllocator::get().allocateBuffer(*this, allocInfo.bufferInfo, allocInfo.usage);
+
+		if(allocInfo.dataInfo.data != nullptr && allocInfo.dataInfo.commandPool != nullptr) {
+			VulkanCopy::copy(allocInfo.dataInfo.commandPool, this, allocInfo.dataInfo.data, allocInfo.bufferInfo.size);
+		}
 	}
 
 	void VulkanBuffer::reallocate(const VulkanBufferAllocInfo& allocInfo) {
@@ -58,11 +68,26 @@ namespace milo {
 	}
 
 	void VulkanBuffer::destroy() {
-		m_Device.context().allocator().freeBuffer(*this);
+		VulkanAllocator::get().freeBuffer(*this);
 	}
 
 	VulkanMappedMemory VulkanBuffer::map(uint64_t size) {
-		return VulkanMappedMemory(m_Device.context().allocator(), m_Allocation, size);
+		return VulkanMappedMemory(VulkanAllocator::get(), m_Allocation, size);
+	}
+
+	void VulkanBuffer::readData(void* data, uint64_t size) {
+		if(isCPUAllocated()) {
+			VulkanMappedMemory mappedMemory = this->map(size);
+			memcpy(data, mappedMemory.data, size);
+		} else {
+			auto* stagingBuffer = createStagingBuffer(size);
+			{
+				VulkanCopy::copy(m_Device.transferCommandPool(), this, stagingBuffer, size);
+				VulkanMappedMemory mappedMemory = stagingBuffer->map(size);
+				memcpy(data, mappedMemory.data, size);
+			}
+			DELETE_PTR(stagingBuffer);
+		}
 	}
 
 	bool VulkanBuffer::operator==(const VulkanBuffer& rhs) const {
@@ -73,8 +98,48 @@ namespace milo {
 		return ! (rhs == *this);
 	}
 
-
 	VulkanBufferAllocInfo::VulkanBufferAllocInfo() {
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	}
+
+	VulkanBuffer* VulkanBuffer::createStagingBuffer(uint64_t size) {
+
+		auto& context = dynamic_cast<VulkanContext&>(Graphics::graphicsContext());
+		VulkanDevice& device = context.device();
+
+		auto* stagingBuffer = new VulkanBuffer(device);
+
+		VulkanBufferAllocInfo allocInfo = {};
+		allocInfo.bufferInfo.size = size;
+		allocInfo.bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		allocInfo.bufferInfo.pQueueFamilyIndices = &device.transferQueue().family;
+		allocInfo.bufferInfo.queueFamilyIndexCount = 1;
+		allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+		stagingBuffer->allocate(allocInfo);
+
+		return stagingBuffer;
+	}
+
+	VulkanBuffer* VulkanBuffer::createStagingBuffer(const void* data, uint64_t size) {
+
+		auto& context = dynamic_cast<VulkanContext&>(Graphics::graphicsContext());
+		VulkanDevice& device = context.device();
+
+		auto* stagingBuffer = new VulkanBuffer(device);
+
+		VulkanBufferAllocInfo allocInfo = {};
+		allocInfo.bufferInfo.size = size;
+		allocInfo.bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		allocInfo.bufferInfo.pQueueFamilyIndices = &device.transferQueue().family;
+		allocInfo.bufferInfo.queueFamilyIndexCount = 1;
+		allocInfo.dataInfo.data = data;
+		allocInfo.dataInfo.commandPool = device.transferCommandPool();
+		allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+		stagingBuffer->allocate(allocInfo);
+
+		return stagingBuffer;
 	}
 }

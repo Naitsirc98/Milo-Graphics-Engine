@@ -21,7 +21,7 @@ namespace milo {
 	void EventQueue::reserve(size_t capacity) {
 		if(m_Capacity == capacity) return;
 		if(capacity < m_Capacity && m_Events != nullptr) DELETE_ARRAY(m_Events);
-		m_Events = NEW RawEvent[capacity]{0};
+		m_Events = new RawEvent[capacity]{0};
 		m_Capacity = capacity;
 	}
 

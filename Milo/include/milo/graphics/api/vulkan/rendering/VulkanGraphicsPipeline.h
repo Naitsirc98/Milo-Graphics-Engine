@@ -24,6 +24,7 @@ namespace milo {
 		ArrayList<VulkanShaderInfo> shaderInfos;
 		VulkanVertexInputInfo vertexInputInfo = {};
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
+		VkPipelineDepthStencilStateCreateInfo depthStencil = {};
 		VkViewport viewport = {};
 		VkRect2D scissor = {};
 		VkPipelineViewportStateCreateInfo viewportState = {};
@@ -33,12 +34,12 @@ namespace milo {
 		VkPipelineColorBlendStateCreateInfo colorBlendState = {};
 
 	public:
-		VulkanGraphicsPipelineInfo() = default;
-		explicit VulkanGraphicsPipelineInfo(VkPipelineLayout pipelineLayout, VkRenderPass renderPass = VK_NULL_HANDLE, uint32_t subPass = 0);
+		explicit VulkanGraphicsPipelineInfo(VkPipelineLayout pipelineLayout = VK_NULL_HANDLE, VkRenderPass renderPass = VK_NULL_HANDLE, uint32_t subPass = 0);
 		~VulkanGraphicsPipelineInfo() = default;
 	private:
 		void initVulkanVertexInputInfo();
 		void initInputAssembly();
+		void initDepthStencil();
 		void initViewportState();
 		void initRasterizationState();
 		void initMultisampleState();
@@ -48,7 +49,7 @@ namespace milo {
 
 	class VulkanGraphicsPipeline {
 	public:
-		static VkPipeline create(VkDevice device, const VulkanGraphicsPipelineInfo& info);
+		static VkPipeline create(const String& name, VkDevice device, const VulkanGraphicsPipelineInfo& info);
 	private:
 		static ArrayList<VkPipelineShaderStageCreateInfo> createShaderPipelineStages(const ArrayList<VulkanShaderInfo>& shaderInfos, const ArrayList<VkShaderModule>& shaderModules);
 		static VkShaderModule createShaderModule(VkDevice device, const VulkanShaderInfo& shaderInfo);

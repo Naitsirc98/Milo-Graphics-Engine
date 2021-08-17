@@ -16,18 +16,17 @@ namespace milo {
 
 		createSyncObjects();
 
-		m_SimpleRenderPass = NEW VulkanSimpleRenderPass(m_Swapchain);
+		m_SimpleRenderPass = new VulkanSimpleRenderPass(m_Swapchain);
 
 		m_Swapchain.addSwapchainRecreateCallback([&]() {
 			m_MaxImageCount = m_Swapchain.imageCount();
 			m_CurrentImageIndex = 0;
 			m_CurrentFrame = 0;
 
-			DELETE_PTR(m_SimpleRenderPass);
 			destroySyncObjects();
-
 			createSyncObjects();
-			m_SimpleRenderPass = NEW VulkanSimpleRenderPass(m_Swapchain);
+
+			m_SimpleRenderPass->recreate();
 		});
 	}
 
@@ -61,7 +60,7 @@ namespace milo {
 		VkSwapchainKHR swch = m_Swapchain.vkSwapchain();
 		VkSemaphore imgSemaphore = m_ImageAvailableSemaphore[m_CurrentFrame];
 
-		VkResult result = vkAcquireNextImageKHR(dv, swch, UINT64_MAX, imgSemaphore, VK_NULL_HANDLE, &m_CurrentImageIndex);
+		VkResult result = VK_CALLR(vkAcquireNextImageKHR(dv, swch, UINT64_MAX, imgSemaphore, VK_NULL_HANDLE, &m_CurrentImageIndex));
 
 		bool success;
 
@@ -83,7 +82,7 @@ namespace milo {
 		}
 
 		if (m_ImageAvailableFences[m_CurrentImageIndex] != VK_NULL_HANDLE)
-			vkWaitForFences(dv, 1, &m_ImageAvailableFences[m_CurrentImageIndex], VK_TRUE, UINT64_MAX);
+			VK_CALL(vkWaitForFences(dv, 1, &m_ImageAvailableFences[m_CurrentImageIndex], VK_TRUE, UINT64_MAX));
 
 		m_ImageAvailableFences[m_CurrentImageIndex] = m_FramesInFlightFences[m_CurrentFrame];
 
@@ -96,9 +95,13 @@ namespace milo {
 
 	void VulkanPresenter::end() {
 
+		VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
 		VulkanSimpleRenderPass::ExecuteInfo executeInfo = {};
-		executeInfo.waitSemaphores = &m_ImageAvailableSemaphore[m_CurrentImageIndex];
+		executeInfo.swapchainImageIndex = m_CurrentImageIndex;
+		executeInfo.waitSemaphores = &m_ImageAvailableSemaphore[m_CurrentFrame];
 		executeInfo.waitSemaphoresCount = 1;
+		executeInfo.waitDstStageMask = &waitStages;
 		executeInfo.signalSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
 		executeInfo.signalSemaphoresCount = 1;
 		executeInfo.fence = m_FramesInFlightFences[m_CurrentFrame];
@@ -117,7 +120,7 @@ namespace milo {
 
 		presentInfo.pImageIndices = &m_CurrentImageIndex;
 
-		VkResult result = vkQueuePresentKHR(m_PresentationQueue, &presentInfo);
+		VkResult result = VK_CALLR(vkQueuePresentKHR(m_PresentationQueue, &presentInfo));
 
 		switch(result) {
 			case VK_SUCCESS:
@@ -162,9 +165,9 @@ namespace milo {
 	void VulkanPresenter::destroySyncObjects() {
 		VkDevice device = m_Device.ldevice();
 		for(uint32_t i = 0;i < MAX_FRAMES_IN_FLIGHT;++i) {
-			vkDestroySemaphore(device, m_ImageAvailableSemaphore[i], nullptr);
-			vkDestroySemaphore(device, m_RenderFinishedSemaphore[i], nullptr);
-			vkDestroyFence(device, m_FramesInFlightFences[i], nullptr);
+			VK_CALLV(vkDestroySemaphore(device, m_ImageAvailableSemaphore[i], nullptr));
+			VK_CALLV(vkDestroySemaphore(device, m_RenderFinishedSemaphore[i], nullptr));
+			VK_CALLV(vkDestroyFence(device, m_FramesInFlightFences[i], nullptr));
 		}
 		memset(m_ImageAvailableFences, VK_NULL_HANDLE, MAX_SWAPCHAIN_IMAGE_COUNT * sizeof(VkFence));
 	}

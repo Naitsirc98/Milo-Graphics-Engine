@@ -49,17 +49,25 @@ namespace milo {
 	VulkanAPICall VulkanAPICallManager::s_LastVulkanAPICall;
 	Mutex VulkanAPICallManager::s_Mutex;
 
-	VulkanAPICall VulkanAPICallManager::getLastAPICall() {
+	VulkanAPICall VulkanAPICallManager::popVkCall() {
 		return s_LastVulkanAPICall;
 	}
 
-	void VulkanAPICallManager::registerAPICall(const char* function, const char* file, uint32_t line) {
+	void VulkanAPICallManager::pushVkCall(StackTrace&& stackTrace, const char* function, const char* file, uint32_t line) {
 		s_Mutex.lock();
 		{
+			s_LastVulkanAPICall.stacktrace = std::forward<StackTrace>(stackTrace);
 			s_LastVulkanAPICall.function = function;
 			s_LastVulkanAPICall.file = file;
 			s_LastVulkanAPICall.line = line;
 		}
 		s_Mutex.unlock();
+	}
+
+	VkResult VulkanAPICallManager::pushVkCall(StackTrace&& stackTrace, const char* function, const char* file,
+											  uint32_t line, VkResult vkResult) {
+
+		pushVkCall(std::forward<StackTrace>(stackTrace), function, file, line);
+		return vkResult;
 	}
 }

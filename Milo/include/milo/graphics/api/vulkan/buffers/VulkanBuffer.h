@@ -2,13 +2,19 @@
 
 #include "milo/graphics/api/vulkan/VulkanDevice.h"
 #include "milo/graphics/api/vulkan/VulkanAllocator.h"
+#include "milo/graphics/api/vulkan/commands/VulkanCommandPool.h"
 
 namespace milo {
+
+	struct VulkanBufferDataInfo {
+		const void* data = nullptr;
+		VulkanCommandPool* commandPool = nullptr;
+	};
 
 	struct VulkanBufferAllocInfo {
 		VkBufferCreateInfo bufferInfo = {};
 		VmaMemoryUsage usage = VMA_MEMORY_USAGE_UNKNOWN;
-		const void* data = nullptr;
+		VulkanBufferDataInfo dataInfo = {};
 
 		VulkanBufferAllocInfo();
 	};
@@ -35,12 +41,15 @@ namespace milo {
 		[[nodiscard]] VmaAllocation& allocation();
 		[[nodiscard]] uint64_t size() const;
 		[[nodiscard]] bool valid() const;
+		bool isCPUAllocated() const;
 
 		void allocate(const VulkanBufferAllocInfo& allocInfo);
 		void reallocate(const VulkanBufferAllocInfo& allocInfo);
 		void destroy();
 
+
 		VulkanMappedMemory map(uint64_t size);
+		void readData(void* data, uint64_t size);
 
 		VulkanBuffer& operator=(const VulkanBuffer& other) = delete;
 
@@ -48,8 +57,7 @@ namespace milo {
 		bool operator!=(const VulkanBuffer& rhs) const;
 
 	public:
-		static void copyToGPUBuffer(VulkanBuffer& buffer, void* data, uint64_t size);
-		static void copyToCPUBuffer(VulkanBuffer& buffer, void* data, uint64_t size);
-		static void copy(VulkanBuffer& dst, VulkanBuffer& src, uint64_t size);
+		static VulkanBuffer* createStagingBuffer(uint64_t size);
+		static VulkanBuffer* createStagingBuffer(const void* data, uint64_t size);
 	};
 }

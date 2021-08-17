@@ -27,7 +27,7 @@ file(GLOB_RECURSE ENGINE_HEADER_FILES
         )
 
 # Build this project as a library
-# add_library(${PROJECT_NAME} STATIC ${ENGINE_HEADER_FILES} ${ENGINE_SOURCE_FILES} include/milo/core/MiloSubSystemManager.h src/milo/core/MiloSubSystemManager.cpp include/milo/common/Concurrency.h)
+# add_library(${PROJECT_NAME} STATIC ${ENGINE_HEADER_FILES} ${ENGINE_SOURCE_FILES})
 
 # Build this project as an executable
 add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES})
@@ -43,6 +43,18 @@ add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/spdlog)
 set(SHADERC_SKIP_TESTS ON)
 add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/shaderc)
 
+#set(BOOST_ROOT $ENV{BOOST_HOME})
+#set(Boost_USE_STATIC_LIBS OFF)
+#set(Boost_DEBUG FALSE)
+#set(Boost_USE_MULTITHREADED ON)
+#set(Boost_USE_STATIC_RUNTIME OFF)
+#find_package(Boost 1.77.0 REQUIRED COMPONENTS stacktrace)
+#
+#if(Boost_FOUND)
+#    include_directories(${Boost_INCLUDE_DIRS})
+#    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+#endif()
+
 # INCLUDE DIRECTORIES
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIRS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_DEPENDENCIES_DIR}/VulkanMemoryAllocator/include/)
@@ -57,6 +69,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/st
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/json/single_include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/entt)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/shaderc/libshaderc/include)
+target_include_directories(${PROJECT_NAME} PUBLIC $ENV{BOOST_HOME})
+
+message("Boost = $ENV{BOOST_HOME}")
 
 # PRECOMPILED HEADERS
 #target_precompile_headers(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/include/public_headers/engine/core/Common.h")
@@ -69,4 +84,7 @@ target_link_libraries(${PROJECT_NAME} spdlog)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} shaderc)
 
-#target_precompile_headers(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/include/milo/common/Common.h)
+set(RESOURCES_DIR ${PROJECT_SOURCE_DIR}/resources)
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${PROJECT_SOURCE_DIR}/resources/ $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources)

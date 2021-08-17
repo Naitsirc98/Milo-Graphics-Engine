@@ -2,17 +2,17 @@
 
 namespace milo {
 
-	VulkanCommandPool::VulkanCommandPool(const VulkanQueue& queue) : m_Queue(queue), m_VkCommandPool(VK_NULL_HANDLE) {
+	VulkanCommandPool::VulkanCommandPool(const VulkanQueue& queue, VkCommandPoolCreateFlags flags) : m_Queue(queue), m_VkCommandPool(VK_NULL_HANDLE) {
 		VkCommandPoolCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		createInfo.queueFamilyIndex = m_Queue.family;
-		createInfo.flags = 0;
+		createInfo.flags = flags;
 
 		VK_CALL(vkCreateCommandPool(m_Queue.device->ldevice(), &createInfo, nullptr, &m_VkCommandPool));
 	}
 
 	VulkanCommandPool::~VulkanCommandPool() {
-		vkDestroyCommandPool(m_Queue.device->ldevice(), m_VkCommandPool, nullptr);
+		VK_CALLV(vkDestroyCommandPool(m_Queue.device->ldevice(), m_VkCommandPool, nullptr));
 		m_VkCommandPool = VK_NULL_HANDLE;
 	}
 
@@ -27,8 +27,8 @@ namespace milo {
 	void VulkanCommandPool::allocate(VkCommandBufferLevel level, uint32_t count, VkCommandBuffer* commandBuffers) {
 
 		VkCommandBufferAllocateInfo allocateInfo = {};
+		allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocateInfo.commandPool = m_VkCommandPool;
-		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocateInfo.level = level;
 		allocateInfo.commandBufferCount = count;
 
@@ -36,7 +36,7 @@ namespace milo {
 	}
 
 	void VulkanCommandPool::free(uint32_t count, VkCommandBuffer* commandBuffers) {
-		vkFreeCommandBuffers(m_Queue.device->ldevice(), m_VkCommandPool, count, commandBuffers);
+		VK_CALLV(vkFreeCommandBuffers(m_Queue.device->ldevice(), m_VkCommandPool, count, commandBuffers));
 	}
 
 	void VulkanCommandPool::execute(const VulkanTask& task) {
@@ -63,6 +63,7 @@ namespace milo {
 		submitInfo.waitSemaphoreCount = task.waitSemaphoresCount;
 		submitInfo.pSignalSemaphores = task.signalSemaphores;
 		submitInfo.signalSemaphoreCount = task.signalSemaphoresCount;
+		submitInfo.pWaitDstStageMask = task.waitDstStageMask;
 
 		VK_CALL(vkQueueSubmit(m_Queue.vkQueue, 1, &submitInfo, task.fence));
 
