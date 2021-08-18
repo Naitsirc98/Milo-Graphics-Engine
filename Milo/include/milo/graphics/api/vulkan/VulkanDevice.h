@@ -18,6 +18,8 @@ namespace milo {
 		[[nodiscard]] VkPhysicalDeviceLimits limits() const;
 		[[nodiscard]] ArrayList<VkExtensionProperties> extensions() const;
 		[[nodiscard]] ArrayList<VkLayerProperties> layers() const;
+		[[nodiscard]] uint32_t uniformBufferAlignment() const;
+		[[nodiscard]] uint32_t storageBufferAlignment() const;
 	};
 
 	enum DeviceUsageFlags {

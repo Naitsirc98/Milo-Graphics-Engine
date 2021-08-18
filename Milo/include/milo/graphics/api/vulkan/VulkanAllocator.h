@@ -51,8 +51,8 @@ namespace milo {
 		VulkanAllocator& allocator() const;
 		VmaAllocation allocation() const;
 
-		void set(const void* srcData, uint64_t size);
-		void get(void* dstData, uint64_t size) const;
+		void set(const void* srcData, uint64_t offset, uint64_t size);
+		void get(void* dstData, uint64_t offset, uint64_t size) const;
 
 		template<typename T>
 		inline T* as() {

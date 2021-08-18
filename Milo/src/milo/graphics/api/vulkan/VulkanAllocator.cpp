@@ -137,13 +137,13 @@ namespace milo {
 		return m_Allocation;
 	}
 
-	void VulkanMappedMemory::set(const void* srcData, uint64_t size) {
+	void VulkanMappedMemory::set(const void* srcData, uint64_t offset, uint64_t size) {
 		CHECK_MAPPED
-		memcpy(m_Data, srcData, size);
+		memcpy(m_Data + offset, srcData, size);
 	}
 
-	void VulkanMappedMemory::get(void* dstData, uint64_t size) const {
+	void VulkanMappedMemory::get(void* dstData, uint64_t offset, uint64_t size) const {
 		CHECK_MAPPED
-		memcpy(dstData, m_Data, size);
+		memcpy(dstData, m_Data + offset, size);
 	}
 }

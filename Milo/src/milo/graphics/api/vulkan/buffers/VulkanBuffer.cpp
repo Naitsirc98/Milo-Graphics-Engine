@@ -72,19 +72,19 @@ namespace milo {
 	}
 
 	VulkanMappedMemory VulkanBuffer::map(uint64_t size) {
-		return VulkanMappedMemory(VulkanAllocator::get(), m_Allocation, size);
+		return VulkanMappedMemory(VulkanAllocator::get(), m_Allocation, size == UINT64_MAX ? this->size() : size);
 	}
 
 	void VulkanBuffer::readData(void* dstData, uint64_t size) {
 		if(isCPUAllocated()) {
 			VulkanMappedMemory mappedMemory = this->map(size);
-			mappedMemory.get(dstData, size);
+			mappedMemory.get(dstData, 0, size);
 		} else {
 			auto* stagingBuffer = createStagingBuffer(size);
 			{
 				VulkanCopy::copy(m_Device.transferCommandPool(), this, stagingBuffer, size);
 				VulkanMappedMemory mappedMemory = stagingBuffer->map(size);
-				mappedMemory.get(dstData, size);
+				mappedMemory.get(dstData, 0, size);
 			}
 			DELETE_PTR(stagingBuffer);
 		}

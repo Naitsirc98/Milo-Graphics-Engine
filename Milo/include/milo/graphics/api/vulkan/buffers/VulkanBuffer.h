@@ -48,7 +48,7 @@ namespace milo {
 		void destroy();
 
 
-		VulkanMappedMemory map(uint64_t size);
+		VulkanMappedMemory map(uint64_t size = UINT64_MAX);
 		void readData(void* dstData, uint64_t size);
 
 		VulkanBuffer& operator=(const VulkanBuffer& other) = delete;
