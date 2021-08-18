@@ -44,6 +44,6 @@ namespace milo {
 
 	void VulkanCopy::copyByMemoryMapping(VulkanBuffer* buffer, const void* data, uint64_t size) {
 		VulkanMappedMemory memory = buffer->map(size);
-		memcpy(memory.data, data, size);
+		memory.set(data, size);
 	}
 }

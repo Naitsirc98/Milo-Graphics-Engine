@@ -17,8 +17,9 @@ namespace milo {
 		~VulkanAllocator();
 		[[nodiscard]] VmaAllocator vmaAllocator() const;
 
-		void mapMemory(VmaAllocation allocation, void* data);
+		void mapMemory(VmaAllocation allocation, void** data);
 		void unmapMemory(VmaAllocation allocation);
+		void flushMemory(VmaAllocation allocation, uint64_t offset, uint64_t size);
 
 		void allocateBuffer(VulkanBuffer& buffer, const VkBufferCreateInfo& bufferInfo, VmaMemoryUsage usage);
 		void freeBuffer(VulkanBuffer& buffer);
@@ -29,13 +30,33 @@ namespace milo {
 		static VulkanAllocator& get();
 	};
 
-	struct VulkanMappedMemory {
-		VulkanAllocator& allocator;
-		VmaAllocation_T* const allocation;
-		const uint64_t size;
-		int8_t* data = nullptr;
-
+	class VulkanMappedMemory {
+	private:
+		VulkanAllocator& m_Allocator;
+		VmaAllocation m_Allocation;
+		const uint64_t m_Size;
+		bool m_FlushOnUnmap = false;
+		int8_t* m_Data = nullptr;
+	public:
 		explicit VulkanMappedMemory(VulkanAllocator& allocator, VmaAllocation allocation, uint64_t size);
 		~VulkanMappedMemory();
+		void* data();
+		const void* data() const;
+		uint64_t size() const;
+		bool flushOnUnmap() const;
+		void setFlushOnUnmap(bool flushOnUnmap);
+		void flush(uint64_t offset = 0);
+		void unmap();
+		bool valid() const;
+		VulkanAllocator& allocator() const;
+		VmaAllocation allocation() const;
+
+		void set(const void* srcData, uint64_t size);
+		void get(void* dstData, uint64_t size) const;
+
+		template<typename T>
+		inline T* as() {
+			return (T*)m_Data;
+		}
 	};
 }

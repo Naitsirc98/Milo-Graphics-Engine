@@ -32,12 +32,16 @@ namespace milo {
 		return m_VmaAllocator;
 	}
 
-	void VulkanAllocator::mapMemory(VmaAllocation allocation, void* data) {
-		VK_CALL(vmaMapMemory(m_VmaAllocator, allocation, &data));
+	void VulkanAllocator::mapMemory(VmaAllocation allocation, void** data) {
+		VK_CALL(vmaMapMemory(m_VmaAllocator, allocation, data));
 	}
 
 	void VulkanAllocator::unmapMemory(VmaAllocation allocation) {
 		VK_CALLV(vmaUnmapMemory(m_VmaAllocator, allocation));
+	}
+
+	void VulkanAllocator::flushMemory(VmaAllocation allocation, uint64_t offset, uint64_t size) {
+		VK_CALL(vmaFlushAllocation(m_VmaAllocator, allocation, offset, size));
 	}
 
 	void VulkanAllocator::allocateBuffer(VulkanBuffer& buffer, const VkBufferCreateInfo& bufferInfo, VmaMemoryUsage usage) {
@@ -71,15 +75,75 @@ namespace milo {
 		texture.m_Allocation = VK_NULL_HANDLE;
 	}
 
-	VulkanMappedMemory::VulkanMappedMemory(VulkanAllocator& allocator, VmaAllocation allocation, uint64_t size)
-		: allocator(allocator), allocation(allocation), size(size) {
 
-		data = new int8_t[size]{0};
-		allocator.mapMemory(allocation, data);
+	//========
+
+#ifdef _DEBUG
+#define CHECK_MAPPED if(!this->valid()) throw MILO_RUNTIME_EXCEPTION("VulkanMappedMemory was already unmapped!");
+#else
+#define CHECK_MAPPED
+#endif
+
+	VulkanMappedMemory::VulkanMappedMemory(VulkanAllocator& allocator, VmaAllocation allocation, uint64_t size)
+		: m_Allocator(allocator), m_Allocation(allocation), m_Size(size) {
+
+		allocator.mapMemory(allocation, (void**)&m_Data);
 	}
 
 	VulkanMappedMemory::~VulkanMappedMemory() {
-		allocator.unmapMemory(allocation);
-		DELETE_ARRAY(data);
+		unmap();
+	}
+
+	void* VulkanMappedMemory::data() {
+		return m_Data;
+	}
+
+	const void* VulkanMappedMemory::data() const {
+		return m_Data;
+	}
+
+	uint64_t VulkanMappedMemory::size() const {
+		return m_Size;
+	}
+
+	bool VulkanMappedMemory::flushOnUnmap() const {
+		return m_FlushOnUnmap;
+	}
+
+	void VulkanMappedMemory::setFlushOnUnmap(bool flushOnUnmap) {
+		m_FlushOnUnmap = flushOnUnmap;
+	}
+
+	void VulkanMappedMemory::flush(uint64_t offset) {
+		m_Allocator.flushMemory(m_Allocation, offset, m_Size);
+	}
+
+	void VulkanMappedMemory::unmap() {
+		if(!valid()) return;
+		if(m_FlushOnUnmap) flush();
+		m_Allocator.unmapMemory(m_Allocation);
+		m_Data = nullptr;
+	}
+
+	bool VulkanMappedMemory::valid() const {
+		return m_Data != nullptr;
+	}
+
+	VulkanAllocator& VulkanMappedMemory::allocator() const {
+		return m_Allocator;
+	}
+
+	VmaAllocation VulkanMappedMemory::allocation() const {
+		return m_Allocation;
+	}
+
+	void VulkanMappedMemory::set(const void* srcData, uint64_t size) {
+		CHECK_MAPPED
+		memcpy(m_Data, srcData, size);
+	}
+
+	void VulkanMappedMemory::get(void* dstData, uint64_t size) const {
+		CHECK_MAPPED
+		memcpy(dstData, m_Data, size);
 	}
 }

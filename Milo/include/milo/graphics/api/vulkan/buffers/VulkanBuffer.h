@@ -41,7 +41,7 @@ namespace milo {
 		[[nodiscard]] VmaAllocation& allocation();
 		[[nodiscard]] uint64_t size() const;
 		[[nodiscard]] bool valid() const;
-		bool isCPUAllocated() const;
+		[[nodiscard]] bool isCPUAllocated() const;
 
 		void allocate(const VulkanBufferAllocInfo& allocInfo);
 		void reallocate(const VulkanBufferAllocInfo& allocInfo);
@@ -49,7 +49,7 @@ namespace milo {
 
 
 		VulkanMappedMemory map(uint64_t size);
-		void readData(void* data, uint64_t size);
+		void readData(void* dstData, uint64_t size);
 
 		VulkanBuffer& operator=(const VulkanBuffer& other) = delete;
 

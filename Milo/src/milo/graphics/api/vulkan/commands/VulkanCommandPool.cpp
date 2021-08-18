@@ -70,5 +70,7 @@ namespace milo {
 		if (!task.asynchronous) {
 			VK_CALL(vkQueueWaitIdle(m_Queue.vkQueue));
 		}
+
+		free(1, &commandBuffer);
 	}
 }

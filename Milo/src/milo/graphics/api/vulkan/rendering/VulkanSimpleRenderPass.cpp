@@ -18,10 +18,13 @@ namespace milo {
 
 		uint32_t swapchainImageIndex = executeInfo.swapchainImageIndex;
 
-		Matrix4 view = lookAt(Vector3(0, 0, -3), Vector3(0, 0, 0), Vector3(0, 0, 1));
-		Matrix4 proj = perspective(radians(45.0f), Window::get().aspectRatio(), 0.1f, 1000.0f);
+		Vector3 cameraPos   = Vector3(0.0f, 0.0f,  3.0f);
+		Vector3 cameraFront = Vector3(0.0f, 0.0f, -1.0f);
+		Vector3 cameraUp    = Vector3(0.0f, 1.0f,  0.0f);
+		Matrix4 view = lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		Matrix4 proj = perspective(radians(45.0f), Window::get().aspectRatio(), 0.01f, 100.0f);
 
-		Matrix4 viewProj(1.0f);// = proj * view;
+		Matrix4 viewProj = proj * view;
 
 		VkCommandBuffer commandBuffer = m_VkCommandBuffers[swapchainImageIndex];
 
@@ -52,10 +55,15 @@ namespace milo {
 				VkDeviceSize offsets[] = {0};
 				VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
 
+				static float delta = 0;
+
 				for(uint32_t i = 0;i < 1;++i) {
-					Matrix4 model(1.0f);// = translate(Vector3(Random::nextInt(0, 100), Random::nextInt(0, 100), Random::nextInt(0, 100)));
+					//Matrix4 model = translate(Vector3(Random::nextInt(0, 100), Random::nextInt(0, 100), Random::nextInt(0, 100)));
+					Matrix4 model = translate(Vector3(0, 0, -5 + delta));
+					//Matrix4 model(1.0f);
 					updatePushConstants(commandBuffer, viewProj * model);
-					VK_CALLV(vkCmdDraw(commandBuffer, static_cast<uint32_t>(getCubeVertexData().size()), 1, 0, 0));
+					VK_CALLV(vkCmdDraw(commandBuffer, 36, 1, 0, 0));
+					delta += Time::deltaTime();
 				}
 			}
 			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
@@ -249,6 +257,8 @@ namespace milo {
 		pipelineInfo.vkRenderPass = m_VkRenderPass;
 		pipelineInfo.vkPipelineCache = m_VkPipelineCache;
 
+		pipelineInfo.depthStencil.depthTestEnable = VK_FALSE;
+
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
@@ -270,19 +280,25 @@ namespace milo {
 		uint32_t queueFamilies[] = {device.graphicsQueue().family, device.transferQueue().family};
 
 		const ArrayList<float>& cubeVertexData = getCubeVertexData();
+		const size_t vertexDataSize = cubeVertexData.size() * sizeof(float);
 
 		VulkanBufferAllocInfo allocInfo = {};
 		allocInfo.bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		allocInfo.bufferInfo.queueFamilyIndexCount = 2;
+		allocInfo.bufferInfo.queueFamilyIndexCount = 1;
 		allocInfo.bufferInfo.pQueueFamilyIndices = queueFamilies;
-		allocInfo.bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-		allocInfo.bufferInfo.size = cubeVertexData.size() * sizeof(float);
+		allocInfo.bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		allocInfo.bufferInfo.size = vertexDataSize;
 		allocInfo.dataInfo.data = cubeVertexData.data();
 		allocInfo.dataInfo.commandPool = m_CommandPool;
 
 		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
 		m_VertexBuffer->allocate(allocInfo);
+
+		float vertices[288];
+		m_VertexBuffer->readData(vertices, 288 * sizeof(float));
+
+		Vector3 vertex0 = Vector3(vertices[0], vertices[1], vertices[2]);
 	}
 
 	static const ArrayList<float> CUBE_VERTEX_DATA = {

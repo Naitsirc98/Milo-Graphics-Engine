@@ -75,16 +75,16 @@ namespace milo {
 		return VulkanMappedMemory(VulkanAllocator::get(), m_Allocation, size);
 	}
 
-	void VulkanBuffer::readData(void* data, uint64_t size) {
+	void VulkanBuffer::readData(void* dstData, uint64_t size) {
 		if(isCPUAllocated()) {
 			VulkanMappedMemory mappedMemory = this->map(size);
-			memcpy(data, mappedMemory.data, size);
+			mappedMemory.get(dstData, size);
 		} else {
 			auto* stagingBuffer = createStagingBuffer(size);
 			{
 				VulkanCopy::copy(m_Device.transferCommandPool(), this, stagingBuffer, size);
 				VulkanMappedMemory mappedMemory = stagingBuffer->map(size);
-				memcpy(data, mappedMemory.data, size);
+				mappedMemory.get(dstData, size);
 			}
 			DELETE_PTR(stagingBuffer);
 		}
@@ -110,11 +110,13 @@ namespace milo {
 
 		auto* stagingBuffer = new VulkanBuffer(device);
 
+		uint32_t queueFamilies[] = {device.graphicsQueue().family, device.transferQueue().family};
+
 		VulkanBufferAllocInfo allocInfo = {};
 		allocInfo.bufferInfo.size = size;
 		allocInfo.bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		allocInfo.bufferInfo.pQueueFamilyIndices = &device.transferQueue().family;
-		allocInfo.bufferInfo.queueFamilyIndexCount = 1;
+		allocInfo.bufferInfo.pQueueFamilyIndices = queueFamilies;
+		allocInfo.bufferInfo.queueFamilyIndexCount = 2;
 		allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
 		stagingBuffer->allocate(allocInfo);
