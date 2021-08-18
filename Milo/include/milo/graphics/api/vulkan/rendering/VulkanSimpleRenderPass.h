@@ -18,6 +18,11 @@ namespace milo {
 			VkFence fence = VK_NULL_HANDLE;
 			VkPipelineStageFlags* waitDstStageMask = nullptr;
 		};
+
+		struct PushConstants {
+			Matrix4 mvp;
+			Vector4 color;
+		};
 	private:
 		VulkanSwapchain& m_Swapchain;
 		VkRenderPass m_VkRenderPass = VK_NULL_HANDLE;
@@ -39,7 +44,7 @@ namespace milo {
 		void destroy();
 		void createRenderAreaDependentComponents();
 		void destroyRenderAreaDependentComponents();
-		void updatePushConstants(VkCommandBuffer commandBuffer, const Matrix4& mvp);
+		void updatePushConstants(VkCommandBuffer commandBuffer, const PushConstants& pushConstants);
 		void createRenderPass();
 		void createDepthTextures();
 		void createFramebuffers();

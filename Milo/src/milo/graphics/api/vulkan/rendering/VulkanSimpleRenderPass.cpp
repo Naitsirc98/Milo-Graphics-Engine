@@ -1,3 +1,4 @@
+#include <milo/scenes/components/Transform.h>
 #include "milo/graphics/api/vulkan/rendering/VulkanSimpleRenderPass.h"
 #include "milo/graphics/api/vulkan/VulkanContext.h"
 #include "milo/graphics/api/vulkan/rendering/VulkanGraphicsPipeline.h"
@@ -55,15 +56,29 @@ namespace milo {
 				VkDeviceSize offsets[] = {0};
 				VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
 
-				static float delta = 0;
+				for(int32_t x = -10;x <= 10;++x) {
+					for(int32_t y = -10;y <= 10;++y) {
 
-				for(uint32_t i = 0;i < 1;++i) {
-					//Matrix4 model = translate(Vector3(Random::nextInt(0, 100), Random::nextInt(0, 100), Random::nextInt(0, 100)));
-					Matrix4 model = translate(Vector3(0, 0, -5 + delta));
-					//Matrix4 model(1.0f);
-					updatePushConstants(commandBuffer, viewProj * model);
-					VK_CALLV(vkCmdDraw(commandBuffer, 36, 1, 0, 0));
-					delta += Time::deltaTime();
+						float scale = 0.5f;
+
+						Transform transform;
+						transform.translation = {sin(Time::now()) + scale * 1.1f, y, -5};
+						transform.scale = {scale, scale, scale};
+						Matrix4 model = transform.modelMatrix();
+
+						float r = cos((float) x * Time::now());
+						float g = sin((float) y * Time::now());
+						float b = r * g;
+
+						Vector4 color = {r, g, b, 1.0f};
+
+						PushConstants pushConstants = {};
+						pushConstants.mvp = viewProj * model;
+						pushConstants.color = color;
+
+						updatePushConstants(commandBuffer, pushConstants);
+						VK_CALLV(vkCmdDraw(commandBuffer, 36, 1, 0, 0));
+					}
 				}
 			}
 			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
@@ -83,8 +98,13 @@ namespace milo {
 		VK_CALL(vkQueueSubmit(m_Swapchain.device().graphicsQueue().vkQueue, 1, &submitInfo, executeInfo.fence));
 	}
 
-	void VulkanSimpleRenderPass::updatePushConstants(VkCommandBuffer commandBuffer, const Matrix4& mvp) {
-		VK_CALLV(vkCmdPushConstants(commandBuffer, m_VkPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp), value_ptr(mvp)));
+	void VulkanSimpleRenderPass::updatePushConstants(VkCommandBuffer commandBuffer, const PushConstants& pushConstants) {
+		VK_CALLV(vkCmdPushConstants(commandBuffer,
+									m_VkPipelineLayout,
+									VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+									0,
+									sizeof(pushConstants),
+									&pushConstants));
 	}
 
 	void VulkanSimpleRenderPass::create() {
@@ -235,9 +255,9 @@ namespace milo {
 
 	void VulkanSimpleRenderPass::createPipelineLayout() {
 		VkPushConstantRange pushConstants = {};
-		pushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushConstants.offset = 0;
-		pushConstants.size = sizeof(Matrix4);
+		pushConstants.size = sizeof(PushConstants);
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -256,8 +276,6 @@ namespace milo {
 		pipelineInfo.vkPipelineLayout = m_VkPipelineLayout;
 		pipelineInfo.vkRenderPass = m_VkRenderPass;
 		pipelineInfo.vkPipelineCache = m_VkPipelineCache;
-
-		pipelineInfo.depthStencil.depthTestEnable = VK_FALSE;
 
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
