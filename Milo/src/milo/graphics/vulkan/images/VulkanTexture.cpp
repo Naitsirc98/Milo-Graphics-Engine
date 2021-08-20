@@ -54,6 +54,18 @@ namespace milo {
 		return m_ImageLayout;
 	}
 
+	uint32_t VulkanTexture::width() const {
+		return m_VkImageInfo.extent.width;
+	}
+
+	uint32_t VulkanTexture::height() const {
+		return m_VkImageInfo.extent.height;
+	}
+
+	uint32_t VulkanTexture::depth() const {
+		return m_VkImageInfo.extent.depth;
+	}
+
 	void VulkanTexture::allocate(const VulkanTextureAllocInfo& allocInfo) {
 		m_Device.context().allocator().allocateImage(*this, allocInfo.imageInfo, allocInfo.usage);
 
@@ -111,6 +123,93 @@ namespace milo {
 		m_ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		DELETE_PTR(stagingBuffer);
+	}
+
+	void VulkanTexture::generateMipmaps(uint32_t mipLevels) {
+
+		if(m_VkImage == VK_NULL_HANDLE) return;
+
+		// Check if image format supports linear blitting
+		VkFormatProperties formatProperties = {};
+		vkGetPhysicalDeviceFormatProperties(m_Device.pdevice(), m_VkImageInfo.format, &formatProperties);
+
+		if((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == 0) {
+			throw MILO_RUNTIME_EXCEPTION("Failed to generate mipmaps: Texture image format does not support linear blitting");
+		}
+
+		if(mipLevels == UINT32_MAX) {
+			mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width(), height())))) + 1;
+		} else if(mipLevels % 2 != 0) {
+			throw MILO_RUNTIME_EXCEPTION("MipLevels must be multiple of 2");
+		}
+
+		VulkanTask task = {};
+		task.run = [&](VkCommandBuffer commandBuffer) {
+
+			uint32_t mipLevels = m_VkImageInfo.mipLevels;
+
+			VkImageMemoryBarrier barrier = mvk::vkImageMemoryBarrier(m_VkImage, m_ImageLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+			int32_t mipWidth = width();
+			int32_t mipHeight = height();
+
+			for(uint32_t i = 1;i < mipLevels;++i) {
+
+				barrier.subresourceRange.baseMipLevel = i - 1;
+				barrier.oldLayout = m_ImageLayout;
+				barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+									 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+				VkImageBlit blit = {};
+
+				blit.srcOffsets[0] = {0,0,0};
+				blit.srcOffsets[1] = {mipWidth, mipHeight, 1};
+
+				blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				blit.srcSubresource.mipLevel = i - 1;
+				blit.srcSubresource.baseArrayLayer = 0;
+				blit.srcSubresource.layerCount = 1;
+
+				blit.dstOffsets[0] = {0, 0, 0};
+				blit.dstOffsets[1] = {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1};
+
+				blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				blit.dstSubresource.mipLevel = i;
+				blit.dstSubresource.baseArrayLayer = 0;
+				blit.dstSubresource.layerCount = 1;
+
+				vkCmdBlitImage(commandBuffer,
+							   vkImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+							   vkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+							   1, &blit, VK_FILTER_LINEAR);
+
+				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+				barrier.newLayout = m_ImageLayout;
+				barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+				barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+									 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+				if(mipWidth > 1) mipWidth /= 2;
+				if(mipHeight > 1) mipHeight /= 2;
+			}
+
+			barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+								 0, 0, nullptr, 0, nullptr, 1, &barrier);
+		};
+
+		m_Device.transferCommandPool()->execute(task);
 	}
 
 	void VulkanTexture::transitionLayout(VkCommandBuffer commandBuffer, const VkImageMemoryBarrier& memoryBarrier,

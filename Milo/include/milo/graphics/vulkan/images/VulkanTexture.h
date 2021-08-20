@@ -41,6 +41,9 @@ namespace milo {
 		void vkSampler(VkSampler sampler);
 		[[nodiscard]] VmaAllocation allocation() const;
 		[[nodiscard]] VkImageLayout layout() const;
+		uint32_t width() const;
+		uint32_t height() const;
+		uint32_t depth() const;
 
 		void allocate(const VulkanTextureAllocInfo& allocInfo);
 		void reallocate(const VulkanTextureAllocInfo& allocInfo);
@@ -48,6 +51,8 @@ namespace milo {
 
 		void pixels(const Image& image);
 		void pixels(uint32_t width, uint32_t height, PixelFormat format, const void* data);
+
+		void generateMipmaps(uint32_t mipLevels = UINT32_MAX);
 
 		VulkanTexture& operator=(const VulkanTexture& other) = delete;
 

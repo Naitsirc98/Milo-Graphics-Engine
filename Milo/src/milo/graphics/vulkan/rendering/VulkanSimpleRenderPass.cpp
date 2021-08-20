@@ -62,7 +62,7 @@ namespace milo {
 				VkDeviceSize offsets[] = {0};
 				VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
 
-				for(int32_t obj = 0; obj < 2; ++obj) {
+				for(int32_t obj = 0; obj < 50; ++obj) {
 
 					uint32_t uniformIndex = obj + imageIndex * 64;
 
@@ -519,6 +519,8 @@ namespace milo {
 
 			auto texture = new VulkanTexture(m_Swapchain.device());
 			texture->vkSampler(m_Samplers->get(samplerInfo));
+
+			texture->generateMipmaps();
 
 			VulkanTextureAllocInfo allocInfo = {};
 			allocInfo.imageInfo.extent = {image->width(), image->height(), 1};
