@@ -4,8 +4,10 @@
 #include "milo/graphics/api/vulkan/commands/VulkanCommandPool.h"
 #include "milo/graphics/api/vulkan/images/VulkanTexture.h"
 #include "milo/graphics/api/vulkan/buffers/VulkanBuffer.h"
+#include "milo/graphics/api/vulkan/buffers/VulkanUniformBuffer.h"
+#include "milo/graphics/api/vulkan/descriptors/VulkanDescriptorPool.h"
 
-#define MAX_DESCRIPTOR_SETS MAX_SWAPCHAIN_IMAGE_COUNT
+#define MAX_DESCRIPTOR_SETS 1024 * 1024
 
 namespace milo {
 
@@ -24,13 +26,16 @@ namespace milo {
 
 		struct PushConstants {
 			Matrix4 mvp;
-			Vector4 color;
 		};
 
-		struct CameraUniformBufferData {
+		struct Camera {
 			Matrix4 view;
 			Matrix4 proj;
 			Matrix4 viewProj;
+		};
+
+		struct Material {
+			Vector4 color;
 		};
 	private:
 		VulkanSwapchain& m_Swapchain;
@@ -43,10 +48,9 @@ namespace milo {
 		VkFramebuffer m_VkFramebuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
 		VulkanTexture* m_DepthTextures[MAX_SWAPCHAIN_IMAGE_COUNT]{nullptr};
 		VkDescriptorSetLayout m_VkDescriptorSetLayout = VK_NULL_HANDLE;
-		VkDescriptorPool m_VkDescriptorPool = VK_NULL_HANDLE;
-		VkDescriptorSet m_VkDescriptorSets[MAX_DESCRIPTOR_SETS]{VK_NULL_HANDLE};
-		VulkanBuffer* m_CameraUniformBuffer = nullptr; // sizeof(CameraUniformBufferData) * MAX_DESCRIPTOR_SETS
-		uint32_t m_UniformBufferOffset = 0;
+		VulkanDescriptorPool* m_DescriptorPool = nullptr;
+		VulkanUniformBuffer<Camera>* m_CameraUniformBuffer = nullptr; // sizeof(Camera) * BATCH_SIZE
+		VulkanUniformBuffer<Material>* m_MaterialUniformBuffer = nullptr; // sizeof(MaterialUniformBuffer) * BATCH_SIZE
 		VulkanBuffer* m_VertexBuffer = nullptr;
 	public:
 		explicit VulkanSimpleRenderPass(VulkanSwapchain& swapchain);
@@ -58,15 +62,18 @@ namespace milo {
 		void destroy();
 		void createRenderAreaDependentComponents();
 		void destroyRenderAreaDependentComponents();
+		void updateCameraUniformBuffer(uint32_t swapchainImage, const Camera& camera);
 		void updatePushConstants(VkCommandBuffer commandBuffer, const PushConstants& pushConstants);
+		void updateMaterialUniformBuffer(uint32_t swapchainImage, const Material& material);
 		void createRenderPass();
 		void createDepthTextures();
 		void createFramebuffers();
-		void createUniformBuffer();
+		void createCameraUniformBuffer();
+		void createMaterialUniformBuffer();
 		void createDescriptorSetLayout();
 		void createDescriptorPool();
 		void allocateDescriptorSets();
-		void setupDescriptorSets();
+		void setupDescriptorSet(size_t index, VkDescriptorSet vkDescriptorSet);
 		void createPipelineLayout();
 		void createGraphicsPipeline();
 		void createCommandPool();

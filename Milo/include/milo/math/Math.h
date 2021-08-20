@@ -84,4 +84,9 @@ namespace milo {
 		static int32 nextInt(int32 min = 0, int32 max = RAND_MAX);
 		static float nextFloat(float min = 0.0f, float max = 1.0f);
 	};
+
+	template<typename Integer>
+	inline Integer roundUp2(Integer numToRound, Integer multiple) {
+		return (numToRound + multiple - 1) & -multiple;
+	}
 }

@@ -60,7 +60,7 @@ namespace milo {
 			return !(rhs == *this);
 		}
 
-		void awaitTermination();
+		void awaitTermination() const;
 	};
 
 	class VulkanCommandPool;

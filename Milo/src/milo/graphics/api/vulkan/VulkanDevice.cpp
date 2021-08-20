@@ -5,7 +5,7 @@
 
 namespace milo {
 
-	void VulkanQueue::awaitTermination() {
+	void VulkanQueue::awaitTermination() const {
 		device->awaitTermination(vkQueue);
 	}
 

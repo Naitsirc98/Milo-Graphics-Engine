@@ -17,7 +17,7 @@ namespace milo {
 
 	void VulkanSimpleRenderPass::execute(const VulkanSimpleRenderPass::ExecuteInfo& executeInfo) {
 
-		uint32_t swapchainImageIndex = executeInfo.swapchainImageIndex;
+		uint32_t imageIndex=executeInfo.swapchainImageIndex;uint32_t swapchainImageIndex = imageIndex;
 
 		Vector3 cameraPos   = Vector3(0.0f, 0.0f,  3.0f);
 		Vector3 cameraFront = Vector3(0.0f, 0.0f, -1.0f);
@@ -27,11 +27,8 @@ namespace milo {
 		Matrix4 proj = perspective(radians(45.0f), Window::get().aspectRatio(), 0.01f, 100.0f);
 		Matrix4 projView = proj * view;
 
-		CameraUniformBufferData cameraData = {view, proj, projView};
-		{
-			VulkanMappedMemory memory = m_CameraUniformBuffer->map();
-			memory.set(&cameraData, m_UniformBufferOffset * executeInfo.swapchainImageIndex * sizeof(CameraUniformBufferData), sizeof(CameraUniformBufferData));
-		}
+		//Camera cameraData = {view, proj, projView};
+		//updateCameraUniformBuffer(executeInfo.swapchainImageIndex, cameraData);
 
 		VkCommandBuffer commandBuffer = m_VkCommandBuffers[swapchainImageIndex];
 
@@ -58,15 +55,6 @@ namespace milo {
 			{
 				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline));
 
-				VK_CALLV(vkCmdBindDescriptorSets(commandBuffer,
-												 VK_PIPELINE_BIND_POINT_GRAPHICS,
-												 m_VkPipelineLayout,
-												 0,
-												 1,
-												 &m_VkDescriptorSets[executeInfo.swapchainImageIndex],
-												 0,
-												 nullptr));
-
 				VkBuffer vertexBuffers[] = {m_VertexBuffer->vkBuffer()};
 				VkDeviceSize offsets[] = {0};
 				VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
@@ -79,22 +67,44 @@ namespace milo {
 						Vector4(1.0f, 0.0f, 1.0f, 1.0f),
 				};
 
-				for(int32_t i = 1;i <= 2;++i) {
+				for(int32_t obj = 0; obj < 3; ++obj) {
+
+					uint32_t uniformIndex = obj + imageIndex * MAX_SWAPCHAIN_IMAGE_COUNT;
 
 					float scale = 1.0f;
 
 					Transform transform;
-					transform.translation = {sin(Time::now() * i), 0, -4 - i*2};
+					transform.translation = {sin(Time::now() * (obj + 1.0f)), obj, -4 - (obj+1) * 2};
 					transform.scale = {scale, scale, scale};
 					Matrix4 model = transform.modelMatrix();
 
-					const Vector4& color = colors[i % colors.size()];
-
 					PushConstants pushConstants = {};
 					pushConstants.mvp = model;
-					pushConstants.color = color;
-
 					updatePushConstants(commandBuffer, pushConstants);
+
+					Camera cameraData = {view, proj, projView};
+					updateCameraUniformBuffer(uniformIndex, cameraData);
+
+					const Vector4& color = colors[obj % colors.size()];
+					Material materialData = {};
+					materialData.color = color;
+					updateMaterialUniformBuffer(uniformIndex, materialData);
+
+					// offset per object!! (or batch of them) per imageIndex / frame
+					//uint32_t dynamicOffset = executeInfo.swapchainImageIndex * obj * m_UniformBufferOffset * sizeof(Material);
+					uint32_t dynamicOffset = uniformIndex * m_MaterialUniformBuffer->elementSize();
+
+					VkDescriptorSet descriptorSet = m_DescriptorPool->get(uniformIndex);
+
+					VK_CALLV(vkCmdBindDescriptorSets(commandBuffer,
+													 VK_PIPELINE_BIND_POINT_GRAPHICS,
+													 m_VkPipelineLayout,
+													 0,
+													 1,
+													 &descriptorSet,
+													 1,
+													 &dynamicOffset));
+
 					VK_CALLV(vkCmdDraw(commandBuffer, 36, 1, 0, 0));
 				}
 			}
@@ -115,6 +125,10 @@ namespace milo {
 		VK_CALL(vkQueueSubmit(m_Swapchain.device().graphicsQueue().vkQueue, 1, &submitInfo, executeInfo.fence));
 	}
 
+	void VulkanSimpleRenderPass::updateCameraUniformBuffer(uint32_t swapchainImage, const Camera& camera) {
+		m_CameraUniformBuffer->update(swapchainImage, camera);
+	}
+
 	void VulkanSimpleRenderPass::updatePushConstants(VkCommandBuffer commandBuffer, const PushConstants& pushConstants) {
 		VK_CALLV(vkCmdPushConstants(commandBuffer,
 									m_VkPipelineLayout,
@@ -124,15 +138,19 @@ namespace milo {
 									&pushConstants));
 	}
 
+	void VulkanSimpleRenderPass::updateMaterialUniformBuffer(uint32_t swapchainImage, const Material& material) {
+		m_MaterialUniformBuffer->update(swapchainImage, material);
+	}
+
 	void VulkanSimpleRenderPass::create() {
 		createRenderPass();
 		createRenderAreaDependentComponents();
 		createCommandPool();
-		createUniformBuffer();
+		createCameraUniformBuffer();
+		createMaterialUniformBuffer();
 		createDescriptorSetLayout();
 		createDescriptorPool();
 		allocateDescriptorSets();
-		setupDescriptorSets();
 		createPipelineLayout();
 		createGraphicsPipeline();
 		createVertexBuffer();
@@ -145,9 +163,9 @@ namespace milo {
 		DELETE_PTR(m_VertexBuffer);
 
 		DELETE_PTR(m_CameraUniformBuffer);
+		DELETE_PTR(m_MaterialUniformBuffer);
 
-		memset(m_VkDescriptorSets, VK_NULL_HANDLE, MAX_FRAMES_IN_FLIGHT * sizeof(VkDescriptorSet));
-		VK_CALLV(vkDestroyDescriptorPool(device, m_VkDescriptorPool, nullptr));
+		DELETE_PTR(m_DescriptorPool);
 		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_VkDescriptorSetLayout, nullptr));
 
 		destroyRenderAreaDependentComponents();
@@ -281,90 +299,94 @@ namespace milo {
 		}
 	}
 
-	void VulkanSimpleRenderPass::createUniformBuffer() {
+	void VulkanSimpleRenderPass::createCameraUniformBuffer() {
+		m_CameraUniformBuffer = new VulkanUniformBuffer<Camera>(m_Swapchain.device());
+		m_CameraUniformBuffer->allocate(64 * MAX_SWAPCHAIN_IMAGE_COUNT);
+	}
 
-		m_CameraUniformBuffer = new VulkanBuffer(m_Swapchain.device());
-		m_UniformBufferOffset = m_Swapchain.device().pDeviceInfo().uniformBufferAlignment();
-
-		VulkanBufferAllocInfo allocInfo = {};
-		allocInfo.bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		allocInfo.bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		allocInfo.bufferInfo.pQueueFamilyIndices = &m_CommandPool->queue().family;
-		allocInfo.bufferInfo.queueFamilyIndexCount = 1;
-		allocInfo.bufferInfo.size = sizeof(CameraUniformBufferData) * MAX_DESCRIPTOR_SETS * m_UniformBufferOffset;
-		allocInfo.dataInfo.commandPool = m_CommandPool;
-		allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_CameraUniformBuffer->allocate(allocInfo);
+	void VulkanSimpleRenderPass::createMaterialUniformBuffer() {
+		m_MaterialUniformBuffer = new VulkanUniformBuffer<Material>(m_Swapchain.device());
+		m_MaterialUniformBuffer->allocate(64 * MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
 	void VulkanSimpleRenderPass::createDescriptorSetLayout() {
 
-		VkDescriptorSetLayoutBinding binding = {};
-		binding.binding = 0;
-		binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		binding.descriptorCount = 1;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		Array<VkDescriptorSetLayoutBinding, 2> bindings;
+		// Camera Uniform Buffer
+		bindings[0].binding = 0;
+		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		bindings[0].descriptorCount = 1;
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		// Material Uniform Buffer
+		bindings[1].binding = 1;
+		bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		bindings[1].descriptorCount = 1;
+		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
 		VkDescriptorSetLayoutCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		createInfo.bindingCount = 1;
-		createInfo.pBindings = &binding;
+		createInfo.bindingCount = bindings.size();
+		createInfo.pBindings = bindings.data();
 
 		VK_CALL(vkCreateDescriptorSetLayout(m_Swapchain.device().ldevice(), &createInfo, nullptr, &m_VkDescriptorSetLayout));
 	}
 
 	void VulkanSimpleRenderPass::createDescriptorPool() {
 
-		VkDescriptorPoolSize poolSize = {};
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = MAX_DESCRIPTOR_SETS;
+		Array<VkDescriptorPoolSize, 2> poolSizes;
+		// Camera Uniform Buffer
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[0].descriptorCount = MAX_DESCRIPTOR_SETS; // Total count across all sets
+		// Material Uniform Buffer
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		poolSizes[1].descriptorCount = MAX_DESCRIPTOR_SETS; // Total count across all sets
 
-		VkDescriptorPoolCreateInfo createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		createInfo.maxSets = MAX_DESCRIPTOR_SETS;
-		createInfo.pPoolSizes = &poolSize;
-		createInfo.poolSizeCount = 1;
+		VulkanDescriptorPool::CreateInfo createInfo = {};
+		createInfo.layout = m_VkDescriptorSetLayout;
+		createInfo.capacity = MAX_DESCRIPTOR_SETS;
+		createInfo.poolSizes.push_back(poolSizes[0]);
+		createInfo.poolSizes.push_back(poolSizes[1]);
 
-		VK_CALL(vkCreateDescriptorPool(m_Swapchain.device().ldevice(), &createInfo, nullptr, &m_VkDescriptorPool));
+		m_DescriptorPool = new VulkanDescriptorPool(m_Swapchain.device(), createInfo);
 	}
 
 	void VulkanSimpleRenderPass::allocateDescriptorSets() {
-
-		Array<VkDescriptorSetLayout, MAX_DESCRIPTOR_SETS> layouts;
-		layouts.fill(m_VkDescriptorSetLayout);
-
-		for(uint32_t i = 0;i < MAX_DESCRIPTOR_SETS;++i) {
-
-			VkDescriptorSetAllocateInfo allocInfo = {};
-			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			allocInfo.pSetLayouts = layouts.data();
-			allocInfo.descriptorPool = m_VkDescriptorPool;
-			allocInfo.descriptorSetCount = 1;
-
-			VK_CALL(vkAllocateDescriptorSets(m_Swapchain.device().ldevice(), &allocInfo, &m_VkDescriptorSets[i]));
-		}
+		m_DescriptorPool->allocate(
+				64 * MAX_SWAPCHAIN_IMAGE_COUNT,
+				[&](size_t index, VkDescriptorSet vkDescriptorSet) { setupDescriptorSet(index, vkDescriptorSet);});
 	}
 
-	void VulkanSimpleRenderPass::setupDescriptorSets() {
+	void VulkanSimpleRenderPass::setupDescriptorSet(size_t index, VkDescriptorSet vkDescriptorSet) {
 
-		for(uint32_t i = 0;i < MAX_DESCRIPTOR_SETS;++i) {
+		VkDescriptorBufferInfo cameraUBOInfo = {};
+		cameraUBOInfo.offset = 0;
+		cameraUBOInfo.range = sizeof(Camera);
+		cameraUBOInfo.buffer = m_CameraUniformBuffer->vkBuffer();
 
-			VkDescriptorBufferInfo bufferInfo = {};
-			bufferInfo.offset = i * m_UniformBufferOffset * sizeof(CameraUniformBufferData);
-			bufferInfo.range = sizeof(CameraUniformBufferData);
-			bufferInfo.buffer = m_CameraUniformBuffer->vkBuffer();
+		VkDescriptorBufferInfo materialUBOInfo = {};
+		materialUBOInfo.offset = 0;
+		materialUBOInfo.range = sizeof(Material);
+		materialUBOInfo.buffer = m_MaterialUniformBuffer->vkBuffer();
 
-			VkWriteDescriptorSet writeDescriptorSet = {};
-			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSet.pBufferInfo = &bufferInfo;
-			writeDescriptorSet.dstSet = m_VkDescriptorSets[i];
-			writeDescriptorSet.dstBinding = 0;
+		VkWriteDescriptorSet cameraUBOWrite = {};
+		cameraUBOWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		cameraUBOWrite.descriptorCount = 1;
+		cameraUBOWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		cameraUBOWrite.pBufferInfo = &cameraUBOInfo;
+		cameraUBOWrite.dstSet = vkDescriptorSet;
+		cameraUBOWrite.dstBinding = 0;
 
-			VK_CALLV(vkUpdateDescriptorSets(m_Swapchain.device().ldevice(), 1, &writeDescriptorSet, 0, nullptr));
-		}
+		VkWriteDescriptorSet materialUBOWrite = {};
+		materialUBOWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		materialUBOWrite.descriptorCount = 1;
+		materialUBOWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		materialUBOWrite.pBufferInfo = &materialUBOInfo;
+		materialUBOWrite.dstSet = vkDescriptorSet;
+		materialUBOWrite.dstBinding = 1;
+
+		VkWriteDescriptorSet writeDescriptorSets[] = {cameraUBOWrite, materialUBOWrite};
+
+		VK_CALLV(vkUpdateDescriptorSets(m_Swapchain.device().ldevice(), 2, writeDescriptorSets, 0, nullptr));
 	}
 
 	void VulkanSimpleRenderPass::createPipelineLayout() {

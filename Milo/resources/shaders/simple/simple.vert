@@ -2,10 +2,9 @@
 
 layout(push_constant) uniform PushConstants {
     mat4 u_ModelMatrix;
-    vec4 u_Color;
 };
 
-layout(set = 0, binding = 0) uniform CameraUniformBuffer {
+layout(std140, binding = 0) uniform CameraUniformBuffer {
     mat4 view;
     mat4 proj;
     mat4 projView;
