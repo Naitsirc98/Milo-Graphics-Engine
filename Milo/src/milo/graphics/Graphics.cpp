@@ -1,5 +1,5 @@
 #include "milo/graphics/Graphics.h"
-#include "milo/graphics/api/vulkan/VulkanContext.h"
+#include "milo/graphics/vulkan/VulkanContext.h"
 
 namespace milo {
 

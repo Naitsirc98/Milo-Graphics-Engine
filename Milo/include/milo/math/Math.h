@@ -15,6 +15,8 @@ namespace milo {
 
 	using namespace glm;
 
+	using byte_t = int8_t;
+
 	using Vector2 = glm::vec2;
 	using Vector2i = glm::ivec2;
 

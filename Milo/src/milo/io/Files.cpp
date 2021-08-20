@@ -18,14 +18,25 @@ namespace milo {
 
 	uint64 Files::length(const String& filename) {
 		if (!exists(filename)) return 0;
-		InputStream inputStream(filename, InputStream ::ate | InputStream ::binary);
-		return inputStream.tellg();
+		return std::filesystem::file_size(Path(filename));
 	}
 
-	ArrayList<int8> Files::readAllBytes(const String& filename) {
+	bool Files::isDirectory(const String& path) {
+		return is_directory(Path(path));
+	}
+
+	ArrayList<String> Files::listFiles(const String& directory) {
+		if(!isDirectory(directory)) return {};
+		ArrayList<String> files;
+		for (const auto& entry : std::filesystem::directory_iterator(Path(directory)))
+			files.push_back(entry.path().string());
+		return files;
+	}
+
+	ArrayList<byte_t> Files::readAllBytes(const String& filename) {
 		InputStream inputStream(filename, InputStream::binary | InputStream::ate);
-		uint32 size = static_cast<uint32>(inputStream.tellg());
-		ArrayList<int8> contents(size);
+		std::streamsize size = inputStream.tellg();
+		ArrayList<byte_t> contents(size);
 		inputStream.seekg(0, InputStream::beg);
 		inputStream.read((char*)contents.data(), size);
 		return contents;
@@ -39,10 +50,10 @@ namespace milo {
 		return stringStream.str();
 	}
 
-	ArrayList<String> Files::readAllLines(const String& filename) {
+	ArrayList<String> Files::readAllLines(const String& filename, uint32_t numLinesAprox) {
 		InputStream inputStream(filename);
 		ArrayList<String> lines;
-		lines.reserve(16);
+		lines.reserve(numLinesAprox);
 		String line;
 		while (getline(inputStream, line)) {
 			lines.push_back(line);
@@ -61,7 +72,7 @@ namespace milo {
 
 	void Files::writeAllText(const String& filename, const String& str) {
 		OutputStream outputStream(filename);
-		outputStream.write(str.c_str(), str.length());
+		outputStream.write(str.c_str(), static_cast<std::streamsize>(str.length()));
 	}
 
 	void Files::writeAllLines(const String& filename, const ArrayList<String>& lines) {
