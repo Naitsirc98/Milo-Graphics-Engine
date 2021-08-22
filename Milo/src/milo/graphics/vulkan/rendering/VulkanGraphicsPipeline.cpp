@@ -29,6 +29,11 @@ namespace milo {
 
 		const VkPipelineColorBlendStateCreateInfo& colorBlendStateInfo = info.colorBlendState;
 
+		VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
+		dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicStateInfo.pDynamicStates = info.dynamicStates.data();
+		dynamicStateInfo.dynamicStateCount = info.dynamicStates.size();
+
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineInfo.stageCount = shaderStages.size();
@@ -43,6 +48,7 @@ namespace milo {
 		pipelineInfo.layout = info.vkPipelineLayout;
 		pipelineInfo.renderPass = info.vkRenderPass;
 		pipelineInfo.subpass = info.renderSubPass;
+		pipelineInfo.pDynamicState = &dynamicStateInfo;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 		float start = Time::millis();
@@ -241,4 +247,5 @@ namespace milo {
 		colorBlendState.blendConstants[2] = 0.0f;
 		colorBlendState.blendConstants[3] = 0.0f;
 	}
+
 }

@@ -34,6 +34,7 @@ namespace milo {
 		VkPipelineMultisampleStateCreateInfo multisampleState = {};
 		ArrayList<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
 		VkPipelineColorBlendStateCreateInfo colorBlendState = {};
+		ArrayList<VkDynamicState> dynamicStates;
 
 	public:
 		explicit VulkanGraphicsPipelineInfo(VkPipelineLayout pipelineLayout = VK_NULL_HANDLE, VkRenderPass renderPass = VK_NULL_HANDLE, uint32_t subPass = 0);

@@ -59,6 +59,17 @@ namespace milo {
 			{
 				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline));
 
+				Size size = Window::get()->size();
+				VkViewport viewport = {};
+				viewport.x = 0;
+				viewport.y = 0;
+				viewport.minDepth = 0;
+				viewport.maxDepth = 1;
+				viewport.width = size.width;
+				viewport.height = size.height;
+
+				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
+
 				VkBuffer vertexBuffers[] = {m_VertexBuffer->vkBuffer()};
 				VkDeviceSize offsets[] = {0};
 				VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
@@ -433,6 +444,8 @@ namespace milo {
 
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+
+		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 
 		m_VkGraphicsPipeline = VulkanGraphicsPipeline::create("VulkanSimpleGraphicsPipeline",
 															  m_Device->logical(), pipelineInfo);
