@@ -2,18 +2,18 @@
 
 namespace milo {
 
-	VulkanFramebuffer::VulkanFramebuffer(VulkanDevice& device, const VkFramebufferCreateInfo& info) : m_Device(device),
+	VulkanFramebuffer::VulkanFramebuffer(VulkanDevice* device, const VkFramebufferCreateInfo& info) : m_Device(device),
 																									  m_Info(info) {
 
-		VK_CALL(vkCreateFramebuffer(device.ldevice(), &m_Info, nullptr, &m_VkFramebuffer));
+		VK_CALL(vkCreateFramebuffer(device->logical(), &m_Info, nullptr, &m_VkFramebuffer));
 	}
 
 	VulkanFramebuffer::~VulkanFramebuffer() {
-		vkDestroyFramebuffer(m_Device.ldevice(), m_VkFramebuffer, nullptr);
+		vkDestroyFramebuffer(m_Device->logical(), m_VkFramebuffer, nullptr);
 		m_VkFramebuffer = VK_NULL_HANDLE;
 	}
 
-	VulkanDevice& VulkanFramebuffer::device() const {
+	VulkanDevice* VulkanFramebuffer::device() const {
 		return m_Device;
 	}
 

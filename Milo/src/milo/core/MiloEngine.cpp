@@ -58,7 +58,7 @@ namespace milo {
 		application.onInit();
 		init();
 		Log::info("Starting Milo Application...");
-		Window::get().show();
+		Window::get()->show();
 		application.onStart();
 
 		float updateDelay = 0;
@@ -111,13 +111,14 @@ namespace milo {
 	}
 
 	inline void MiloEngine::render() {
-		GraphicsPresenter& presenter = Graphics::graphicsContext().presenter();
 
-		if(presenter.begin()) {
+		GraphicsPresenter* presenter = GraphicsPresenter::get();
+
+		if(presenter->begin()) {
 			SceneManager::render();
 			renderUI();
 		}
-		presenter.end();
+		presenter->end();
 
 		++Time::s_Fps;
 	}
@@ -143,7 +144,7 @@ namespace milo {
 			String message = fmt::format("Ups: {}, Fps: {}, Dt:{}, Ft: {} ms", Time::ups(), Time::fps(), Time::deltaTime(), Time::rawDeltaTime() * 1000.0f);
 #endif
 			Log::info(message);
-			Window::get().title("Milo Engine  " + std::move(message));
+			Window::get()->title("Milo Engine  " + std::move(message));
 
 			Time::s_Ups = Time::s_Fps = 0;
 			debugTime = Time::now();

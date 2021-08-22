@@ -21,12 +21,12 @@ namespace milo {
 	class VulkanCommandPool {
 	private:
 		VkCommandPool m_VkCommandPool;
-		VulkanQueue m_Queue;
+		VulkanQueue* m_Queue;
 	public:
-		explicit VulkanCommandPool(const VulkanQueue& queue, VkCommandPoolResetFlags flags = 0);
+		explicit VulkanCommandPool(VulkanQueue* queue, VkCommandPoolResetFlags flags = 0);
 		~VulkanCommandPool();
-		[[nodiscard]] VkCommandPool vkCommandPool() const;
-		[[nodiscard]] const VulkanQueue& queue() const;
+		VkCommandPool vkCommandPool() const;
+		VulkanQueue* queue() const;
 		void allocate(VkCommandBufferLevel level, uint32_t count, VkCommandBuffer* commandBuffers);
 		void free(uint32_t count, VkCommandBuffer* commandBuffers);
 		void execute(const VulkanTask& task);

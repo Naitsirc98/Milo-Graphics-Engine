@@ -6,6 +6,7 @@
 #include "milo/graphics/vulkan/presentation/VulkanSwapchain.h"
 #include "VulkanAllocator.h"
 #include "milo/graphics/vulkan/presentation/VulkanPresenter.h"
+#include "milo/common/Common.h"
 
 namespace milo {
 
@@ -15,36 +16,39 @@ namespace milo {
 		friend class Graphics;
 	private:
 		VkInstance m_VkInstance = VK_NULL_HANDLE;
-		VulkanDevice* m_Device = nullptr;
-		VulkanWindowSurface* m_WindowSurface = nullptr;
-		VulkanDebugMessenger* m_DebugMessenger = nullptr;
-		VulkanSwapchain* m_Swapchain = nullptr;
-		VulkanAllocator* m_Allocator = nullptr;
-		VulkanPresenter* m_Presenter = nullptr;
+		VulkanDevice* m_Device;
+		VulkanWindowSurface* m_WindowSurface;
+		VulkanDebugMessenger* m_DebugMessenger;
+		VulkanSwapchain* m_Swapchain;
+		VulkanAllocator* m_Allocator;
+		VulkanPresenter* m_Presenter;
 	private:
 		VulkanContext();
-		~VulkanContext() override;
 	public:
-		[[nodiscard]] Handle handle() const override;
-		[[nodiscard]] VkInstance vkInstance() const;
-		[[nodiscard]] VulkanDevice& device() const;
-		[[nodiscard]] VulkanWindowSurface& windowSurface() const;
-		[[nodiscard]] VulkanSwapchain& swapchain() const;
-		[[nodiscard]] VulkanAllocator& allocator() const;
-		[[nodiscard]] GraphicsPresenter& presenter() const override;
-		[[nodiscard]] VulkanPresenter& vulkanPresenter() const;
+		~VulkanContext() override;
+		Handle handle() const override;
+		VkInstance vkInstance() const;
+		VulkanDevice* device() const;
+		VulkanWindowSurface* windowSurface() const;
+		VulkanSwapchain* swapchain() const;
+		VulkanAllocator* allocator() const;
+		GraphicsPresenter* presenter() const override;
+		VulkanPresenter* vulkanPresenter() const;
 	protected:
-		void init(Window& mainWindow) override;
+		void init(Window* mainWindow) override;
 	private:
 		void createVkInstance();
 		void createDebugMessenger();
-		void createWindowSurface(Window& mainWindow);
+		void createWindowSurface(Window* mainWindow);
 		void createMainVulkanDevice();
 		void createSwapchain();
 		void createAllocator();
 		void createPresenter();
 	private:
+		static VulkanContext* s_Instance;
+	public:
+		static VulkanContext* get();
+	private:
 		static VkApplicationInfo getApplicationInfo();
-
 	};
 }

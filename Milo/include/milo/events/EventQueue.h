@@ -19,8 +19,8 @@ namespace milo {
 		~EventQueue();
 		void reserve(size_t capacity);
 		void clear();
-		[[nodiscard]] size_t size() const;
-		[[nodiscard]] size_t capacity() const;
+		 size_t size() const;
+		 size_t capacity() const;
 
 		template<typename T>
 		void push(const T& event) {

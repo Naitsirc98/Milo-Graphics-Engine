@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <fstream>
 
+#define MILO_MAX_PATH_LENGTH 256
+
 namespace milo {
 
 	using Path = std::filesystem::path;

@@ -1,5 +1,5 @@
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
-#include "milo/graphics/rendering/SPIRVCompiler.h"
+#include "milo/graphics/shaders/SPIRVCompiler.h"
 
 namespace milo {
 
@@ -186,7 +186,7 @@ namespace milo {
 	}
 
 	void VulkanGraphicsPipelineInfo::initViewportState() {
-		const Size windowSize = Window::get().size();
+		const Size windowSize = Window::get()->size();
 
 		viewport.x = 0;
 		viewport.y = 0;

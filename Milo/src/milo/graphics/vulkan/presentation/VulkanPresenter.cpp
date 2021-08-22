@@ -4,13 +4,13 @@
 
 namespace milo {
 
-	VulkanPresenter::VulkanPresenter(VulkanContext& context)
-			: m_Context(context), m_Device(context.device()), m_Swapchain(context.swapchain()) {
+	VulkanPresenter::VulkanPresenter(VulkanContext* context)
+			: m_Device(context->device()), m_Swapchain(context->swapchain()) {
 
-		m_GraphicsQueue = m_Device.graphicsQueue().vkQueue;
-		m_PresentationQueue = m_Device.presentationQueue().vkQueue;
+		m_GraphicsQueue = m_Device->graphicsQueue()->vkQueue();
+		m_PresentationQueue = m_Device->presentationQueue()->vkQueue();
 
-		m_MaxImageCount = m_Swapchain.imageCount();
+		m_MaxImageCount = m_Swapchain->imageCount();
 		m_CurrentImageIndex = 0;
 		m_CurrentFrame = 0;
 
@@ -18,8 +18,8 @@ namespace milo {
 
 		m_SimpleRenderPass = new VulkanSimpleRenderPass(m_Swapchain);
 
-		m_Swapchain.addSwapchainRecreateCallback([&]() {
-			m_MaxImageCount = m_Swapchain.imageCount();
+		m_Swapchain->addSwapchainRecreateCallback([&]() {
+			m_MaxImageCount = m_Swapchain->imageCount();
 			m_CurrentImageIndex = 0;
 			m_CurrentFrame = 0;
 
@@ -37,7 +37,7 @@ namespace milo {
 
 	bool VulkanPresenter::begin() {
 
-		if(Window::get().size().isZero()) return false;
+		if(Window::get()->size().isZero()) return false;
 
 		m_CurrentFrame = advanceToNextFrame();
 
@@ -51,13 +51,13 @@ namespace milo {
 	}
 
 	inline void VulkanPresenter::waitForPreviousFrameToComplete() {
-		VK_CALL(vkWaitForFences(m_Device.ldevice(), 1, &m_FramesInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
+		VK_CALL(vkWaitForFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
 	}
 
 	inline bool VulkanPresenter::tryGetNextSwapchainImage() {
 
-		VkDevice dv = m_Device.ldevice();
-		VkSwapchainKHR swch = m_Swapchain.vkSwapchain();
+		VkDevice dv = m_Device->logical();
+		VkSwapchainKHR swch = m_Swapchain->vkSwapchain();
 		VkSemaphore imgSemaphore = m_ImageAvailableSemaphore[m_CurrentFrame];
 
 		VkResult result = VK_CALLR(vkAcquireNextImageKHR(dv, swch, UINT64_MAX, imgSemaphore, VK_NULL_HANDLE, &m_CurrentImageIndex));
@@ -74,7 +74,7 @@ namespace milo {
 				break;
 			case VK_SUBOPTIMAL_KHR:
 			case VK_ERROR_OUT_OF_DATE_KHR:
-				m_Swapchain.recreate();
+				m_Swapchain->recreate();
 				success = false;
 				break;
 			default:
@@ -90,7 +90,7 @@ namespace milo {
 	}
 
 	inline void VulkanPresenter::setCurrentFrameInFlight() {
-		VK_CALL(vkResetFences(m_Device.ldevice(), 1, &m_FramesInFlightFences[m_CurrentFrame]));
+		VK_CALL(vkResetFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentFrame]));
 	}
 
 	void VulkanPresenter::end() {
@@ -115,7 +115,7 @@ namespace milo {
 		presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
 		presentInfo.waitSemaphoreCount = 1;
 
-		VkSwapchainKHR swapchains = m_Swapchain.vkSwapchain();
+		VkSwapchainKHR swapchains = m_Swapchain->vkSwapchain();
 		presentInfo.pSwapchains = &swapchains;
 		presentInfo.swapchainCount = 1;
 
@@ -128,7 +128,7 @@ namespace milo {
 				break;
 			case VK_SUBOPTIMAL_KHR:
 			case VK_ERROR_OUT_OF_DATE_KHR:
-				m_Swapchain.recreate();
+				m_Swapchain->recreate();
 				break;
 			default:
 				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + vulkanErrorName(result));
@@ -145,7 +145,7 @@ namespace milo {
 
 	void VulkanPresenter::createSyncObjects() {
 
-		VkDevice device = m_Device.ldevice();
+		VkDevice device = m_Device->logical();
 
 		VkSemaphoreCreateInfo semaphoreInfo = {};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -164,7 +164,7 @@ namespace milo {
 	}
 
 	void VulkanPresenter::destroySyncObjects() {
-		VkDevice device = m_Device.ldevice();
+		VkDevice device = m_Device->logical();
 		for(uint32_t i = 0;i < MAX_FRAMES_IN_FLIGHT;++i) {
 			VK_CALLV(vkDestroySemaphore(device, m_ImageAvailableSemaphore[i], nullptr));
 			VK_CALLV(vkDestroySemaphore(device, m_RenderFinishedSemaphore[i], nullptr));

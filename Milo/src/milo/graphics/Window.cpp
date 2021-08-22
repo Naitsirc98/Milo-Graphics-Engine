@@ -165,12 +165,12 @@ namespace milo {
 	// ======
 
 
-	Window& Window::getMainWindow() {
-		return *s_MainWindow;
+	Window* Window::getMainWindow() {
+		return s_MainWindow;
 	}
 
-	Window &Window::get() {
-		return *s_MainWindow;
+	Window* Window::get() {
+		return s_MainWindow;
 	}
 
 	GLFWwindow* Window::createWindow(const WindowInfo& info) {

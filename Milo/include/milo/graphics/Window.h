@@ -41,25 +41,25 @@ namespace milo {
 		String m_Title;
 	private:
 		explicit Window(const WindowInfo& info);
-		~Window();
 	public:
+		~Window();
 		explicit Window(const Window& other) = delete;
 		Window& operator=(const Window& other) = delete;
-		[[nodiscard]] GLFWwindow* handle() const;
-		[[nodiscard]] const String& title() const;
+		 GLFWwindow* handle() const;
+		 const String& title() const;
 		Window& title(const String& title);
 		Window& title(String&& title);
-		[[nodiscard]] Size framebufferSize() const;
-		[[nodiscard]] Size size() const;
+		 Size framebufferSize() const;
+		 Size size() const;
 		Window& size(const Size& size);
 		Window& size(int32_t width, int32_t height);
-		[[nodiscard]] float aspectRatio() const;
-		[[nodiscard]] Vector2i position() const;
+		 float aspectRatio() const;
+		 Vector2i position() const;
 		Window& position(const Vector2i& position);
 		Window& position(int32_t x, int32_t y);
-		[[nodiscard]] WindowState state() const;
+		 WindowState state() const;
 		Window& state(WindowState state);
-		[[nodiscard]] CursorMode cursorMode() const;
+		 CursorMode cursorMode() const;
 		Window& cursorMode(CursorMode cursorMode);
 		bool shouldClose() const;
 		void close();
@@ -72,8 +72,8 @@ namespace milo {
 	private:
 		static Window* s_MainWindow;
 	public:
-		static Window& getMainWindow();
-		static Window& get();
+		static Window* getMainWindow();
+		static Window* get();
 	private:
 		static GLFWwindow* createWindow(const WindowInfo& info);
 		static void setWindowHints(const WindowInfo& info);

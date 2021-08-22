@@ -75,7 +75,7 @@ namespace milo {
 	struct Stopwatch {
 		const float startTime;
 		explicit Stopwatch(float startTime) noexcept : startTime(startTime) {}
-		[[nodiscard]] inline float elapsed() const {return Time::now() - startTime;}
+		 inline float elapsed() const {return Time::now() - startTime;}
 	};
 }
 

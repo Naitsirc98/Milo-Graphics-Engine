@@ -2,7 +2,7 @@
 
 namespace milo {
 
-	VulkanDescriptorPool::VulkanDescriptorPool(VulkanDevice& device, const VulkanDescriptorPool::CreateInfo& createInfo)
+	VulkanDescriptorPool::VulkanDescriptorPool(VulkanDevice* device, const VulkanDescriptorPool::CreateInfo& createInfo)
 	: m_Device(device), m_VkDescriptorSetLayout(createInfo.layout), m_Capacity(createInfo.capacity), m_Flags(createInfo.flags) {
 
 		m_DescriptorSets = new VkDescriptorSet[m_Capacity];
@@ -14,19 +14,19 @@ namespace milo {
 		poolInfo.poolSizeCount = createInfo.poolSizes.size();
 		poolInfo.flags = createInfo.flags;
 
-		VK_CALL(vkCreateDescriptorPool(m_Device.ldevice(), &poolInfo, nullptr, &m_VkDescriptorPool));
+		VK_CALL(vkCreateDescriptorPool(m_Device->logical(), &poolInfo, nullptr, &m_VkDescriptorPool));
 
 		if(createInfo.initialSize > 0) allocate(createInfo.initialSize);
 	}
 
 	VulkanDescriptorPool::~VulkanDescriptorPool() {
 		DELETE_ARRAY(m_DescriptorSets);
-		VK_CALLV(vkDestroyDescriptorPool(m_Device.ldevice(), m_VkDescriptorPool, nullptr));
+		VK_CALLV(vkDestroyDescriptorPool(m_Device->logical(), m_VkDescriptorPool, nullptr));
 		m_VkDescriptorPool = VK_NULL_HANDLE;
 		m_Capacity = 0;
 	}
 
-	VulkanDevice& VulkanDescriptorPool::device() const {
+	VulkanDevice* VulkanDescriptorPool::device() const {
 		return m_Device;
 	}
 
@@ -56,7 +56,7 @@ namespace milo {
 		allocInfo.pSetLayouts = layouts.data();
 		allocInfo.descriptorSetCount = numSets;
 
-		VK_CALL(vkAllocateDescriptorSets(m_Device.ldevice(), &allocInfo, &m_DescriptorSets[m_Size]));
+		VK_CALL(vkAllocateDescriptorSets(m_Device->logical(), &allocInfo, &m_DescriptorSets[m_Size]));
 
 		if(updateDescriptorSetFunction) {
 			for(size_t i = 0;i < numSets;++i) {
@@ -76,7 +76,7 @@ namespace milo {
 		if(numSets > m_Size) throw MILO_RUNTIME_EXCEPTION(str("NumSets > size: ") + str(numSets) + " > " + str(m_Size));
 #endif
 
-		VK_CALLV(vkFreeDescriptorSets(m_Device.ldevice(), m_VkDescriptorPool, numSets, &m_DescriptorSets[m_Size - numSets]));
+		VK_CALLV(vkFreeDescriptorSets(m_Device->logical(), m_VkDescriptorPool, numSets, &m_DescriptorSets[m_Size - numSets]));
 		memset(&m_DescriptorSets[m_Size - numSets], NULL, numSets * sizeof(VkDescriptorSet));
 		m_Size -= numSets;
 	}

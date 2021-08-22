@@ -2,8 +2,8 @@
 
 #include "milo/graphics/vulkan/presentation/VulkanSwapchain.h"
 #include "milo/graphics/vulkan/commands/VulkanCommandPool.h"
-#include "milo/graphics/vulkan/images/VulkanTexture.h"
-#include "milo/graphics/vulkan/images/VulkanSamplerMap.h"
+#include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
+#include "milo/graphics/vulkan/textures/VulkanSamplerMap.h"
 #include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
 #include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
@@ -37,30 +37,30 @@ namespace milo {
 
 		struct Material {
 			Vector4 color = {1, 1, 1, 1};
-			VulkanTexture* texture = nullptr;
+			VulkanTexture2D* texture;
 
 			inline static size_t size() {return offsetof(Material, texture);}
 		};
 	private:
-		VulkanSwapchain& m_Swapchain;
+		VulkanSwapchain* m_Swapchain;
+		VulkanDevice* m_Device;
 		VkRenderPass m_VkRenderPass = VK_NULL_HANDLE;
 		VkPipelineLayout m_VkPipelineLayout = VK_NULL_HANDLE;
 		VkPipeline m_VkGraphicsPipeline = VK_NULL_HANDLE;
 		VkPipelineCache m_VkPipelineCache = VK_NULL_HANDLE;
-		VulkanCommandPool* m_CommandPool = nullptr;
 		VkCommandBuffer m_VkCommandBuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
 		VkFramebuffer m_VkFramebuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
-		VulkanTexture* m_DepthTextures[MAX_SWAPCHAIN_IMAGE_COUNT]{nullptr};
+		VulkanTexture2D* m_DepthTextures[MAX_SWAPCHAIN_IMAGE_COUNT];
 		VkDescriptorSetLayout m_VkDescriptorSetLayout = VK_NULL_HANDLE;
-		VulkanDescriptorPool* m_DescriptorPool = nullptr;
-		VulkanUniformBuffer<Camera>* m_CameraUniformBuffer = nullptr; // sizeof(Camera) * BATCH_SIZE
-		VulkanUniformBuffer<Material>* m_MaterialUniformBuffer = nullptr; // sizeof(MaterialUniformBuffer) * BATCH_SIZE
-		VulkanBuffer* m_VertexBuffer = nullptr;
+		VulkanDescriptorPool* m_DescriptorPool;
+		VulkanUniformBuffer<Camera>* m_CameraUniformBuffer; // sizeof(Camera) * BATCH_SIZE
+		VulkanUniformBuffer<Material>* m_MaterialUniformBuffer; // sizeof(MaterialUniformBuffer) * BATCH_SIZE
+		VulkanBuffer* m_VertexBuffer;
 		Array<Material, 4> m_Materials = {};
-		VulkanSamplerMap* m_Samplers = nullptr;
+		VulkanSamplerMap* m_Samplers;
 		Camera m_Camera = {};
 	public:
-		explicit VulkanSimpleRenderPass(VulkanSwapchain& swapchain);
+		explicit VulkanSimpleRenderPass(VulkanSwapchain* swapchain);
 		~VulkanSimpleRenderPass();
 		void execute(const ExecuteInfo& input);
 		void recreate();
@@ -83,7 +83,6 @@ namespace milo {
 		void setupDescriptorSet(size_t index, VkDescriptorSet vkDescriptorSet);
 		void createPipelineLayout();
 		void createGraphicsPipeline();
-		void createCommandPool();
 		void allocateCommandBuffers();
 		void createVertexBuffer();
 		void createMaterials();

@@ -9,7 +9,8 @@ namespace milo {
 
 	static const ArrayList<float>& getCubeVertexData();
 
-	VulkanSimpleRenderPass::VulkanSimpleRenderPass(VulkanSwapchain& swapchain) : m_Swapchain(swapchain) {
+	VulkanSimpleRenderPass::VulkanSimpleRenderPass(VulkanSwapchain* swapchain)
+		: m_Swapchain(swapchain), m_Device(swapchain->device()) {
 		create();
 	}
 
@@ -26,7 +27,7 @@ namespace milo {
 		Vector3 cameraUp    = Vector3(0.0f, 1.0f,  0.0f);
 
 		m_Camera.view = lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-		m_Camera.proj = perspective(radians(45.0f), Window::get().aspectRatio(), 0.01f, 100.0f);
+		m_Camera.proj = perspective(radians(45.0f), Window::get()->aspectRatio(), 0.01f, 100.0f);
 		m_Camera.projView = m_Camera.proj * m_Camera.view;
 
 		// This should be a per frame or per pass descriptor set
@@ -45,7 +46,7 @@ namespace milo {
 			renderPassInfo.renderPass = m_VkRenderPass;
 			renderPassInfo.framebuffer = m_VkFramebuffers[swapchainImageIndex];
 			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent = m_Swapchain.extent();
+			renderPassInfo.renderArea.extent = m_Swapchain->extent();
 
 			VkClearValue clearValues[2];
 			clearValues[0].color = {{0.1f, 0.1f, 0.1f, 1.0f}};
@@ -66,7 +67,7 @@ namespace milo {
 
 					uint32_t uniformIndex = obj + imageIndex * 64;
 
-					float scale = 1.0f;
+					float scale = sin(Time::now() * (obj + 1));
 
 					Transform transform;
 					transform.translation = {sin(Time::now() * (obj + 1.0f)), obj, -4 - (obj+1) * 2};
@@ -113,7 +114,7 @@ namespace milo {
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pWaitDstStageMask = executeInfo.waitDstStageMask;
 
-		VK_CALL(vkQueueSubmit(m_Swapchain.device().graphicsQueue().vkQueue, 1, &submitInfo, executeInfo.fence));
+		m_Device->graphicsQueue()->submit(1, &submitInfo, executeInfo.fence);
 	}
 
 	void VulkanSimpleRenderPass::updateCameraUniformBuffer(uint32_t swapchainImage, const Camera& camera) {
@@ -136,7 +137,6 @@ namespace milo {
 	void VulkanSimpleRenderPass::create() {
 		createRenderPass();
 		createRenderAreaDependentComponents();
-		createCommandPool();
 		createCameraUniformBuffer();
 		createMaterialUniformBuffer();
 		createMaterials();
@@ -150,7 +150,7 @@ namespace milo {
 	}
 
 	void VulkanSimpleRenderPass::destroy() {
-		VkDevice device = m_Swapchain.device().ldevice();
+		VkDevice device = m_Device->logical();
 
 		for(auto & m_Material : m_Materials) {
 			DELETE_PTR(m_Material.texture);
@@ -167,8 +167,7 @@ namespace milo {
 
 		destroyRenderAreaDependentComponents();
 
-		m_CommandPool->free(MAX_SWAPCHAIN_IMAGE_COUNT, m_VkCommandBuffers);
-		DELETE_PTR(m_CommandPool);
+		m_Device->graphicsCommandPool()->free(MAX_SWAPCHAIN_IMAGE_COUNT, m_VkCommandBuffers);
 
 		VK_CALLV(vkDestroyPipeline(device, m_VkGraphicsPipeline, nullptr));
 		VK_CALLV(vkDestroyPipelineLayout(device, m_VkPipelineLayout, nullptr));
@@ -183,7 +182,7 @@ namespace milo {
 
 	void VulkanSimpleRenderPass::destroyRenderAreaDependentComponents() {
 		for(auto& framebuffer : m_VkFramebuffers) {
-			VK_CALLV(vkDestroyFramebuffer(m_Swapchain.device().ldevice(), framebuffer, nullptr));
+			VK_CALLV(vkDestroyFramebuffer(m_Device->logical(), framebuffer, nullptr));
 		}
 
 		for(auto& depthTexture : m_DepthTextures) {
@@ -199,7 +198,7 @@ namespace milo {
 	void VulkanSimpleRenderPass::createRenderPass() {
 
 		VkAttachmentDescription colorAttachment = {};
-		colorAttachment.format = m_Swapchain.format();
+		colorAttachment.format = m_Swapchain->format();
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -209,7 +208,7 @@ namespace milo {
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 		VkAttachmentDescription depthAttachment = {};
-		depthAttachment.format = m_Swapchain.device().depthFormat();
+		depthAttachment.format = m_Device->depthFormat();
 		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -251,29 +250,23 @@ namespace milo {
 		renderPassInfo.pSubpasses = &subpass;
 		renderPassInfo.subpassCount = 1;
 
-		VK_CALL(vkCreateRenderPass(m_Swapchain.device().ldevice(), &renderPassInfo, nullptr, &m_VkRenderPass));
+		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassInfo, nullptr, &m_VkRenderPass));
 	}
 
 	void VulkanSimpleRenderPass::createDepthTextures() {
-		VkFormat format = m_Swapchain.device().depthFormat();
 
-		Size size = Window::get().size();
-		VkExtent3D extent = {(uint32_t)size.width, (uint32_t)size.height, 1};
-
-		uint32_t queueFamilies[] = {m_Swapchain.device().graphicsQueue().family, m_Swapchain.device().presentationQueue().family};
-
-		VulkanTextureAllocInfo allocInfo = {};
-		allocInfo.imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		allocInfo.imageInfo.format = m_Swapchain.device().depthFormat();
-		allocInfo.imageInfo.extent = extent;
-		allocInfo.imageInfo.pQueueFamilyIndices = queueFamilies;
-		allocInfo.imageInfo.queueFamilyIndexCount = queueFamilies[0] == queueFamilies[1] ? 1 : 2;
-		allocInfo.viewInfo.format = format;
-		allocInfo.viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		const Size size = Window::get()->size();
 
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			auto* texture = new VulkanTexture(m_Swapchain.device());
+
+			VulkanTexture2D* texture = VulkanTexture2D::createDepthAttachment();
+
+			Texture2D::AllocInfo allocInfo = {};
+			allocInfo.width = size.width;
+			allocInfo.height = size.height;
+
 			texture->allocate(allocInfo);
+
 			m_DepthTextures[i] = texture;
 		}
 	}
@@ -285,26 +278,26 @@ namespace milo {
 		framebufferInfo.attachmentCount = 2;
 		framebufferInfo.renderPass = m_VkRenderPass;
 		framebufferInfo.layers = 1;
-		framebufferInfo.width = m_Swapchain.extent().width;
-		framebufferInfo.height = m_Swapchain.extent().height;
+		framebufferInfo.width = m_Swapchain->extent().width;
+		framebufferInfo.height = m_Swapchain->extent().height;
 
-		const VulkanSwapchainImage* swapchainImages = m_Swapchain.images();
+		const VulkanSwapchainImage* swapchainImages = m_Swapchain->images();
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 			const VulkanSwapchainImage& colorTexture = swapchainImages[i];
-			const VulkanTexture* depthTexture = m_DepthTextures[i];
+			auto depthTexture = m_DepthTextures[i];
 			VkImageView attachments[] = {colorTexture.vkImageView, depthTexture->vkImageView()};
 			framebufferInfo.pAttachments = attachments;
-			VK_CALL(vkCreateFramebuffer(m_Swapchain.device().ldevice(), &framebufferInfo, nullptr, &m_VkFramebuffers[i]));
+			VK_CALL(vkCreateFramebuffer(m_Device->logical(), &framebufferInfo, nullptr, &m_VkFramebuffers[i]));
 		}
 	}
 
 	void VulkanSimpleRenderPass::createCameraUniformBuffer() {
-		m_CameraUniformBuffer = new VulkanUniformBuffer<Camera>(m_Swapchain.device());
+		m_CameraUniformBuffer = VulkanUniformBuffer<Camera>::create();
 		m_CameraUniformBuffer->allocate(64 * MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
 	void VulkanSimpleRenderPass::createMaterialUniformBuffer() {
-		m_MaterialUniformBuffer = new VulkanUniformBuffer<Material>(m_Swapchain.device());
+		m_MaterialUniformBuffer = VulkanUniformBuffer<Material>::create();
 		m_MaterialUniformBuffer->allocate(64 * MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
@@ -321,7 +314,7 @@ namespace milo {
 		bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		bindings[1].descriptorCount = 1;
 		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		// Material Texture
+		// Material TextureAsset
 		bindings[2].binding = 2;
 		bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		bindings[2].descriptorCount = 1;
@@ -332,7 +325,7 @@ namespace milo {
 		createInfo.bindingCount = bindings.size();
 		createInfo.pBindings = bindings.data();
 
-		VK_CALL(vkCreateDescriptorSetLayout(m_Swapchain.device().ldevice(), &createInfo, nullptr, &m_VkDescriptorSetLayout));
+		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &createInfo, nullptr, &m_VkDescriptorSetLayout));
 	}
 
 	void VulkanSimpleRenderPass::createDescriptorPool() {
@@ -344,7 +337,7 @@ namespace milo {
 		// Material Uniform Buffer
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		poolSizes[1].descriptorCount = MAX_DESCRIPTOR_SETS; // Total count across all sets
-		// Material Texture
+		// Material TextureAsset
 		poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[2].descriptorCount = MAX_DESCRIPTOR_SETS; // Total count across all sets
 
@@ -355,7 +348,7 @@ namespace milo {
 		createInfo.poolSizes.push_back(poolSizes[1]);
 		createInfo.poolSizes.push_back(poolSizes[2]);
 
-		m_DescriptorPool = new VulkanDescriptorPool(m_Swapchain.device(), createInfo);
+		m_DescriptorPool = new VulkanDescriptorPool(m_Swapchain->device(), createInfo);
 	}
 
 	void VulkanSimpleRenderPass::allocateDescriptorSets() {
@@ -408,7 +401,7 @@ namespace milo {
 
 		Array<VkWriteDescriptorSet, 3> writeDescriptorSets = {cameraUBOWrite, materialUBOWrite, materialTextureWrite};
 
-		VK_CALLV(vkUpdateDescriptorSets(m_Swapchain.device().ldevice(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr));
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr));
 	}
 
 	void VulkanSimpleRenderPass::createPipelineLayout() {
@@ -424,7 +417,7 @@ namespace milo {
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstants;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 
-		VK_CALL(vkCreatePipelineLayout(m_Swapchain.device().ldevice(), &pipelineLayoutInfo, nullptr,
+		VK_CALL(vkCreatePipelineLayout(m_Device->logical(), &pipelineLayoutInfo, nullptr,
 									   &m_VkPipelineLayout));
 	}
 
@@ -440,43 +433,25 @@ namespace milo {
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/simple/simple.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
-		m_VkGraphicsPipeline = VulkanGraphicsPipeline::create("VulkanSimpleGraphicsPipeline", m_Swapchain.device().ldevice(), pipelineInfo);
-	}
-
-	void VulkanSimpleRenderPass::createCommandPool() {
-		m_CommandPool = new VulkanCommandPool(m_Swapchain.device().graphicsQueue(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		m_VkGraphicsPipeline = VulkanGraphicsPipeline::create("VulkanSimpleGraphicsPipeline",
+															  m_Device->logical(), pipelineInfo);
 	}
 
 	void VulkanSimpleRenderPass::allocateCommandBuffers() {
-		m_CommandPool->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, MAX_SWAPCHAIN_IMAGE_COUNT, m_VkCommandBuffers);
+		m_Swapchain->device()->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, MAX_SWAPCHAIN_IMAGE_COUNT, m_VkCommandBuffers);
 	}
 
 	void VulkanSimpleRenderPass::createVertexBuffer() {
-		VulkanDevice& device = m_Swapchain.device();
-		m_VertexBuffer = new VulkanBuffer(device);
 
-		uint32_t queueFamilies[] = {device.graphicsQueue().family, device.transferQueue().family};
+		m_VertexBuffer = VulkanBuffer::createVertexBuffer();
 
-		const ArrayList<float>& cubeVertexData = getCubeVertexData();
-		const size_t vertexDataSize = cubeVertexData.size() * sizeof(float);
-
-		VulkanBufferAllocInfo allocInfo = {};
-		allocInfo.bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		allocInfo.bufferInfo.queueFamilyIndexCount = 1;
-		allocInfo.bufferInfo.pQueueFamilyIndices = queueFamilies;
-		allocInfo.bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		allocInfo.bufferInfo.size = vertexDataSize;
-		allocInfo.dataInfo.data = cubeVertexData.data();
-		allocInfo.dataInfo.commandPool = m_CommandPool;
-
-		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		const ArrayList<float>& vertices = getCubeVertexData();
+		
+		Buffer::AllocInfo allocInfo = {};
+		allocInfo.size = vertices.size() * sizeof(float);
+		allocInfo.data = vertices.data();
 
 		m_VertexBuffer->allocate(allocInfo);
-
-		float vertices[288];
-		m_VertexBuffer->readData(vertices, 288 * sizeof(float));
-
-		Vector3 vertex0 = Vector3(vertices[0], vertices[1], vertices[2]);
 	}
 
 	void VulkanSimpleRenderPass::createMaterials() {
@@ -511,24 +486,26 @@ namespace milo {
 				};
 
 		for(uint32_t i = 0;i < m_Materials.size();++i) {
+
 			const String& imageFile = imageFiles[i % imageFiles.size()];
-
 			Log::info("Loading texture {}...", imageFile);
+			Image* image = Image::createImage(imageFile, PixelFormat::RGBA8);
 
-			Image* image = ImageFactory::createImage(imageFile, PixelFormat::RGBA8);
+			VulkanTexture2D::CreateInfo createInfo = {};
+			createInfo.imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+			createInfo.viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 
-			auto texture = new VulkanTexture(m_Swapchain.device());
+			auto texture = new VulkanTexture2D(createInfo);
 			texture->vkSampler(m_Samplers->get(samplerInfo));
 
-			texture->generateMipmaps();
-
-			VulkanTextureAllocInfo allocInfo = {};
-			allocInfo.imageInfo.extent = {image->width(), image->height(), 1};
-			allocInfo.imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-			allocInfo.imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			Texture2D::AllocInfo allocInfo = {};
+			allocInfo.width = image->width();
+			allocInfo.height = image->height();
+			allocInfo.format = image->format();
+			allocInfo.pixels = image->pixels();
 
 			texture->allocate(allocInfo);
-			texture->pixels(*image);
+			texture->generateMipmaps();
 
 			m_Materials[i].color = colors[i % colors.size()];
 			m_Materials[i].texture = texture;
@@ -538,7 +515,7 @@ namespace milo {
 	}
 
 	void VulkanSimpleRenderPass::createSamplersMap() {
-		m_Samplers = new VulkanSamplerMap(m_Swapchain.device());
+		m_Samplers = new VulkanSamplerMap(m_Device);
 	}
 
 	static const ArrayList<float> CUBE_VERTEX_DATA = {

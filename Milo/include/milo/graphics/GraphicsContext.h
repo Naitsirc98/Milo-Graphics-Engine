@@ -1,22 +1,20 @@
 #pragma once
 
 #include "milo/common/Common.h"
-#include "milo/graphics/rendering/GraphicsPresenter.h"
 #include "milo/logging/Log.h"
+#include "milo/graphics/rendering/GraphicsPresenter.h"
 
 namespace milo {
 
 	class Window;
 
-	using Handle = void*;
-
 	class GraphicsContext {
 		friend class Graphics;
 	public:
 		virtual ~GraphicsContext() = default;
-		[[nodiscard]] virtual Handle handle() const = 0;
-		virtual GraphicsPresenter& presenter() const = 0;
+		 virtual Handle handle() const = 0;
+		 virtual GraphicsPresenter* presenter() const = 0;
 	protected:
-		virtual void init(Window& mainWindow) = 0;
+		virtual void init(Window* mainWindow) = 0;
 	};
 }

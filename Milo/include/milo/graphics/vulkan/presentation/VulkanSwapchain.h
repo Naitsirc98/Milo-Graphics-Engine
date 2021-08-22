@@ -1,7 +1,7 @@
 #pragma once
 
 #include "VulkanWindowSurface.h"
-#include "milo/graphics/vulkan/images/VulkanTexture.h"
+#include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
 
 namespace milo {
 
@@ -17,7 +17,7 @@ namespace milo {
 	class VulkanSwapchain {
 		friend class VulkanContext;
 	private:
-		VulkanContext& m_Context;
+		VulkanDevice* m_Device;
 		VkSwapchainKHR m_VkSwapchain = nullptr;
 		VkPresentModeKHR m_PresentMode = VK_PRESENT_MODE_FIFO_KHR;
 		VkFormat m_Format = VK_FORMAT_MAX_ENUM;
@@ -26,16 +26,15 @@ namespace milo {
 		uint32_t m_ImageCount = 0;
 		ArrayList<SwapchainResetCallback> m_OnRecreateCallbacks;
 	public:
-		explicit VulkanSwapchain(VulkanContext& context);
+		explicit VulkanSwapchain(VulkanDevice* device);
 		~VulkanSwapchain();
-		[[nodiscard]] VulkanContext& context() const;
-		[[nodiscard]] VulkanDevice& device() const;
-		[[nodiscard]] VkSwapchainKHR vkSwapchain() const;
-		[[nodiscard]] VkPresentModeKHR presentMode() const;
-		[[nodiscard]] VkFormat format() const;
-		[[nodiscard]] const VkExtent2D& extent() const;
-		[[nodiscard]] const VulkanSwapchainImage* images() const;
-		[[nodiscard]] uint32_t imageCount() const;
+		VulkanDevice* device() const;
+		VkSwapchainKHR vkSwapchain() const;
+		VkPresentModeKHR presentMode() const;
+		VkFormat format() const;
+		const VkExtent2D& extent() const;
+		const VulkanSwapchainImage* images() const;
+		uint32_t imageCount() const;
 		void addSwapchainRecreateCallback(SwapchainResetCallback callback);
 		void recreate();
 	private:

@@ -4,14 +4,14 @@
 
 namespace milo {
 
-	VulkanSwapchain::VulkanSwapchain(VulkanContext& context) : m_Context(context) {
+	VulkanSwapchain::VulkanSwapchain(VulkanDevice* device) : m_Device(device) {
 
 		create();
 
-		Size lastWindowSize = Window::get().size();
+		Size lastWindowSize = Window::get()->size();
 
 		EventSystem::addEventCallback(EventType::WindowResize, [&](const Event& e) {
-			const Size& size = Window::get().size();
+			const Size& size = Window::get()->size();
 			if(size == lastWindowSize || size.aspect() == 0.0f) return;
 			recreate();
 			lastWindowSize = size;
@@ -23,12 +23,8 @@ namespace milo {
 		m_OnRecreateCallbacks.clear();
 	}
 
-	VulkanContext& VulkanSwapchain::context() const {
-		return m_Context;
-	}
-
-	VulkanDevice& VulkanSwapchain::device() const {
-		return m_Context.device();
+	VulkanDevice* VulkanSwapchain::device() const {
+		return m_Device;
 	}
 
 	VkSwapchainKHR VulkanSwapchain::vkSwapchain() const {
@@ -66,7 +62,9 @@ namespace milo {
 
 	void VulkanSwapchain::createSwapchain() {
 
-		VulkanWindowSurfaceDetails surfaceDetails(m_Context.device().pdevice(), m_Context.windowSurface());
+		VulkanWindowSurface* surface = m_Device->context()->windowSurface();
+
+		VulkanWindowSurfaceDetails surfaceDetails(m_Device->physical(), surface);
 
 		VkSurfaceCapabilitiesKHR capabilities = surfaceDetails.capabilities();
 		VkSurfaceFormatKHR format = surfaceDetails.getBestSurfaceFormat();
@@ -76,7 +74,7 @@ namespace milo {
 
 		VkSwapchainCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = m_Context.windowSurface().vkSurface();
+		createInfo.surface = surface->vkSurface();
 
 		// Image settings
 		createInfo.minImageCount = imageCount;
@@ -86,12 +84,12 @@ namespace milo {
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		const VulkanQueue& graphicsQueue = m_Context.device().graphicsQueue();
-		const VulkanQueue& presentationQueue = m_Context.device().presentationQueue();
+		VulkanQueue* graphicsQueue = m_Device->graphicsQueue();
+		VulkanQueue* presentationQueue = m_Device->presentationQueue();
 
-		const uint32_t queueFamilies[2] = {presentationQueue.family, graphicsQueue.family};
+		const uint32_t queueFamilies[2] = {presentationQueue->family(), graphicsQueue->family()};
 
-		if(graphicsQueue != presentationQueue) {
+		if(graphicsQueue->family() != presentationQueue->family()) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			createInfo.queueFamilyIndexCount = 2;
 		} else {
@@ -107,7 +105,7 @@ namespace milo {
 
 		createInfo.oldSwapchain = m_VkSwapchain;
 
-		VK_CALL(vkCreateSwapchainKHR(m_Context.device().ldevice(), &createInfo, nullptr, &m_VkSwapchain));
+		VK_CALL(vkCreateSwapchainKHR(m_Device->logical(), &createInfo, nullptr, &m_VkSwapchain));
 
 		m_Format = format.format;
 		m_Extent = extent;
@@ -116,19 +114,19 @@ namespace milo {
 
 	void VulkanSwapchain::destroy() {
 
-		device().awaitTermination();
+		m_Device->awaitTermination();
 
 		for(uint32_t i = 0;i < m_ImageCount;++i) {
 			destroySwapchainImage(m_Images[i]);
 		}
 
-		vkDestroySwapchainKHR(m_Context.device().ldevice(), m_VkSwapchain, nullptr);
+		vkDestroySwapchainKHR(m_Device->logical(), m_VkSwapchain, nullptr);
 		m_VkSwapchain = VK_NULL_HANDLE;
 	}
 
 	void VulkanSwapchain::recreate() {
 #ifdef _DEBUG
-		Size size = Window::get().size();
+		Size size = Window::get()->size();
 		Log::debug("Recreating Swapchain (Size = {} x {})", size.width, size.height);
 		float startMillis = Time::millis();
 #endif
@@ -142,7 +140,7 @@ namespace milo {
 
 	void VulkanSwapchain::getSwapchainImages() {
 		VkImage images[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
-		vkGetSwapchainImagesKHR(m_Context.device().ldevice(), m_VkSwapchain, &m_ImageCount, images);
+		vkGetSwapchainImagesKHR(m_Device->logical(), m_VkSwapchain, &m_ImageCount, images);
 
 		for(uint32_t i = 0;i < m_ImageCount;++i) {
 			createSwapchainImage(i, m_Images[i], images[i]);
@@ -164,12 +162,12 @@ namespace milo {
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
 
-		VK_CALL(vkCreateImageView(m_Context.device().ldevice(), &viewInfo, nullptr, &image.vkImageView));
+		VK_CALL(vkCreateImageView(m_Device->logical(), &viewInfo, nullptr, &image.vkImageView));
 		image.vkImageViewInfo = viewInfo;
 	}
 
 	void VulkanSwapchain::destroySwapchainImage(VulkanSwapchainImage& image) {
-		vkDestroyImageView(m_Context.device().ldevice(), image.vkImageView, nullptr);
+		vkDestroyImageView(m_Device->logical(), image.vkImageView, nullptr);
 		image.vkImageView = VK_NULL_HANDLE;
 		image.vkImage = VK_NULL_HANDLE;
 		image.index = 0;

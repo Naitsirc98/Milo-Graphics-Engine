@@ -17,9 +17,9 @@ namespace milo {
 		bool operator==(const Tag& rhs) const;
 		bool operator!=(const Tag& rhs) const;
 
-		[[nodiscard]] const char* value() const;
-		[[nodiscard]] String str() const;
-		[[nodiscard]] size_t hash() const;
+		 const char* value() const;
+		 String str() const;
+		 size_t hash() const;
 	};
 
 	template<>

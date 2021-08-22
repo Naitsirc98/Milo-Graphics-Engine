@@ -6,6 +6,7 @@ namespace milo {
 
 	enum class PixelFormat {
 		Undefined,
+
 		R8,
 		R8I,
 		R8UI,
@@ -81,7 +82,7 @@ namespace milo {
 		uint32_t channels;
 		uint32_t channelSize;
 		FormatType dataType;
-		[[nodiscard]] constexpr uint32_t size() const noexcept {return channels * channelSize;}
+		constexpr uint32_t size() const noexcept {return channels * channelSize;}
 	};
 
 	class PixelFormats {

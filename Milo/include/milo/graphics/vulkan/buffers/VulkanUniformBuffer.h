@@ -11,8 +11,9 @@ namespace milo {
 		uint32_t m_MinAlignment;
 		uint32_t m_ElementSize;
 	public:
-		VulkanUniformBuffer(VulkanDevice& device) : m_Buffer(new VulkanBuffer(device)) {
-			m_MinAlignment = m_Buffer->device().pDeviceInfo().uniformBufferAlignment();
+		VulkanUniformBuffer() {
+			m_Buffer = VulkanBuffer::createUniformBuffer();
+			m_MinAlignment = m_Buffer->device()->info().uniformBufferAlignment();
 			m_ElementSize = roundUp2((uint32_t)sizeof(T), m_MinAlignment);
 		}
 
@@ -21,34 +22,21 @@ namespace milo {
 		}
 
 		void allocate(uint32_t numElements) {
-
-			uint32_t queueFamilies = {device().graphicsQueue().family};
-
-			VulkanBufferAllocInfo allocInfo = {};
-			allocInfo.bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			allocInfo.bufferInfo.size = m_ElementSize * numElements;
-			allocInfo.bufferInfo.pQueueFamilyIndices = &queueFamilies;
-			allocInfo.bufferInfo.queueFamilyIndexCount = 1;
-			allocInfo.bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
+			Buffer::AllocInfo allocInfo = {};
+			allocInfo.size = numElements * m_ElementSize;
 			m_Buffer->allocate(allocInfo);
 		}
 
 		void update(uint32_t elementIndex, const T& value) {
-			VulkanMappedMemory mappedMemory = map();
-			mappedMemory.set(&value, elementIndex * m_ElementSize, sizeof(T));
-		}
-
-		inline VulkanMappedMemory map(uint64_t size = UINT64_MAX) {
-			return m_Buffer->map(size);
+			byte_t* mappedMemory = (byte_t*)m_Buffer->map();
+			memcpy(mappedMemory + elementIndex * m_ElementSize, &value, sizeof(T));
 		}
 
 		inline VulkanBuffer& buffer() const {
 			return *m_Buffer;
 		}
 
-		inline VulkanDevice& device() const {
+		inline VulkanDevice* device() const {
 			return m_Buffer->device();
 		}
 
@@ -70,6 +58,11 @@ namespace milo {
 
 		inline uint32_t numElements() const {
 			return size() / elementSize();
+		}
+
+	public:
+		static VulkanUniformBuffer<T>* create() {
+			return new VulkanUniformBuffer<T>();
 		}
 	};
 

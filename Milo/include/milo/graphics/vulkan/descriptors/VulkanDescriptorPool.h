@@ -14,7 +14,7 @@ namespace milo {
 			VkDescriptorPoolCreateFlags flags = 0;
 		};
 	private:
-		VulkanDevice& m_Device;
+		VulkanDevice* m_Device;
 		VkDescriptorSetLayout m_VkDescriptorSetLayout = VK_NULL_HANDLE;
 		VkDescriptorPool m_VkDescriptorPool = VK_NULL_HANDLE;
 		VkDescriptorSet* m_DescriptorSets = nullptr;
@@ -22,9 +22,9 @@ namespace milo {
 		size_t m_Capacity;
 		size_t m_Size = 0;
 	public:
-		VulkanDescriptorPool(VulkanDevice& device, const VulkanDescriptorPool::CreateInfo& createInfo);
+		VulkanDescriptorPool(VulkanDevice* device, const VulkanDescriptorPool::CreateInfo& createInfo);
 		~VulkanDescriptorPool();
-		VulkanDevice& device() const;
+		VulkanDevice* device() const;
 		VkDescriptorPool vkDescriptorPool() const;
 		size_t size() const;
 		size_t capacity() const;

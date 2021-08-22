@@ -29,7 +29,32 @@ namespace milo {
 	};
 
 	namespace mvk {
-		VkImageMemoryBarrier vkImageMemoryBarrier(VkImage image = VK_NULL_HANDLE, VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout newLayout = VK_IMAGE_LAYOUT_UNDEFINED) noexcept;
+
+		namespace ImageMemoryBarrier {
+			VkImageMemoryBarrier create(VkImage image = VK_NULL_HANDLE,
+										VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+										VkImageLayout newLayout = VK_IMAGE_LAYOUT_UNDEFINED) noexcept;
+		}
+
+		namespace ImageCreateInfo {
+			VkImageCreateInfo create() noexcept;
+			VkImageCreateInfo colorAttachment() noexcept;
+			VkImageCreateInfo depthStencilAttachment() noexcept;
+		}
+
+		namespace ImageViewCreateInfo {
+			VkImageViewCreateInfo create(VkImage image = VK_NULL_HANDLE, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT, uint32_t levelCount = 1) noexcept;
+			VkImageViewCreateInfo colorAttachment(VkImage image = VK_NULL_HANDLE, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT, uint32_t levelCount = 1) noexcept;
+			VkImageViewCreateInfo depthStencilAttachment(VkImage image = VK_NULL_HANDLE, VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT, uint32_t levelCount = 1) noexcept;
+		}
+
+		namespace SamplerCreateInfo {
+			VkSamplerCreateInfo create() noexcept;
+		}
+
+		namespace BufferCreateInfo {
+			VkBufferCreateInfo create(VkBufferUsageFlags usage = 0) noexcept;
+		}
 	}
 }
 

@@ -2,36 +2,45 @@
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/VulkanFormats.h"
 #include <algorithm>
+#include <utility>
 
 namespace milo {
 
-	void VulkanQueue::awaitTermination() const {
-		device->awaitTermination(vkQueue);
+	void VulkanQueue::submit(uint32_t submitCount, VkSubmitInfo* submitInfos, VkFence fence) {
+		VK_CALL(vkQueueSubmit(m_VkQueue, submitCount, submitInfos, fence));
 	}
 
-	VulkanDevice::VulkanDevice(VulkanContext& context) : m_Context(context) {
+	void VulkanQueue::awaitTermination() {
+		m_Device->awaitTermination(m_VkQueue);
+	}
+
+	// =====
+
+	VulkanDevice::VulkanDevice(VulkanContext* context) : m_Context(context) {
 	}
 
 	VulkanDevice::~VulkanDevice() {
 		awaitTermination();
 
+		DELETE_PTR(m_GraphicsCommandPool);
+		DELETE_PTR(m_ComputeCommandPool);
 		DELETE_PTR(m_TransferCommandPool);
 
-		m_GraphicsQueue.vkQueue = VK_NULL_HANDLE;
-		m_ComputeQueue.vkQueue = VK_NULL_HANDLE;
-		m_TransferQueue.vkQueue = VK_NULL_HANDLE;
-		m_PresentationQueue.vkQueue = VK_NULL_HANDLE;
-
-		vkDestroyDevice(m_Ldevice, nullptr);
-		m_Ldevice = VK_NULL_HANDLE;
-		m_Pdevice = VK_NULL_HANDLE;
+		vkDestroyDevice(m_Logical, nullptr);
+		m_Logical = VK_NULL_HANDLE;
+		m_Physical = VK_NULL_HANDLE;
 	}
 
 	void VulkanDevice::init(const VulkanDevice::Info& info) {
 
-		m_Pdevice = info.physicalDevice;
+		m_Physical = info.physicalDevice;
 
-		VulkanPhysicalDeviceInfo physicalDeviceInfo(m_Pdevice);
+		m_GraphicsQueue.init(this, "GraphicsQueue", VK_QUEUE_GRAPHICS_BIT);
+		m_ComputeQueue.init(this, "ComputeQueue", VK_QUEUE_COMPUTE_BIT);
+		m_TransferQueue.init(this, "TransferQueue", VK_QUEUE_TRANSFER_BIT);
+		m_PresentationQueue.init(this, "PresentationQueue", VK_QUEUE_GRAPHICS_BIT);
+
+		VulkanPhysicalDeviceInfo physicalDeviceInfo(m_Physical);
 		VkPhysicalDeviceFeatures features = physicalDeviceInfo.features();
 		ArrayList<VkDeviceQueueCreateInfo> queueCreateInfos = inferQueueCreateInfos(info);
 
@@ -45,59 +54,78 @@ namespace milo {
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		createInfo.queueCreateInfoCount = queueCreateInfos.size();
 
-		VK_CALL(vkCreateDevice(m_Pdevice, &createInfo, nullptr, &m_Ldevice));
+		VK_CALL(vkCreateDevice(m_Physical, &createInfo, nullptr, &m_Logical));
 
 		getQueues();
 
-		m_TransferCommandPool = new VulkanCommandPool(m_TransferQueue);
+		m_GraphicsCommandPool = new VulkanCommandPool(&m_GraphicsQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		m_ComputeCommandPool = new VulkanCommandPool(&m_ComputeQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		m_TransferCommandPool = new VulkanCommandPool(&m_TransferQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 	}
 
 	void VulkanDevice::awaitTermination() {
-		vkDeviceWaitIdle(m_Ldevice);
+		vkDeviceWaitIdle(m_Logical);
 	}
 
 	void VulkanDevice::awaitTermination(VkQueue queue) {
 		vkQueueWaitIdle(queue);
 	}
 
-	VulkanContext& VulkanDevice::context() const {
+	VulkanContext* VulkanDevice::context() const {
 		return m_Context;
 	}
 
-	VkPhysicalDevice VulkanDevice::pdevice() const {
-		return m_Pdevice;
+	VkPhysicalDevice VulkanDevice::physical() const {
+		return m_Physical;
 	}
 
-	VkDevice VulkanDevice::ldevice() const {
-		return m_Ldevice;
+	VkDevice VulkanDevice::logical() const {
+		return m_Logical;
 	}
 
-	const VulkanQueue& VulkanDevice::graphicsQueue() const {
-		return m_GraphicsQueue;
+	VulkanQueue* VulkanDevice::graphicsQueue() {
+		return &m_GraphicsQueue;
 	}
 
-	const VulkanQueue& VulkanDevice::computeQueue() const {
-		return m_ComputeQueue;
+	VulkanQueue* VulkanDevice::computeQueue() {
+		return &m_ComputeQueue;
 	}
 
-	const VulkanQueue& VulkanDevice::transferQueue() const {
-		return m_TransferQueue;
+	VulkanQueue* VulkanDevice::transferQueue() {
+		return &m_TransferQueue;
 	}
 
-	const VulkanQueue& VulkanDevice::presentationQueue() const {
-		return m_PresentationQueue;
+	VulkanQueue* VulkanDevice::presentationQueue() {
+		return &m_PresentationQueue;
 	}
 
-	VulkanPhysicalDeviceInfo VulkanDevice::pDeviceInfo() const {
-		return VulkanPhysicalDeviceInfo(m_Pdevice);
+	VulkanQueue* VulkanDevice::queue(VkQueueFlags type) {
+		switch(type) {
+			case VK_QUEUE_GRAPHICS_BIT: return &m_GraphicsQueue;
+			case VK_QUEUE_COMPUTE_BIT: return &m_ComputeQueue;
+			case VK_QUEUE_TRANSFER_BIT: return &m_TransferQueue;
+		}
+		throw MILO_RUNTIME_EXCEPTION(str("Unsupported queue type ") + str(type));
+	}
+
+	VulkanPhysicalDeviceInfo VulkanDevice::info() const {
+		return VulkanPhysicalDeviceInfo(m_Physical);
 	}
 
 	String VulkanDevice::name() const {
-		return pDeviceInfo().properties().deviceName;
+		return info().properties().deviceName;
 	}
 
 	VkFormat VulkanDevice::depthFormat() const {
-		return VulkanFormats::findDepthFormat(m_Pdevice);
+		return VulkanFormats::findDepthFormat(m_Physical);
+	}
+
+	VulkanCommandPool* VulkanDevice::graphicsCommandPool() const {
+		return m_GraphicsCommandPool;
+	}
+
+	VulkanCommandPool* VulkanDevice::computeCommandPool() const {
+		return m_ComputeCommandPool;
 	}
 
 	VulkanCommandPool* VulkanDevice::transferCommandPool() const {
@@ -177,6 +205,7 @@ namespace milo {
 	}
 
 	ArrayList<VkDeviceQueueCreateInfo> VulkanDevice::inferQueueCreateInfos(const VulkanDevice::Info &info) {
+
 		ArrayList<VkQueueFamilyProperties> queueFamilies = VulkanPhysicalDeviceInfo(info.physicalDevice).queueFamilyProperties();
 		ArrayList<VkDeviceQueueCreateInfo> queues;
 		queues.reserve(4);
@@ -190,8 +219,8 @@ namespace milo {
 	}
 
 	void VulkanDevice::tryGetQueue(VkQueueFlagBits queueType, const VulkanDevice::Info &info,
-										   const ArrayList<VkQueueFamilyProperties> &queueFamilies,
-										   ArrayList<VkDeviceQueueCreateInfo> &queues) {
+								   const ArrayList<VkQueueFamilyProperties> &queueFamilies,
+								   ArrayList<VkDeviceQueueCreateInfo> &queues) {
 
 		uint32_t bestQueueFamily = findBestQueueFamilyOf(queueType, queueFamilies);
 
@@ -199,29 +228,9 @@ namespace milo {
 			throw MILO_RUNTIME_EXCEPTION(str("Device has no queueFamilies supporting queue type ") + str(queueType));
 		}
 
-		VulkanQueue* queue;
-
-		switch(queueType) {
-			case VK_QUEUE_GRAPHICS_BIT:
-				queue = &m_GraphicsQueue;
-				queue->name = "GraphicsQueue";
-				queue->type = VK_QUEUE_GRAPHICS_BIT;
-				break;
-			case VK_QUEUE_COMPUTE_BIT:
-				queue = &m_ComputeQueue;
-				queue->name = "ComputeQueue";
-				queue->type = VK_QUEUE_COMPUTE_BIT;
-				break;
-			case VK_QUEUE_TRANSFER_BIT:
-				queue = &m_TransferQueue;
-				queue->name = "TransferQueue";
-				queue->type = VK_QUEUE_TRANSFER_BIT;
-				break;
-		}
-
-		queue->device = this;
-		queue->family = bestQueueFamily;
-		queue->index = 0;
+		VulkanQueue* queue = this->queue(queueType);
+		queue->m_Family = bestQueueFamily;
+		queue->m_Index = 0;
 
 		const auto alreadyFound = std::find_if(queues.begin(), queues.end(), [&](const auto& queueInfo) {
 			return queueInfo.queueFamilyIndex == bestQueueFamily;
@@ -241,7 +250,7 @@ namespace milo {
 											   const ArrayList<VkQueueFamilyProperties> &queueFamilies,
 											   ArrayList<VkDeviceQueueCreateInfo> &queues) {
 
-		VkSurfaceKHR surface = m_Context.windowSurface().vkSurface();
+		VkSurfaceKHR surface = m_Context->windowSurface()->vkSurface();
 
 		uint32_t bestQueueFamily = UINT32_MAX;
 		uint32_t numQueues = UINT32_MAX;
@@ -266,11 +275,8 @@ namespace milo {
 			throw MILO_RUNTIME_EXCEPTION("Device has no queueFamilies supporting a presentation capable queue");
 		}
 
-		m_PresentationQueue.name = "PresentationQueue";
-		m_PresentationQueue.type = VK_QUEUE_GRAPHICS_BIT;
-		m_PresentationQueue.device = this;
-		m_PresentationQueue.family = bestQueueFamily;
-		m_PresentationQueue.index = 0;
+		m_PresentationQueue.m_Family = bestQueueFamily;
+		m_PresentationQueue.m_Index = 0;
 
 		const auto alreadyFound = std::find_if(queues.begin(), queues.end(), [&](const auto& queueInfo) {
 			return queueInfo.queueFamilyIndex == bestQueueFamily;
@@ -287,10 +293,10 @@ namespace milo {
 	}
 
 	void VulkanDevice::getQueues() {
-		vkGetDeviceQueue(m_Ldevice, m_GraphicsQueue.family, m_GraphicsQueue.index, &m_GraphicsQueue.vkQueue);
-		vkGetDeviceQueue(m_Ldevice, m_TransferQueue.family, m_TransferQueue.index, &m_TransferQueue.vkQueue);
-		vkGetDeviceQueue(m_Ldevice, m_ComputeQueue.family, m_ComputeQueue.index, &m_ComputeQueue.vkQueue);
-		vkGetDeviceQueue(m_Ldevice, m_PresentationQueue.family, m_PresentationQueue.index, &m_PresentationQueue.vkQueue);
+		vkGetDeviceQueue(m_Logical, m_GraphicsQueue.m_Family, m_GraphicsQueue.m_Index, &m_GraphicsQueue.m_VkQueue);
+		vkGetDeviceQueue(m_Logical, m_TransferQueue.m_Family, m_TransferQueue.m_Index, &m_TransferQueue.m_VkQueue);
+		vkGetDeviceQueue(m_Logical, m_ComputeQueue.m_Family, m_ComputeQueue.m_Index, &m_ComputeQueue.m_VkQueue);
+		vkGetDeviceQueue(m_Logical, m_PresentationQueue.m_Family, m_PresentationQueue.m_Index, &m_PresentationQueue.m_VkQueue);
 	}
 
 	uint32_t VulkanDevice::findBestQueueFamilyOf(VkQueueFlagBits queueType, const ArrayList<VkQueueFamilyProperties> &queueFamilies) {
@@ -310,6 +316,14 @@ namespace milo {
 		}
 
 		return bestQueueFamily;
+	}
+
+	bool VulkanDevice::operator==(const VulkanDevice& rhs) const {
+		return m_Physical == rhs.m_Physical && m_Logical == rhs.m_Logical;
+	}
+
+	bool VulkanDevice::operator!=(const VulkanDevice& rhs) const {
+		return ! (rhs == *this);
 	}
 
 	VulkanPhysicalDeviceInfo::VulkanPhysicalDeviceInfo(VkPhysicalDevice physicalDevice) : physicalDevice(physicalDevice) {

@@ -15,13 +15,13 @@ namespace milo {
 	private:
 		Entity(EntityId id, Scene& scene);
 	public:
-		[[nodiscard]] EntityId id() const noexcept;
-		[[nodiscard]] Scene& scene() const noexcept;
-		[[nodiscard]] bool valid() const noexcept;
+		 EntityId id() const noexcept;
+		 Scene& scene() const noexcept;
+		 bool valid() const noexcept;
 		void destroy() noexcept;
 
 		template<typename T>
-		[[nodiscard]] bool hasComponent() const noexcept {
+		 bool hasComponent() const noexcept {
 			return getComponent<T>() != nullptr;
 		}
 

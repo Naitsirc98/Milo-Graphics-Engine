@@ -11,7 +11,7 @@ namespace milo {
 	public:
 		explicit VulkanDebugMessenger(VulkanContext* context);
 		~VulkanDebugMessenger();
-		[[nodiscard]] VkDebugUtilsMessengerEXT vkDebugUtilsMessenger() const;
+		 VkDebugUtilsMessengerEXT vkDebugUtilsMessenger() const;
 		static VkDebugUtilsMessengerCreateInfoEXT getDebugMessengerCreateInfo();
 	};
 }

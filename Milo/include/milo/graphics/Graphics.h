@@ -20,7 +20,7 @@ namespace milo {
 		static GraphicsContext* s_GraphicsContext;
 	public:
 		static GraphicsAPI graphicsAPI();
-		static GraphicsContext& graphicsContext();
+		static GraphicsContext* graphicsContext();
 	private:
 		static void init();
 		static void shutdown();

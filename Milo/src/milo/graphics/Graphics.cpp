@@ -10,11 +10,11 @@ namespace milo {
 		return s_GraphicsAPI;
 	}
 
-	GraphicsContext& Graphics::graphicsContext() {
+	GraphicsContext* Graphics::graphicsContext() {
 #ifdef _DEBUG
 		if(s_GraphicsContext == nullptr) throw MILO_RUNTIME_EXCEPTION("GraphicsContext has not been initialized!");
 #endif
-		return *s_GraphicsContext;
+		return s_GraphicsContext;
 	}
 
 	void Graphics::init() {

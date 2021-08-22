@@ -46,23 +46,23 @@ namespace milo {
 		return pixels;
 	}
 
-	Image* ImageFactory::createWhiteImage(PixelFormat format, uint32_t width, uint32_t height) {
+	Image* Image::createWhiteImage(PixelFormat format, uint32_t width, uint32_t height) {
 		return createImage(format, width, height, UINT32_MAX);
 	}
 
-	Image* ImageFactory::createBlackImage(PixelFormat format, uint32_t width, uint32_t height) {
+	Image* Image::createBlackImage(PixelFormat format, uint32_t width, uint32_t height) {
 		return createImage(format, width, height, 0);
 	}
 
-	Image* ImageFactory::createImage(PixelFormat format, uint32_t width, uint32_t height, uint32_t value) {
+	Image* Image::createImage(PixelFormat format, uint32_t width, uint32_t height, uint32_t value) {
 		return createImage(allocate(format, width, height, value), format, width, height);
 	}
 
-	Image* ImageFactory::createImage(void* pixels, PixelFormat format, uint32_t width, uint32_t height) {
+	Image* Image::createImage(void* pixels, PixelFormat format, uint32_t width, uint32_t height) {
 		return new Image(width, height, format, pixels, free);
 	}
 
-	Image* ImageFactory::createImage(const String &path, PixelFormat format, bool flipY) {
+	Image* Image::createImage(const String &path, PixelFormat format, bool flipY) {
 
 		int32_t width;
 		int32_t height;

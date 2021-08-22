@@ -15,7 +15,7 @@ namespace milo {
 		int32_t exitCode;
 		String message;
 
-		[[nodiscard]] inline bool success() const noexcept {return exitCode == MILO_SUCCESS;}
+		 inline bool success() const noexcept {return exitCode == MILO_SUCCESS;}
 	};
 
 	class MiloEngine {

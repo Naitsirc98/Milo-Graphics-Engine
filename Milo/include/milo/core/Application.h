@@ -19,8 +19,8 @@ namespace milo {
 	public:
 		explicit Application(const AppConfiguration& config);
 		virtual ~Application() = default;
-		[[nodiscard]] bool running() const;
-		[[nodiscard]] const AppConfiguration& configuration() const;
+		 bool running() const;
+		 const AppConfiguration& configuration() const;
 		virtual void onInit() {}
 		virtual void onStart() {}
 		virtual void onUpdate() {}

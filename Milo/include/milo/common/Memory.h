@@ -10,6 +10,13 @@
 #define DELETE_ARRAY(arr) {delete[] arr; arr = nullptr;}
 
 #ifdef _DEBUG
+#define DELETE_REF(ref) {if(ref.unique()) {delete ref.get(); ref.reset();} else { LOG_WARN(str("Reference ") + str(#ref) + " requested to be deleted, but there are still alive references to that object");} }
+#else
+#define DELETE_REF(ref) delete ref.get()
+#endif
+
+#ifdef _DEBUG
+
 
 void* operator new(size_t size);
 void* operator new[](size_t size);
@@ -19,17 +26,6 @@ void operator delete[](void* ptr);
 #endif
 
 namespace milo {
-
-	template<typename T>
-	using SharedPtr = std::shared_ptr<T>;
-	using std::make_shared;
-
-	template<typename T>
-	using UniquePtr = std::unique_ptr<T>;
-	using std::make_unique;
-
-	template<typename T>
-	using WeakPtr = std::weak_ptr<T>;
 
 	// TODO: make this thread safe
 	class MemoryTracker {

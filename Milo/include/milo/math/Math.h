@@ -43,7 +43,7 @@ namespace milo {
 		Size() : Size(0, 0) {}
 		Size(int32_t width, int32_t height) : width(width), height(height) {}
 
-		[[nodiscard]] inline float aspect() const noexcept {return height == 0 ? 0.0f : (float)width / (float)height;}
+		 inline float aspect() const noexcept {return height == 0 ? 0.0f : (float)width / (float)height;}
 
 		inline bool isZero() const noexcept {return width == 0 || height == 0;}
 

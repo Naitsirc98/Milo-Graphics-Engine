@@ -13,7 +13,7 @@
 
 namespace milo {
 
-	using ResourceHandle = size_t;
+	using Handle = uint64_t;
 
 	template<typename R, typename ...Args>
 	using Function = std::function<R(Args...)>;

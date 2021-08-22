@@ -1,4 +1,4 @@
-#include "milo/graphics/vulkan/images/VulkanSamplerMap.h"
+#include "milo/graphics/vulkan/textures/VulkanSamplerMap.h"
 #include <boost/container_hash/hash.hpp>
 
 namespace milo {
@@ -26,13 +26,13 @@ namespace milo {
 
 	const VkSamplerCreateInfo VulkanSamplerMap::DEFAULT_SAMPLER = createDefaultSamplerInfo();
 
-	VulkanSamplerMap::VulkanSamplerMap(VulkanDevice& device) : m_Device(device) {
-		m_Samplers.reserve(32);
+	VulkanSamplerMap::VulkanSamplerMap(VulkanDevice* device) : m_Device(device) {
+		m_Samplers.reserve(8);
 	}
 
 	VulkanSamplerMap::~VulkanSamplerMap() {
 		for(const auto& [hash, sampler] : m_Samplers) {
-			VK_CALLV(vkDestroySampler(m_Device.ldevice(), sampler, nullptr));
+			VK_CALLV(vkDestroySampler(m_Device->logical(), sampler, nullptr));
 		}
 	}
 
@@ -43,7 +43,7 @@ namespace milo {
 		if(m_Samplers.find(hash) != m_Samplers.end()) return m_Samplers[hash];
 
 		VkSampler vkSampler;
-		VK_CALL(vkCreateSampler(m_Device.ldevice(), &samplerInfo, nullptr, &vkSampler));
+		VK_CALL(vkCreateSampler(m_Device->logical(), &samplerInfo, nullptr, &vkSampler));
 
 		m_Samplers[hash] = vkSampler;
 		return vkSampler;

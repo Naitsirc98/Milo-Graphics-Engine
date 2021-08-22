@@ -1,18 +1,22 @@
 #include "milo/graphics/vulkan/commands/VulkanCommandPool.h"
 
+#include <utility>
+
 namespace milo {
 
-	VulkanCommandPool::VulkanCommandPool(const VulkanQueue& queue, VkCommandPoolCreateFlags flags) : m_Queue(queue), m_VkCommandPool(VK_NULL_HANDLE) {
+	VulkanCommandPool::VulkanCommandPool(VulkanQueue* queue, VkCommandPoolCreateFlags flags)
+		: m_Queue(queue), m_VkCommandPool(VK_NULL_HANDLE) {
+
 		VkCommandPoolCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		createInfo.queueFamilyIndex = m_Queue.family;
+		createInfo.queueFamilyIndex = m_Queue->family();
 		createInfo.flags = flags;
 
-		VK_CALL(vkCreateCommandPool(m_Queue.device->ldevice(), &createInfo, nullptr, &m_VkCommandPool));
+		VK_CALL(vkCreateCommandPool(m_Queue->device()->logical(), &createInfo, nullptr, &m_VkCommandPool));
 	}
 
 	VulkanCommandPool::~VulkanCommandPool() {
-		VK_CALLV(vkDestroyCommandPool(m_Queue.device->ldevice(), m_VkCommandPool, nullptr));
+		VK_CALLV(vkDestroyCommandPool(m_Queue->device()->logical(), m_VkCommandPool, nullptr));
 		m_VkCommandPool = VK_NULL_HANDLE;
 	}
 
@@ -20,7 +24,7 @@ namespace milo {
 		return m_VkCommandPool;
 	}
 
-	const VulkanQueue& VulkanCommandPool::queue() const {
+	VulkanQueue* VulkanCommandPool::queue() const {
 		return m_Queue;
 	}
 
@@ -32,11 +36,11 @@ namespace milo {
 		allocateInfo.level = level;
 		allocateInfo.commandBufferCount = count;
 
-		VK_CALL(vkAllocateCommandBuffers(m_Queue.device->ldevice(), &allocateInfo, commandBuffers));
+		VK_CALL(vkAllocateCommandBuffers(m_Queue->device()->logical(), &allocateInfo, commandBuffers));
 	}
 
 	void VulkanCommandPool::free(uint32_t count, VkCommandBuffer* commandBuffers) {
-		VK_CALLV(vkFreeCommandBuffers(m_Queue.device->ldevice(), m_VkCommandPool, count, commandBuffers));
+		VK_CALLV(vkFreeCommandBuffers(m_Queue->device()->logical(), m_VkCommandPool, count, commandBuffers));
 	}
 
 	void VulkanCommandPool::execute(const VulkanTask& task) {
@@ -67,7 +71,7 @@ namespace milo {
 
 		if(task.asynchronous) {
 
-			VK_CALL(vkQueueSubmit(m_Queue.vkQueue, 1, &submitInfo, task.fence));
+			VK_CALL(vkQueueSubmit(m_Queue->vkQueue(), 1, &submitInfo, task.fence));
 
 		} else {
 
@@ -79,19 +83,19 @@ namespace milo {
 				createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 				//createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-				VK_CALL(vkCreateFence(m_Queue.device->ldevice(), &createInfo, nullptr, &fence));
+				VK_CALL(vkCreateFence(m_Queue->device()->logical(), &createInfo, nullptr, &fence));
 				shouldDeleteFence = true;
 			}
 
-			VK_CALL(vkQueueSubmit(m_Queue.vkQueue, 1, &submitInfo, fence));
+			VK_CALL(vkQueueSubmit(m_Queue->vkQueue(), 1, &submitInfo, fence));
 
-			VK_CALL(vkWaitForFences(m_Queue.device->ldevice(), 1, &fence, VK_TRUE, UINT64_MAX));
+			VK_CALL(vkWaitForFences(m_Queue->device()->logical(), 1, &fence, VK_TRUE, UINT64_MAX));
 
 			if(shouldDeleteFence) {
-				VK_CALLV(vkDestroyFence(m_Queue.device->ldevice(), fence, nullptr));
+				VK_CALLV(vkDestroyFence(m_Queue->device()->logical(), fence, nullptr));
 			}
 
-			//VK_CALL(vkQueueWaitIdle(m_Queue.vkQueue));
+			//VK_CALL(vkQueueWaitIdle(m_Queue->vkQueue));
 		}
 
 		free(1, &commandBuffer);

@@ -1,5 +1,5 @@
 #include <milo/logging/Log.h>
-#include "milo/graphics/rendering/SPIRVCompiler.h"
+#include "milo/graphics/shaders/SPIRVCompiler.h"
 #include "milo/io/Files.h"
 
 namespace milo {

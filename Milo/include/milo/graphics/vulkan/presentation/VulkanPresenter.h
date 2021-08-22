@@ -2,7 +2,7 @@
 
 #include <milo/graphics/vulkan/rendering/VulkanSimpleRenderPass.h>
 #include "milo/graphics/rendering/GraphicsPresenter.h"
-#include "milo/graphics/vulkan/images/VulkanTexture.h"
+#include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
 #include "milo/graphics/vulkan/commands/VulkanCommandPool.h"
 #include "VulkanSwapchain.h"
 
@@ -12,9 +12,8 @@ namespace milo {
 		friend class GraphicsPresenter;
 		friend class VulkanContext;
 	private:
-		VulkanContext& m_Context;
-		VulkanDevice& m_Device;
-		VulkanSwapchain& m_Swapchain;
+		VulkanDevice* m_Device;
+		VulkanSwapchain* m_Swapchain;
 		// Queues
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VkQueue m_PresentationQueue = VK_NULL_HANDLE;
@@ -30,13 +29,13 @@ namespace milo {
 		// TMP
 		VulkanSimpleRenderPass* m_SimpleRenderPass = nullptr;
 	private:
-		explicit VulkanPresenter(VulkanContext& context);
-		~VulkanPresenter();
+		explicit VulkanPresenter(VulkanContext* context);
 	public:
+		~VulkanPresenter();
 		bool begin() override;
 		void end() override;
-		[[nodiscard]] uint32_t currentImageIndex() const;
-		[[nodiscard]] uint32_t maxImageCount() const;
+		uint32_t currentImageIndex() const;
+		uint32_t maxImageCount() const;
 	private:
 		void waitForPreviousFrameToComplete();
 		bool tryGetNextSwapchainImage();

@@ -4,17 +4,21 @@
 
 namespace milo {
 
-	VulkanWindowSurface::VulkanWindowSurface(VulkanContext& context, Window *window) : m_Context(context), m_Window(window) {
-		VK_CALL(glfwCreateWindowSurface(context.vkInstance(), window->handle(), nullptr, &m_VkSurface));
+	VulkanWindowSurface::VulkanWindowSurface(VulkanContext* context, Window* window) : m_Context(context), m_Window(window) {
+		VK_CALL(glfwCreateWindowSurface(context->vkInstance(), window->handle(), nullptr, &m_VkSurface));
 	}
 
 	VulkanWindowSurface::~VulkanWindowSurface() {
-		vkDestroySurfaceKHR(m_Context.vkInstance(), m_VkSurface, nullptr);
+		vkDestroySurfaceKHR(m_Context->vkInstance(), m_VkSurface, nullptr);
 		m_VkSurface = VK_NULL_HANDLE;
 		m_Window = nullptr;
 	}
 
-	Window *VulkanWindowSurface::window() const {
+	VulkanContext* VulkanWindowSurface::context() const {
+		return m_Context;
+	}
+
+	Window* VulkanWindowSurface::window() const {
 		return m_Window;
 	}
 
@@ -25,28 +29,28 @@ namespace milo {
 	// ======
 
 
-	VulkanWindowSurfaceDetails::VulkanWindowSurfaceDetails(VkPhysicalDevice d, VulkanWindowSurface& s) : physicalDevice(d), surface(s) {
+	VulkanWindowSurfaceDetails::VulkanWindowSurfaceDetails(VkPhysicalDevice d, VulkanWindowSurface* s) : physicalDevice(d), surface(s) {
 	}
 
 	inline VkSurfaceCapabilitiesKHR VulkanWindowSurfaceDetails::capabilities() const {
 		VkSurfaceCapabilitiesKHR capabilities;
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface.vkSurface(), &capabilities);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface->vkSurface(), &capabilities);
 		return capabilities;
 	}
 
 	inline ArrayList<VkSurfaceFormatKHR> VulkanWindowSurfaceDetails::formats() const {
 		uint32_t formatsCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface.vkSurface(), &formatsCount, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface->vkSurface(), &formatsCount, nullptr);
 		ArrayList<VkSurfaceFormatKHR> formats(formatsCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface.vkSurface(), &formatsCount, formats.data());
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface->vkSurface(), &formatsCount, formats.data());
 		return formats;
 	}
 
 	inline ArrayList<VkPresentModeKHR> VulkanWindowSurfaceDetails::presentModes() const {
 		uint32_t presentModesCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface.vkSurface(), &presentModesCount, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface->vkSurface(), &presentModesCount, nullptr);
 		ArrayList<VkPresentModeKHR> presentModes(presentModesCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface.vkSurface(), &presentModesCount, presentModes.data());
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface->vkSurface(), &presentModesCount, presentModes.data());
 		return presentModes;
 	}
 
@@ -75,7 +79,7 @@ namespace milo {
 			return capabilities.currentExtent; // Optimal
 		}
 
-		Size fbSize = surface.window()->size();
+		Size fbSize = surface->window()->size();
 		VkExtent2D actualExtent = {};
 		actualExtent.width = fbSize.width;
 		actualExtent.height = fbSize.height;

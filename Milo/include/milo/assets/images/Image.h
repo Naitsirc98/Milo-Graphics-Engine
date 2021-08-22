@@ -26,16 +26,11 @@ namespace milo {
 		inline PixelFormat format() const {return m_Format;}
 		inline const byte_t* pixels() const {return m_Pixels;}
 		inline void* pixels() {return m_Pixels;}
-	};
-
-	class ImageFactory {
 	public:
 		static Image* createWhiteImage(PixelFormat format, uint32_t width = 1, uint32_t height = 1);
 		static Image* createBlackImage(PixelFormat format, uint32_t width = 1, uint32_t height = 1);
 		static Image* createImage(const String& path, PixelFormat format, bool flipY = false);
 		static Image* createImage(void* pixels, PixelFormat format, uint32_t width = 1, uint32_t height = 1);
 		static Image* createImage(PixelFormat format, uint32_t width = 1, uint32_t height = 1,  uint32_t value = 0);
-	private:
-		ImageFactory() = delete;
 	};
 }
