@@ -4,7 +4,7 @@ namespace milo {
 
 	Scene* SceneManager::s_ActiveScene = nullptr;
 
-	Scene *SceneManager::activeScene() {
+	Scene* SceneManager::activeScene() {
 		return s_ActiveScene;
 	}
 

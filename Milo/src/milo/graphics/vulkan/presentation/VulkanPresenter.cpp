@@ -97,7 +97,7 @@ namespace milo {
 
 		VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-		VulkanSimpleRenderPass::ExecuteInfo executeInfo = {};
+		VulkanSimpleRenderPass::Input executeInfo = {};
 		executeInfo.currentFrame = m_CurrentFrame;
 		executeInfo.swapchainImageIndex = m_CurrentImageIndex;
 		executeInfo.waitSemaphores = &m_ImageAvailableSemaphore[m_CurrentFrame];

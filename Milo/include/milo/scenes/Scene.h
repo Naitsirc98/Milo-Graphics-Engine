@@ -8,6 +8,8 @@ namespace milo {
 	using ECSRegistry = entt::registry;
 	using EntityId = entt::entity;
 
+	const EntityId NULL_ENTITY = entt::null;
+
 	class Entity;
 
 	class Scene {
@@ -25,7 +27,7 @@ namespace milo {
 		bool isActiveScene() const;
 		Entity createEntity();
 		bool exists(EntityId entityId) const;
-		Optional<Entity> find(EntityId id) const;
+		Entity find(EntityId id) const;
 		void destroyEntity(EntityId entityId) noexcept;
 	private:
 		ECSRegistry& registry() noexcept;

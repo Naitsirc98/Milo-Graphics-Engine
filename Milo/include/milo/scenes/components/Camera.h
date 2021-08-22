@@ -35,7 +35,8 @@ namespace milo {
 		}
 
 		inline Matrix4 viewMatrix(const Vector3& position, const Vector3& rotation) const {
-			
+			// TODO
+			return Matrix4();
 		}
 	};
 }

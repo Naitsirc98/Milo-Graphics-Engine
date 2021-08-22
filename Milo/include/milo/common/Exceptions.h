@@ -3,6 +3,7 @@
 #include <exception>
 #include <stdexcept>
 #include <boost/stacktrace.hpp>
+#include <boost/exception/all.hpp>
 
 #define MILO_DETAILED_MESSAGE(message) milo::str(message).append("\n\tat ").append(__FILE__).append("(").append(milo::str(__LINE__)).append(")"))
 #define MILO_RUNTIME_EXCEPTION(message) RuntimeException(MILO_DETAILED_MESSAGE((message))
@@ -29,6 +30,13 @@ namespace milo {
 
 	inline StackTrace getStackTrace(size_t skip = 0, size_t maxDepth = 10) {
 		return boost::stacktrace::stacktrace(MILO_STACKTRACE_OFFSET + skip, maxDepth);
+	}
+
+	typedef boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace> traced;
+
+	template<typename E>
+	inline void doThrow(const E& e) {
+		throw boost::enable_error_info(e) << traced(getStackTrace());
 	}
 
 	template<>

@@ -29,9 +29,9 @@ namespace milo {
 		return m_Registry.valid(entityId);
 	}
 
-	Optional<Entity> Scene::find(EntityId id) const {
-		if(exists(id)) return Entity(id, const_cast<Scene &>(*this));
-		return {};
+	Entity Scene::find(EntityId id) const {
+		if(!exists(id)) throw MILO_RUNTIME_EXCEPTION(str("Entity ") + str((uint64_t)id) + " does not exists");
+		return Entity(id, const_cast<Scene&>(*this));
 	}
 
 	void Scene::destroyEntity(EntityId entityId) noexcept {
@@ -39,16 +39,26 @@ namespace milo {
 		m_Registry.destroy(entityId);
 	}
 
-	ECSRegistry &Scene::registry() noexcept {
+	ECSRegistry& Scene::registry() noexcept {
 		return m_Registry;
 	}
 
 	void Scene::update() {
-
+		auto nativeScripts = m_Registry.view<NativeScriptView>();
+		for(EntityId entity : nativeScripts) {
+			auto& nativeScriptView = m_Registry.get<NativeScriptView>(entity);
+			nativeScriptView.createIfNotExists(entity);
+			nativeScriptView.script->onUpdate(entity);
+		}
 	}
 
 	void Scene::lateUpdate() {
-
+		auto nativeScripts = m_Registry.view<NativeScriptView>();
+		for(EntityId entity : nativeScripts) {
+			auto& nativeScriptView = m_Registry.get<NativeScriptView>(entity);
+			nativeScriptView.createIfNotExists(entity);
+			nativeScriptView.script->onLateUpdate(entity);
+		}
 	}
 
 	void Scene::render() {

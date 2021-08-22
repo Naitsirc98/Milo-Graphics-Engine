@@ -2,8 +2,7 @@
 
 #include "milo/common/Common.h"
 #include "milo/scenes/Scene.h"
-#include "milo/scenes/components/Tag.h"
-#include "milo/scenes/components/Transform.h"
+#include "Components.h"
 
 namespace milo {
 
@@ -15,24 +14,29 @@ namespace milo {
 	private:
 		Entity(EntityId id, Scene& scene);
 	public:
-		 EntityId id() const noexcept;
-		 Scene& scene() const noexcept;
-		 bool valid() const noexcept;
+		EntityId id() const noexcept;
+		Scene& scene() const noexcept;
+		bool valid() const noexcept;
 		void destroy() noexcept;
 
 		template<typename T>
-		 bool hasComponent() const noexcept {
+		bool hasComponent() const noexcept {
 			return getComponent<T>() != nullptr;
 		}
 
 		template<typename T>
-		T* getComponent() const noexcept {
+		T& getComponent() const noexcept {
+			return m_Scene.m_Registry.get<T>(m_Id);
+		}
+
+		template<typename T>
+		T* tryGetComponent() const noexcept {
 			return m_Scene.m_Registry.try_get<T>(m_Id);
 		}
 
 		template<typename T, typename ...Args>
-		T* addComponent(Args&& ...args) {
-			return m_Scene.registry().get_or_emplace<T>(std::forward<>(args)...);
+		T& createComponent(Args&& ...args) {
+			return m_Scene.registry().emplace<T>(m_Id, std::forward<Args>(args)...);
 		}
 	};
 }

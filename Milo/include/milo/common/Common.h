@@ -29,4 +29,7 @@ namespace milo {
 
 	template<typename T>
 	using Optional = std::optional<T>;
+
+	using Color3 = Vector3;
+	using Color = Vector4;
 }
