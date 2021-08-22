@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "milo/events/EventSystem.h"
@@ -7,6 +8,7 @@ namespace milo {
 
 	class Input {
 		friend class MiloEngine;
+		friend class MiloSubSystemManager;
 	private:
 		Keyboard m_Keyboard;
 		Mouse m_Mouse;
@@ -27,12 +29,13 @@ namespace milo {
 		static bool isMouseButtonRepeated(MouseButton button);
 		static bool isMouseButtonClicked(MouseButton button);
 
-		static const Vector2f& getMousePosition();
-		static const Vector2f& getMouseScroll();
+		static const Vector2& getMousePosition();
+		static const Vector2& getMouseScroll();
 	private:
 		static Input* s_Instance;
-		static void initSystem();
-		static void shutdownSystem();
+	private:
+		static void init();
+		static void shutdown();
 		static void update();
 	};
 

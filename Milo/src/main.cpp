@@ -16,21 +16,20 @@ public:
 
 		struct MyScript : public NativeScript {
 
-			void onCreate(EntityId entityId) override {
-				Log::debug("OnCreate");
-			}
-
 			void onUpdate(EntityId entityId) override {
-				Log::debug("OnUpdate");
-			}
-
-			void onLateUpdate(EntityId entityId) override {
-				Log::debug("OnLateUpdate");
+				//Log::debug("OnUpdate");
 			}
 		};
 
 		NativeScriptView& script = entity.createComponent<NativeScriptView>();
 		script.bind<MyScript>();
+
+		Entity camera = scene->createEntity();
+		camera.createComponent<Camera>();
+		auto& camScript = camera.createComponent<NativeScriptView>();
+		camScript.bind<CameraController>();
+
+		scene->setMainCamera(camera.id());
 	}
 
 };

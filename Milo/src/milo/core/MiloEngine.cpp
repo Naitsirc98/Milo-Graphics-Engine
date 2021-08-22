@@ -3,6 +3,7 @@
 #include "milo/scenes/SceneManager.h"
 #include "milo/graphics/Window.h"
 #include "milo/graphics/Graphics.h"
+#include "milo/input/Input.h"
 
 namespace milo {
 
@@ -97,6 +98,8 @@ namespace milo {
 			lastUpdate = now;
 
 			EventSystem::update();
+
+			Input::update();
 
 			SceneManager::update();
 

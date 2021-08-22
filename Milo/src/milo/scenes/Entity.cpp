@@ -4,6 +4,9 @@
 namespace milo {
 
 	Entity::Entity(EntityId id, milo::Scene &scene) : m_Id(id), m_Scene(scene) {
+		if(valid() && !hasComponent<Transform>()) {
+			createComponent<Transform>();
+		}
 	}
 
 	EntityId Entity::id() const noexcept {
@@ -23,4 +26,11 @@ namespace milo {
 		m_Scene.destroyEntity(m_Id);
 	}
 
+	bool Entity::operator==(const Entity& rhs) const {
+		return m_Id == rhs.m_Id;
+	}
+
+	bool Entity::operator!=(const Entity& rhs) const {
+		return !(rhs == *this);
+	}
 }

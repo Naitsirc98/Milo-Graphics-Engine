@@ -25,7 +25,7 @@ namespace milo {
 	}
 
 	void SceneManager::init() {
-		// TODO: debug purposes
+		// TODO
 		s_ActiveScene = new Scene("Default Scene");
 	}
 

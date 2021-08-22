@@ -18,6 +18,7 @@ namespace milo {
 	private:
 		const String m_Name;
 		ECSRegistry m_Registry;
+		EntityId m_MainCameraEntity = NULL_ENTITY;
 	private:
 		explicit Scene(const String& name);
 		explicit Scene(String&& name);
@@ -29,6 +30,8 @@ namespace milo {
 		bool exists(EntityId entityId) const;
 		Entity find(EntityId id) const;
 		void destroyEntity(EntityId entityId) noexcept;
+		Entity cameraEntity() noexcept;
+		void setMainCamera(EntityId id) noexcept;
 	private:
 		ECSRegistry& registry() noexcept;
 	private:

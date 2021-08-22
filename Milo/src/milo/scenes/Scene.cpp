@@ -39,6 +39,14 @@ namespace milo {
 		m_Registry.destroy(entityId);
 	}
 
+	Entity Scene::cameraEntity() noexcept {
+		return Entity(m_MainCameraEntity, *this);
+	}
+
+	void Scene::setMainCamera(EntityId id) noexcept {
+		m_MainCameraEntity = id;
+	}
+
 	ECSRegistry& Scene::registry() noexcept {
 		return m_Registry;
 	}

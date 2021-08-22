@@ -3,6 +3,8 @@
 #include "milo/graphics/vulkan/VulkanDevice.h"
 #include "milo/graphics/Graphics.h"
 
+// TODO: DYNAMIC STATES!! (VIEWPORT)
+
 namespace milo {
 
 	struct VulkanShaderInfo {
