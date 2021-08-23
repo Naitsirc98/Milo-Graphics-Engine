@@ -12,6 +12,7 @@ namespace milo {
 
 		m_Device->awaitTermination();
 
+		DELETE_PTR(m_SamplerMap);
 		DELETE_PTR(m_Presenter);
 		DELETE_PTR(m_Allocator);
 		DELETE_PTR(m_Swapchain);
@@ -57,6 +58,10 @@ namespace milo {
 		return m_Presenter;
 	}
 
+	VulkanSamplerMap* VulkanContext::samplerMap() const {
+		return m_SamplerMap;
+	}
+
 	void VulkanContext::init(Window* mainWindow) {
 		Log::info("Initializing Vulkan Context...");
 		{
@@ -66,6 +71,7 @@ namespace milo {
 			createMainVulkanDevice();
 			createSwapchain();
 			createAllocator();
+			createSamplerMap();
 			createPresenter();
 		}
 		Log::info("Vulkan Context initialized");
@@ -131,6 +137,10 @@ namespace milo {
 
 	void VulkanContext::createPresenter() {
 		m_Presenter = new VulkanPresenter(this);
+	}
+
+	void VulkanContext::createSamplerMap() {
+		m_SamplerMap = new VulkanSamplerMap(m_Device);
 	}
 
 	VulkanContext* VulkanContext::s_Instance;

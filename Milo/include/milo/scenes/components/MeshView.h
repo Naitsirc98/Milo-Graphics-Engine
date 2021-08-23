@@ -1,22 +1,15 @@
 #pragma once
 
-#include "milo/common/Common.h"
+#include "milo/assets/meshes/Mesh.h"
+#include "milo/assets/materials/Material.h"
 
 namespace milo {
-
-	// TMP
-	struct Mesh {
-
-	};
-
-	struct Material {
-		Color color;
-	};
 
 	struct MeshView {
 
 		Mesh* mesh = nullptr;
 		Material* material = nullptr;
+		bool opaque = true;
 	};
 
 }

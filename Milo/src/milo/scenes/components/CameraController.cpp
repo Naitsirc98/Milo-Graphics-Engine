@@ -2,7 +2,6 @@
 #include "milo/scenes/components/CameraController.h"
 #include "milo/scenes/Entity.h"
 #include "milo/input/Input.h"
-#include "milo/logging/Log.h"
 #include "milo/graphics/Window.h"
 
 namespace milo {

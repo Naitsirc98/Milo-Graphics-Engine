@@ -6,3 +6,4 @@
 #include "milo/core/MiloEngine.h"
 #include "milo/scenes/Entity.h"
 #include "milo/scenes/SceneManager.h"
+#include "milo/assets/AssetManager.h"

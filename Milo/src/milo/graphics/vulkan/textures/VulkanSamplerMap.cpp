@@ -1,4 +1,5 @@
 #include "milo/graphics/vulkan/textures/VulkanSamplerMap.h"
+#include "milo/graphics/vulkan/VulkanContext.h"
 #include <boost/container_hash/hash.hpp>
 
 namespace milo {
@@ -49,7 +50,7 @@ namespace milo {
 		return vkSampler;
 	}
 
-	VkSampler VulkanSamplerMap::getDefault() {
+	VkSampler VulkanSamplerMap::getDefaultSampler() {
 		return get(DEFAULT_SAMPLER);
 	}
 
@@ -71,5 +72,9 @@ namespace milo {
 		boost::hash_combine(hash, value.maxLod);
 		boost::hash_combine(hash, value.mipLodBias);
 		return hash;
+	}
+
+	VulkanSamplerMap* VulkanSamplerMap::get() {
+		return VulkanContext::get()->samplerMap();
 	}
 }

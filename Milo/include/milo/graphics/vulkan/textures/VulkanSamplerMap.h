@@ -5,17 +5,21 @@
 namespace milo {
 
 	class VulkanSamplerMap {
+		friend class VulkanContext;
 	public:
 		static const VkSamplerCreateInfo DEFAULT_SAMPLER;
 	private:
 		VulkanDevice* m_Device;
 		HashMap<size_t, VkSampler> m_Samplers;
-	public:
+	private:
 		explicit VulkanSamplerMap(VulkanDevice* device);
 		~VulkanSamplerMap();
+	public:
 		VkSampler get(const VkSamplerCreateInfo& samplerInfo);
-		VkSampler getDefault();
+		VkSampler getDefaultSampler();
 	private:
 		static size_t hashOf(const VkSamplerCreateInfo& value) noexcept;
+	public:
+		static VulkanSamplerMap* get();
 	};
 }

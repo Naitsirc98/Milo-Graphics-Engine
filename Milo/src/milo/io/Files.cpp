@@ -21,8 +21,24 @@ namespace milo {
 		return std::filesystem::file_size(Path(filename));
 	}
 
+	bool Files::isAbsolute(const String& filename) {
+		return Path(filename).is_absolute();
+	}
+
 	bool Files::isDirectory(const String& path) {
 		return is_directory(Path(path));
+	}
+
+	String Files::extension(const String& filename) {
+		return Path(filename).extension().string();
+	}
+
+	String Files::parentOf(const String& filename) {
+		return Path(filename).parent_path().string();
+	}
+
+	String Files::append(const String& parent, const String& child) {
+		return parent + '/' + child;
 	}
 
 	ArrayList<String> Files::listFiles(const String& directory) {

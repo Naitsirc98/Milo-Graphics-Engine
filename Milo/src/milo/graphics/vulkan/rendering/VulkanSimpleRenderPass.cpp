@@ -2,7 +2,6 @@
 #include "milo/graphics/vulkan/rendering/VulkanSimpleRenderPass.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
-#include "milo/assets/images/Image.h"
 #include "milo/io/Files.h"
 
 namespace milo {
@@ -168,7 +167,6 @@ namespace milo {
 			DELETE_PTR(m_Material.texture);
 		}
 
-		DELETE_PTR(m_Samplers);
 		DELETE_PTR(m_VertexBuffer);
 
 		DELETE_PTR(m_CameraUniformBuffer);
@@ -471,26 +469,6 @@ namespace milo {
 	void VulkanSimpleRenderPass::createMaterials() {
 		static ArrayList<String> imageFiles = Files::listFiles("C:/Users/naits/Pictures/Google Earth VR");
 
-		createSamplersMap();
-
-		VkSamplerCreateInfo samplerInfo = {};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-		samplerInfo.maxAnisotropy = 16.0f;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.minLod = 0;
-		samplerInfo.maxLod = 1.0f;
-		samplerInfo.mipLodBias = 0;
-
 		Array<Vector4, 5> colors = {
 				Vector4(1.0f, 0.0f, 0.0f, 1.0f),
 				Vector4(0.0f, 1.0f, 0.0f, 1.0f),
@@ -503,14 +481,13 @@ namespace milo {
 
 			const String& imageFile = imageFiles[i % imageFiles.size()];
 			Log::info("Loading texture {}...", imageFile);
-			Image* image = Image::createImage(imageFile, PixelFormat::RGBA8);
+			Image* image = Image::loadImage(imageFile, PixelFormat::RGBA8);
 
 			VulkanTexture2D::CreateInfo createInfo = {};
 			createInfo.imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 			createInfo.viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 
 			auto texture = new VulkanTexture2D(createInfo);
-			texture->vkSampler(m_Samplers->get(samplerInfo));
 
 			Texture2D::AllocInfo allocInfo = {};
 			allocInfo.width = image->width();
@@ -526,10 +503,6 @@ namespace milo {
 
 			DELETE_PTR(image);
 		}
-	}
-
-	void VulkanSimpleRenderPass::createSamplersMap() {
-		m_Samplers = new VulkanSamplerMap(m_Device);
 	}
 
 	static const ArrayList<float> CUBE_VERTEX_DATA = {

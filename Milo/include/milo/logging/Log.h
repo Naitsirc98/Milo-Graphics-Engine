@@ -67,9 +67,10 @@ namespace milo {
 
 	private:
 		static void init();
+		static void shutdown();
 
 	private:
-		static std::shared_ptr<spdlog::logger> s_Logger;
+		static Shared<spdlog::logger> s_Logger;
 		static Level s_Level;
 	};
 

@@ -57,7 +57,6 @@ namespace milo {
 		VulkanUniformBuffer<Material>* m_MaterialUniformBuffer; // sizeof(MaterialUniformBuffer) * BATCH_SIZE
 		VulkanBuffer* m_VertexBuffer;
 		Array<Material, 4> m_Materials = {};
-		VulkanSamplerMap* m_Samplers;
 		Camera m_Camera = {};
 	public:
 		explicit VulkanSimpleRenderPass(VulkanSwapchain* swapchain);
@@ -86,6 +85,5 @@ namespace milo {
 		void allocateCommandBuffers();
 		void createVertexBuffer();
 		void createMaterials();
-		void createSamplersMap();
 	};
 }

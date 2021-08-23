@@ -16,16 +16,17 @@ namespace milo {
 		friend class Graphics;
 	private:
 		VkInstance m_VkInstance = VK_NULL_HANDLE;
-		VulkanDevice* m_Device;
-		VulkanWindowSurface* m_WindowSurface;
-		VulkanDebugMessenger* m_DebugMessenger;
-		VulkanSwapchain* m_Swapchain;
-		VulkanAllocator* m_Allocator;
-		VulkanPresenter* m_Presenter;
+		VulkanDevice* m_Device = nullptr;
+		VulkanWindowSurface* m_WindowSurface = nullptr;
+		VulkanDebugMessenger* m_DebugMessenger = nullptr;
+		VulkanSwapchain* m_Swapchain = nullptr;
+		VulkanAllocator* m_Allocator = nullptr;
+		VulkanPresenter* m_Presenter = nullptr;
+		VulkanSamplerMap* m_SamplerMap = nullptr;
 	private:
 		VulkanContext();
-	public:
 		~VulkanContext() override;
+	public:
 		Handle handle() const override;
 		VkInstance vkInstance() const;
 		VulkanDevice* device() const;
@@ -34,6 +35,7 @@ namespace milo {
 		VulkanAllocator* allocator() const;
 		GraphicsPresenter* presenter() const override;
 		VulkanPresenter* vulkanPresenter() const;
+		VulkanSamplerMap* samplerMap() const;
 	protected:
 		void init(Window* mainWindow) override;
 	private:
@@ -44,6 +46,7 @@ namespace milo {
 		void createSwapchain();
 		void createAllocator();
 		void createPresenter();
+		void createSamplerMap();
 	private:
 		static VulkanContext* s_Instance;
 	public:

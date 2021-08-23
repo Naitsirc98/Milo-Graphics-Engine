@@ -19,7 +19,11 @@ namespace milo {
 		static void create(const String& filename);
 		static void createDirectory(const String& filename);
 		static uint64 length(const String& filename);
+		static bool isAbsolute(const String& filename);
 		static bool isDirectory(const String& path);
+		static String extension(const String& filename);
+		static String parentOf(const String& filename);
+		static String append(const String& parent, const String& child);
 		static ArrayList<String> listFiles(const String& directory);
 		static ArrayList<int8> readAllBytes(const String& filename);
 		static String readAllText(const String& filename);

@@ -3,6 +3,7 @@
 #include "PixelFormat.h"
 
 namespace milo {
+
 	using ImageDeallocator = Function<void, void*>;
 
 	class Image {
@@ -27,10 +28,10 @@ namespace milo {
 		inline const byte_t* pixels() const {return m_Pixels;}
 		inline void* pixels() {return m_Pixels;}
 	public:
-		static Image* createWhiteImage(PixelFormat format, uint32_t width = 1, uint32_t height = 1);
-		static Image* createBlackImage(PixelFormat format, uint32_t width = 1, uint32_t height = 1);
-		static Image* createImage(const String& path, PixelFormat format, bool flipY = false);
-		static Image* createImage(void* pixels, PixelFormat format, uint32_t width = 1, uint32_t height = 1);
-		static Image* createImage(PixelFormat format, uint32_t width = 1, uint32_t height = 1,  uint32_t value = 0);
+		static Image* createWhite(PixelFormat format, uint32_t width = 1, uint32_t height = 1);
+		static Image* createBlack(PixelFormat format, uint32_t width = 1, uint32_t height = 1);
+		static Image* loadImage(const String& path, PixelFormat format, bool flipY = false);
+		static Image* create(void* pixels, PixelFormat format, uint32_t width = 1, uint32_t height = 1);
+		static Image* create(PixelFormat format, uint32_t width = 1, uint32_t height = 1, uint32_t value = 0);
 	};
 }

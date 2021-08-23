@@ -8,6 +8,8 @@ namespace milo {
 			  m_VkImageViewInfo(createInfo.viewInfo), m_Usage(createInfo.usage) {
 
 		m_VkImageViewInfo.format = m_VkImageInfo.format;
+
+		m_VkSampler = VulkanSamplerMap::get()->getDefaultSampler();
 	}
 
 	VulkanTexture2D::~VulkanTexture2D() {

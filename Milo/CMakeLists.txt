@@ -70,6 +70,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/js
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/entt)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/shaderc/libshaderc/include)
 target_include_directories(${PROJECT_NAME} PUBLIC $ENV{BOOST_HOME})
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/tiny_obj_loader)
 
 message("Boost = $ENV{BOOST_HOME}")
 

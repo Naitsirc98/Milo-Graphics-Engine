@@ -57,4 +57,7 @@ namespace milo {
 	void Time::init() {
 		s_StartTimeSeconds = std::chrono::high_resolution_clock::now();
 	}
+
+	void Time::shutdown() {
+	}
 }

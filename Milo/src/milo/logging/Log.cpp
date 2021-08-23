@@ -3,7 +3,7 @@
 
 namespace milo {
 
-	std::shared_ptr<spdlog::logger> Log::s_Logger = nullptr;
+	Shared<spdlog::logger> Log::s_Logger = nullptr;
 #ifdef _DEBUG
 	Log::Level Log::s_Level = Log::Level::Debug;
 #else
@@ -43,5 +43,8 @@ namespace milo {
 #ifdef _DEBUG
 		s_Logger->set_level(spdlog::level::debug);
 #endif
+	}
+
+	void Log::shutdown() {
 	}
 }

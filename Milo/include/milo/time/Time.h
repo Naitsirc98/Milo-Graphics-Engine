@@ -68,6 +68,7 @@ namespace milo {
 		static size_t fps() noexcept;
 	private:
 		static void init();
+		static void shutdown();
 	public:
 		Time() = delete;
 	};
