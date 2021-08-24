@@ -40,7 +40,7 @@ namespace milo {
 		virtual RenderPassId getId() const = 0;
 		virtual RenderPass::InputDescription inputDescription() const = 0;
 		virtual RenderPass::OutputDescription outputDescription() const = 0;
-		virtual void compile() = 0;
+		virtual void compile(FrameGraphResourcePool* resourcePool) = 0;
 		virtual void execute(Scene* scene) = 0;
 	};
 }

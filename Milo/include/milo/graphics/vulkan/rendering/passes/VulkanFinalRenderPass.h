@@ -10,7 +10,7 @@ namespace milo {
 	public:
 		VulkanFinalRenderPass();
 		~VulkanFinalRenderPass();
-		void compile() override;
+		void compile(FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	};
 

@@ -64,7 +64,7 @@ namespace milo {
 				success = true;
 				break;
 			case VK_NOT_READY:
-				Log::warn(str("vkAcquireNextImageKHR returned ") + vulkanErrorName(result));
+				Log::warn(str("vkAcquireNextImageKHR returned ") + mvk::getErrorName(result));
 				success = false;
 				break;
 			case VK_SUBOPTIMAL_KHR:
@@ -73,7 +73,7 @@ namespace milo {
 				success = false;
 				break;
 			default:
-				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + vulkanErrorName(result));
+				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + mvk::getErrorName(result));
 		}
 
 		if (m_ImageAvailableFences[m_CurrentImageIndex] != VK_NULL_HANDLE)
@@ -114,7 +114,7 @@ namespace milo {
 				m_Swapchain->recreate();
 				break;
 			default:
-				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + vulkanErrorName(result));
+				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + mvk::getErrorName(result));
 		}
 	}
 

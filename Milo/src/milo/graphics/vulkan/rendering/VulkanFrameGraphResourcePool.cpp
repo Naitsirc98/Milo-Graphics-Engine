@@ -7,46 +7,82 @@
 namespace milo {
 
 	VulkanFrameGraphResourcePool::VulkanFrameGraphResourcePool() {
-		m_Buffers.reserve(64);
-		m_Textures.reserve(64);
+		m_Buffers.reserve(128);
+		m_Textures.reserve(128);
 	}
 
 	VulkanFrameGraphResourcePool::~VulkanFrameGraphResourcePool() {
 		// Resources will be automatically deleted via shared_ptr
 	}
 
-	FrameGraphBuffer VulkanFrameGraphResourcePool::getBuffer(ResourceHandle handle) {
-		if(findBuffer(handle) != m_Buffers.end()) {
-			return m_Buffers[handle][currentFrame()];
+	void VulkanFrameGraphResourcePool::clearReferences() {
+
+		for(auto& buffers : m_Buffers) {
+			for(auto& buffer : buffers) {
+				buffer.useCount = 0;
+			}
 		}
-		return {};
+
+		for(auto& textures : m_Buffers) {
+			for(auto& texture : textures) {
+				texture.useCount = 0;
+			}
+		}
+	}
+
+	const Array<FrameGraphBuffer, MAX_SWAPCHAIN_IMAGE_COUNT>& VulkanFrameGraphResourcePool::getBuffers(ResourceHandle handle) const {
+		auto it = findBuffer(handle);
+		if(it != m_Buffers.cend()) return *it;
+		throw MILO_RUNTIME_EXCEPTION(fmt::format("No buffer found with handle {}", handle));
+	}
+
+	FrameGraphBuffer VulkanFrameGraphResourcePool::getBuffer(ResourceHandle handle) {
+		auto it = findBuffer(handle);
+		if(it != m_Buffers.end()) {
+			auto& buffers = *it;
+			for(auto& buffer : buffers) {
+				++buffer.useCount;
+			}
+			return buffers[currentSwapchainImage()];
+		}
+		throw MILO_RUNTIME_EXCEPTION(fmt::format("Unknown buffer with handle {}", handle));
 	}
 
 	FrameGraphBuffer VulkanFrameGraphResourcePool::getBuffer(const BufferDescription& description) {
 
 		auto it = findBuffer(description);
 
-		if(it == m_Buffers.end()) {
+		if(it == m_Buffers.cend()) {
 
-			Array<FrameGraphBuffer, MAX_FRAMES_IN_FLIGHT> resources = {};
+			Array<FrameGraphBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> resources = {};
+
+			ResourceHandle handle = ++m_ResourceHandleProvider;
 
 			for(FrameGraphBuffer& resource : resources) {
 
-				resource.handle = ++m_ResourceHandleProvider;
+				resource.handle = handle;
 				resource.description = description;
-				resource.buffer = Shared<VulkanBuffer>(VulkanBuffer::create(description.type));
+				resource.buffer = VulkanBuffer::create(description.type);
 
 				Buffer::AllocInfo allocInfo = {};
 				allocInfo.size = description.size;
 
 				resource.buffer->allocate(allocInfo);
+
+				++resource.useCount;
 			}
 
 			m_Buffers.push_back(resources);
-			return resources[currentFrame()];
+			return resources[currentSwapchainImage()];
 
 		} else {
-			return (*it)[currentFrame()];
+
+			auto& buffers = *it;
+			for(auto& buffer : buffers) {
+				++buffer.useCount;
+			}
+
+			return (*it)[currentSwapchainImage()];
 		}
 	}
 
@@ -57,47 +93,73 @@ namespace milo {
 		if(it == m_Buffers.cend()) return;
 
 		auto& buffers = *it;
-		for(FrameGraphBuffer& resource : buffers) {
-			resource.buffer.reset();
+		for(const FrameGraphBuffer& resource : buffers) {
+			auto& r = const_cast<FrameGraphBuffer&>(resource);
+#ifdef _DEBUG
+			if(r.useCount > 0) Log::warn("Deleting buffer {} that has a use count of {}", handle, r.useCount);
+#endif
+			DELETE_PTR(r.buffer);
 		}
 		m_Buffers.erase(it);
 	}
 
+	const Array<FrameGraphTexture2D, 3>& VulkanFrameGraphResourcePool::getTextures2D(ResourceHandle handle) const {
+		auto it = findTexture2D(handle);
+		if(it != m_Textures.cend()) return *it;
+		throw MILO_RUNTIME_EXCEPTION(fmt::format("No texture2D found with handle {}", handle));
+	}
+
 	FrameGraphTexture2D VulkanFrameGraphResourcePool::getTexture2D(ResourceHandle handle) {
-		if(findTexture2D(handle) != m_Textures.end()) {
-			return m_Textures[handle][currentFrame()];
+		auto it = findTexture2D(handle);
+		if(it != m_Textures.end()) {
+			auto& textures = *it;
+			for(auto& texture : textures) {
+				++texture.useCount;
+			}
+			return textures[currentSwapchainImage()];
 		}
 		return {};
 	}
 
-	FrameGraphTexture2D VulkanFrameGraphResourcePool::getTexture2D(const Texture2DDescription& description) {
+	FrameGraphTexture2D VulkanFrameGraphResourcePool::getTexture2D(const Texture2DDescription& desc) {
 
-		auto it = findTexture2D(description);
+		auto it = findTexture2D(desc);
 
-		if(it == m_Textures.end()) {
+		if(it == m_Textures.cend()) {
 
-			Array<FrameGraphTexture2D, MAX_FRAMES_IN_FLIGHT> resources = {};
+			Array<FrameGraphTexture2D, MAX_SWAPCHAIN_IMAGE_COUNT> resources = {};
+
+			ResourceHandle handle = ++m_ResourceHandleProvider;
 
 			for(FrameGraphTexture2D& resource : resources) {
 
-				resource.handle = ++m_ResourceHandleProvider;
-				resource.description = description;
-				resource.texture = Shared<VulkanTexture2D>(VulkanTexture2D::create());
+				resource.handle = handle;
+				resource.description = desc;
+				resource.texture = VulkanTexture2D::create(desc.format, desc.usageFlags);
 
 				Texture2D::AllocInfo allocInfo = {};
-				allocInfo.width = description.width;
-				allocInfo.height = description.height;
-				allocInfo.mipLevels = description.mipLevels;
-				allocInfo.format = description.format;
+				allocInfo.width = desc.width;
+				allocInfo.height = desc.height;
+				allocInfo.mipLevels = desc.mipLevels;
+				allocInfo.format = desc.format;
 
 				resource.texture->allocate(allocInfo);
+				resource.texture->generateMipmaps();
+
+				++resource.useCount;
 			}
 
 			m_Textures.push_back(resources);
-			return resources[currentFrame()];
+			return resources[currentSwapchainImage()];
 
 		} else {
-			return (*it)[currentFrame()];
+
+			auto& textures = *it;
+			for(auto& texture : textures) {
+				++texture.useCount;
+			}
+
+			return (*it)[currentSwapchainImage()];
 		}
 	}
 
@@ -108,8 +170,12 @@ namespace milo {
 		if(it == m_Textures.cend()) return;
 
 		auto& textures = *it;
-		for(FrameGraphTexture2D& resource : textures) {
-			resource.texture.reset();
+		for(const FrameGraphTexture2D& resource : textures) {
+			auto& r = const_cast<FrameGraphTexture2D&>(resource);
+#ifdef _DEBUG
+			if(r.useCount > 0) Log::warn("Deleting texture {} that has a use count of {}", handle, r.useCount);
+#endif
+			DELETE_PTR(r.texture);
 		}
 		m_Textures.erase(it);
 	}
@@ -117,8 +183,8 @@ namespace milo {
 	void VulkanFrameGraphResourcePool::freeUnreferencedResources() {
 
 		for(auto it = m_Buffers.begin();it != m_Buffers.end();) {
-			auto& [id, resource] = *it;
-			if(resource.buffer.use_count() <= 1) {
+			auto& buffers = *it;
+			if(buffers[0].useCount == 0) {
 				m_Buffers.erase(it);
 			} else {
 				++it;
@@ -126,8 +192,8 @@ namespace milo {
 		}
 
 		for(auto it = m_Textures.begin();it != m_Textures.end();) {
-			auto& [id, resource] = *it;
-			if(resource.texture.use_count() <= 1) {
+			auto& textures = *it;
+			if(textures[0].useCount == 0) {
 				m_Textures.erase(it);
 			} else {
 				++it;
@@ -135,39 +201,39 @@ namespace milo {
 		}
 	}
 
-	ArrayList<Array<FrameGraphBuffer, MAX_FRAMES_IN_FLIGHT>>::iterator VulkanFrameGraphResourcePool::findBuffer(ResourceHandle handle) {
-		for(auto it = m_Buffers.begin();it != m_Buffers.end();++it) {
+	ArrayList<Array<FrameGraphBuffer, MAX_SWAPCHAIN_IMAGE_COUNT>>::const_iterator VulkanFrameGraphResourcePool::findBuffer(ResourceHandle handle) const {
+		for(auto it = m_Buffers.cbegin();it != m_Buffers.cend();++it) {
 			const auto& resources = *it;
 			if(resources[0].handle == handle) return it;
 		}
-		return m_Buffers.end();
+		return m_Buffers.cend();
 	}
 
-	ArrayList<Array<FrameGraphBuffer, MAX_FRAMES_IN_FLIGHT>>::iterator VulkanFrameGraphResourcePool::findBuffer(const BufferDescription& desc) {
-		for(auto it = m_Buffers.begin();it != m_Buffers.end();++it) {
+	ArrayList<Array<FrameGraphBuffer, MAX_SWAPCHAIN_IMAGE_COUNT>>::const_iterator VulkanFrameGraphResourcePool::findBuffer(const BufferDescription& desc) const {
+		for(auto it = m_Buffers.cbegin();it != m_Buffers.cend();++it) {
 			const auto& resources = *it;
 			if(resources[0].description == desc) return it;
 		}
-		return m_Buffers.end();
+		return m_Buffers.cend();
 	}
 
-	ArrayList<Array<FrameGraphTexture2D, MAX_FRAMES_IN_FLIGHT>>::iterator VulkanFrameGraphResourcePool::findTexture2D(ResourceHandle handle) {
-		for(auto it = m_Textures.begin();it != m_Textures.end();++it) {
+	ArrayList<Array<FrameGraphTexture2D, MAX_SWAPCHAIN_IMAGE_COUNT>>::const_iterator VulkanFrameGraphResourcePool::findTexture2D(ResourceHandle handle) const {
+		for(auto it = m_Textures.cbegin();it != m_Textures.cend();++it) {
 			const auto& resources = *it;
 			if(resources[0].handle == handle) return it;
 		}
-		return m_Textures.end();
+		return m_Textures.cend();
 	}
 
-	ArrayList<Array<FrameGraphTexture2D, MAX_FRAMES_IN_FLIGHT>>::iterator VulkanFrameGraphResourcePool::findTexture2D(const Texture2DDescription& desc) {
-		for(auto it = m_Textures.begin();it != m_Textures.end();++it) {
+	ArrayList<Array<FrameGraphTexture2D, MAX_SWAPCHAIN_IMAGE_COUNT>>::const_iterator VulkanFrameGraphResourcePool::findTexture2D(const Texture2DDescription& desc) const {
+		for(auto it = m_Textures.cbegin();it != m_Textures.cend();++it) {
 			const auto& resources = *it;
 			if(resources[0].description == desc) return it;
 		}
-		return m_Textures.end();
+		return m_Textures.cend();
 	}
 
-	uint32_t VulkanFrameGraphResourcePool::currentFrame() {
-		return VulkanContext::get()->vulkanPresenter()->currentFrame();
+	uint32_t VulkanFrameGraphResourcePool::currentSwapchainImage() {
+		return VulkanContext::get()->vulkanPresenter()->currentImageIndex();
 	}
 }

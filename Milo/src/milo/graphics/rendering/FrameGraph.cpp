@@ -25,6 +25,8 @@ namespace milo {
 		// TODO: add render passes by analyzing the scene composition at this frame
 		// For now, lets simply add a GeometryRenderPass and a FinalRenderPass
 
+		m_ResourcePool->clearReferences();
+
 		push<GeometryRenderPass>();
 		push<FinalRenderPass>();
 	}
@@ -64,7 +66,8 @@ namespace milo {
 				renderPass->m_Output.textures[i] = m_ResourcePool->getTexture2D(outputDesc.textures[i]);
 			}
 
-			renderPass->compile();
+			// TODO: only compile render pass if input/output resources have changed
+			renderPass->compile(m_ResourcePool);
 		}
 	}
 

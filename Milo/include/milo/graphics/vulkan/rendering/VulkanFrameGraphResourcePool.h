@@ -9,28 +9,32 @@ namespace milo {
 		friend class FrameGraphResourcePool;
 	private:
 		Atomic<RenderPassId> m_ResourceHandleProvider;
-		ArrayList<Array<FrameGraphBuffer, MAX_FRAMES_IN_FLIGHT>> m_Buffers;
-		ArrayList<Array<FrameGraphTexture2D, MAX_FRAMES_IN_FLIGHT>> m_Textures;
+		ArrayList<Array<FrameGraphBuffer, MAX_SWAPCHAIN_IMAGE_COUNT>> m_Buffers;
+		ArrayList<Array<FrameGraphTexture2D, MAX_SWAPCHAIN_IMAGE_COUNT>> m_Textures;
 	private:
 		VulkanFrameGraphResourcePool();
 		~VulkanFrameGraphResourcePool() override;
 	public:
+		void clearReferences() override;
+
+		const Array<FrameGraphBuffer, MAX_SWAPCHAIN_IMAGE_COUNT>& getBuffers(ResourceHandle handle) const;
 		FrameGraphBuffer getBuffer(ResourceHandle handle) override;
 		FrameGraphBuffer getBuffer(const BufferDescription& description) override;
 		void destroyBuffer(ResourceHandle handle) override;
 
+		const Array<FrameGraphTexture2D, MAX_SWAPCHAIN_IMAGE_COUNT>& getTextures2D(ResourceHandle handle) const;
 		FrameGraphTexture2D getTexture2D(ResourceHandle handle) override;
-		FrameGraphTexture2D getTexture2D(const Texture2DDescription& description) override;
+		FrameGraphTexture2D getTexture2D(const Texture2DDescription& desc) override;
 		void destroyTexture(ResourceHandle handle) override;
 
 		void freeUnreferencedResources() override;
 	private:
-		ArrayList<Array<FrameGraphBuffer, MAX_FRAMES_IN_FLIGHT>>::iterator findBuffer(ResourceHandle handle);
-		ArrayList<Array<FrameGraphBuffer, MAX_FRAMES_IN_FLIGHT>>::iterator findBuffer(const BufferDescription& desc);
-		ArrayList<Array<FrameGraphTexture2D, MAX_FRAMES_IN_FLIGHT>>::iterator findTexture2D(ResourceHandle handle);
-		ArrayList<Array<FrameGraphTexture2D, MAX_FRAMES_IN_FLIGHT>>::iterator findTexture2D(const Texture2DDescription& desc);
+		ArrayList<Array<FrameGraphBuffer, MAX_SWAPCHAIN_IMAGE_COUNT>>::const_iterator findBuffer(ResourceHandle handle) const;
+		ArrayList<Array<FrameGraphBuffer, MAX_SWAPCHAIN_IMAGE_COUNT>>::const_iterator findBuffer(const BufferDescription& desc) const;
+		ArrayList<Array<FrameGraphTexture2D, MAX_SWAPCHAIN_IMAGE_COUNT>>::const_iterator findTexture2D(ResourceHandle handle) const;
+		ArrayList<Array<FrameGraphTexture2D, MAX_SWAPCHAIN_IMAGE_COUNT>>::const_iterator findTexture2D(const Texture2DDescription& desc) const;
 	private:
-		static uint32_t currentFrame();
+		static uint32_t currentSwapchainImage();
 	};
 
 }

@@ -281,6 +281,28 @@ namespace milo {
 		return new VulkanTexture2D(CreateInfo());
 	}
 
+	VulkanTexture2D* VulkanTexture2D::create(PixelFormat pixelFormat, TextureUsageFlags usageFlags) {
+
+		VulkanTexture2D::CreateInfo createInfo = {};
+
+		createInfo.imageInfo.format = mvk::fromPixelFormat(pixelFormat);
+
+		if((usageFlags & TEXTURE_USAGE_SAMPLED_BIT) != 0) {
+			createInfo.imageInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			createInfo.viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		}
+		if((usageFlags & TEXTURE_USAGE_COLOR_ATTACHMENT_BIT) != 0) {
+			createInfo.imageInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+			createInfo.viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		}
+		if((usageFlags & TEXTURE_USAGE_DEPTH_ATTACHMENT_BIT) != 0 || (usageFlags & TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
+			createInfo.imageInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+			createInfo.viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		}
+
+		return new VulkanTexture2D(createInfo);
+	}
+
 	VulkanTexture2D* VulkanTexture2D::createColorAttachment() {
 
 		CreateInfo createInfo = {};

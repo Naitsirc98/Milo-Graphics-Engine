@@ -7,6 +7,15 @@
 
 namespace milo {
 
+	enum TextureUsageFlagBits {
+		TEXTURE_USAGE_UNDEFINED_BIT = 0x0,
+		TEXTURE_USAGE_SAMPLED_BIT = 0x1,
+		TEXTURE_USAGE_COLOR_ATTACHMENT_BIT = 0x2,
+		TEXTURE_USAGE_DEPTH_ATTACHMENT_BIT = 0x4,
+		TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x8
+	};
+	using TextureUsageFlags = uint32_t;
+
 	class Texture2D {
 	public:
 		struct AllocInfo {

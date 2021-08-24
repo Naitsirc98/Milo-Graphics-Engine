@@ -15,12 +15,19 @@ namespace milo {
 
 		OutputDescription output = {};
 
+		output.textures[0].usageFlags = TEXTURE_USAGE_COLOR_ATTACHMENT_BIT | TEXTURE_USAGE_SAMPLED_BIT;
 		output.textures[0].width = size.width;
 		output.textures[0].height = size.height;
-		output.textures[0].format = PixelFormat::RGBA32;
+		output.textures[0].format = PixelFormat::RGBA32F;
 		output.textures[0].mipLevels = 1;
 
-		output.textureCount = 1;
+		output.textures[1].usageFlags = TEXTURE_USAGE_DEPTH_ATTACHMENT_BIT | TEXTURE_USAGE_SAMPLED_BIT;
+		output.textures[1].width = size.width;
+		output.textures[1].height = size.height;
+		output.textures[1].format = PixelFormat::DEPTH;
+		output.textures[1].mipLevels = 1;
+
+		output.textureCount = 2;
 
 		return output;
 	}

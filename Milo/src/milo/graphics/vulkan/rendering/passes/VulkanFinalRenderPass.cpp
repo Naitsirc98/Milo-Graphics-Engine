@@ -10,7 +10,7 @@ namespace milo {
 
 	}
 
-	void VulkanFinalRenderPass::compile() {
+	void VulkanFinalRenderPass::compile(FrameGraphResourcePool* resourcePool) {
 
 	}
 

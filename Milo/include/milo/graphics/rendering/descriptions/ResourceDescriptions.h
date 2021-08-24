@@ -56,6 +56,12 @@ namespace milo {
 		}
 	};
 
+	class FrameGraphResourcePool;
+
+	struct ResourceMetaData {
+		FrameGraphResourcePool* pool = nullptr;
+		uint16_t useCount = 0;
+	};
 
 	// ====
 
@@ -78,6 +84,7 @@ namespace milo {
 
 	struct Texture2DDescription {
 
+		TextureUsageFlags usageFlags = TEXTURE_USAGE_UNDEFINED_BIT;
 		uint32_t width = 0;
 		uint32_t height = 0;
 		PixelFormat format = PixelFormat::Undefined;
@@ -100,9 +107,12 @@ namespace milo {
 	using ResourceHandle = uint64_t;
 
 	struct FrameGraphBuffer {
+		friend class FrameGraphResourcePool;
+		friend class VulkanFrameGraphResourcePool;
+
 		ResourceHandle handle = NULL;
 		BufferDescription description = {};
-		Shared<Buffer> buffer;
+		Buffer* buffer = nullptr;
 
 		inline bool operator==(ResourceHandle handle) const noexcept {
 			return this->handle == handle;
@@ -111,12 +121,18 @@ namespace milo {
 		inline bool operator!=(ResourceHandle handle) const noexcept {
 			return this->handle != handle;
 		}
+
+	private:
+		mutable uint16_t useCount = 0;
 	};
 
 	struct FrameGraphTexture2D {
+		friend class FrameGraphResourcePool;
+		friend class VulkanFrameGraphResourcePool;
+
 		ResourceHandle handle = NULL;
 		Texture2DDescription description = {};
-		Shared<Texture2D> texture;
+		Texture2D* texture = nullptr;
 
 		inline bool operator==(ResourceHandle handle) const noexcept {
 			return this->handle == handle;
@@ -125,6 +141,9 @@ namespace milo {
 		inline bool operator!=(ResourceHandle handle) const noexcept {
 			return this->handle != handle;
 		}
+
+	private:
+		mutable uint16_t useCount = 0;
 	};
 
 	class FrameGraphResourcePool {
@@ -133,6 +152,8 @@ namespace milo {
 		FrameGraphResourcePool() = default;
 		virtual ~FrameGraphResourcePool() = default;
 	public:
+		virtual void clearReferences() = 0;
+
 		virtual FrameGraphBuffer getBuffer(ResourceHandle handle) = 0;
 		virtual FrameGraphBuffer getBuffer(const BufferDescription& description) = 0;
 		virtual void destroyBuffer(ResourceHandle handle) = 0;

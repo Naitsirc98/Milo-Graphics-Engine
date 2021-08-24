@@ -64,6 +64,7 @@ namespace milo {
 		void copyFromBuffer(VkCommandBuffer commandBuffer, VulkanBuffer& buffer);
 	public:
 		static VulkanTexture2D* create();
+		static VulkanTexture2D* create(PixelFormat pixelFormat, TextureUsageFlags usageFlags = TEXTURE_USAGE_UNDEFINED_BIT);
 		static VulkanTexture2D* createColorAttachment();
 		static VulkanTexture2D* createDepthAttachment();
 	};
