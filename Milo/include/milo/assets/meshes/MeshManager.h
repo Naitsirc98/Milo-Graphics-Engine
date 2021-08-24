@@ -12,13 +12,18 @@ namespace milo {
 		HashMap<String, Mesh*> m_Meshes;
 		Mutex m_Mutex;
 	private:
-		MeshManager() = default;
+		MeshManager();
 		~MeshManager();
 	public:
-		Mesh* load(const String& filename);
-		bool exists(const String& filename);
-		Mesh* find(const String& filename);
-		void destroy(const String& filename);
+		Mesh* getPlane() const;
+		Mesh* getCube() const;
+		Mesh* getSphere() const;
+		Mesh* getCylinder() const;
+		Mesh* getMonkey() const;
+		Mesh* load(const String& name, const String& filename);
+		bool exists(const String& name);
+		Mesh* find(const String& name);
+		void destroy(const String& name);
 	private:
 		static Shared<MeshLoader> getMeshLoaderOf(const String& filename);
 		static void createGraphicsBuffers(const String& filename, Mesh* mesh);

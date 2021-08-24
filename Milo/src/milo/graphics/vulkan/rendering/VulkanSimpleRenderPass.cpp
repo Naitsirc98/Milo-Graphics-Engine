@@ -6,8 +6,6 @@
 
 namespace milo {
 
-	static const ArrayList<float>& getCubeVertexData();
-
 	VulkanSimpleRenderPass::VulkanSimpleRenderPass(VulkanSwapchain* swapchain)
 		: m_Swapchain(swapchain), m_Device(swapchain->device()) {
 		create();
@@ -150,13 +148,11 @@ namespace milo {
 		createRenderAreaDependentComponents();
 		createCameraUniformBuffer();
 		createMaterialUniformBuffer();
-		createMaterials();
 		createDescriptorSetLayout();
 		createDescriptorPool();
 		allocateDescriptorSets();
 		createPipelineLayout();
 		createGraphicsPipeline();
-		createVertexBuffer();
 		allocateCommandBuffers();
 	}
 
@@ -453,104 +449,4 @@ namespace milo {
 		m_Swapchain->device()->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, MAX_SWAPCHAIN_IMAGE_COUNT, m_VkCommandBuffers);
 	}
 
-	void VulkanSimpleRenderPass::createVertexBuffer() {
-
-		m_VertexBuffer = VulkanBuffer::createVertexBuffer();
-
-		const ArrayList<float>& vertices = getCubeVertexData();
-		
-		Buffer::AllocInfo allocInfo = {};
-		allocInfo.size = vertices.size() * sizeof(float);
-		allocInfo.data = vertices.data();
-
-		m_VertexBuffer->allocate(allocInfo);
-	}
-
-	void VulkanSimpleRenderPass::createMaterials() {
-		static ArrayList<String> imageFiles = Files::listFiles("C:/Users/naits/Pictures/Google Earth VR");
-
-		Array<Vector4, 5> colors = {
-				Vector4(1.0f, 0.0f, 0.0f, 1.0f),
-				Vector4(0.0f, 1.0f, 0.0f, 1.0f),
-				Vector4(0.0f, 0.0f, 1.0f, 1.0f),
-				Vector4(1.0f, 1.0f, 0.0f, 1.0f),
-				Vector4(1.0f, 0.0f, 1.0f, 1.0f),
-				};
-
-		for(uint32_t i = 0;i < m_Materials.size();++i) {
-
-			const String& imageFile = imageFiles[i % imageFiles.size()];
-			Log::info("Loading texture {}...", imageFile);
-			Image* image = Image::loadImage(imageFile, PixelFormat::RGBA8);
-
-			VulkanTexture2D::CreateInfo createInfo = {};
-			createInfo.imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-			createInfo.viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-
-			auto texture = new VulkanTexture2D(createInfo);
-
-			Texture2D::AllocInfo allocInfo = {};
-			allocInfo.width = image->width();
-			allocInfo.height = image->height();
-			allocInfo.format = image->format();
-			allocInfo.pixels = image->pixels();
-
-			texture->allocate(allocInfo);
-			texture->generateMipmaps();
-
-			m_Materials[i].color = colors[i % colors.size()];
-			m_Materials[i].texture = texture;
-
-			DELETE_PTR(image);
-		}
-	}
-
-	static const ArrayList<float> CUBE_VERTEX_DATA = {
-			// back face
-			-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-			1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-			1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right
-			1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
-			-1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
-			-1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
-			// front face
-			-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-			1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
-			1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-			1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
-			-1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
-			-1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
-			// left face
-			-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-			-1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
-			-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-			-1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
-			-1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-			-1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
-			// right face
-			1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-			1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-			1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right
-			1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
-			1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
-			1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left
-			// bottom face
-			-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-			1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
-			1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-			1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
-			-1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
-			-1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
-			// top face
-			-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-			1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-			1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right
-			1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
-			-1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
-			-1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f // bottom-left
-	};
-
-	static const ArrayList<float>& getCubeVertexData() {
-		return CUBE_VERTEX_DATA;
-	}
 }

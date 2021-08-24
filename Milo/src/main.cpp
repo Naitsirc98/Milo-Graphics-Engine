@@ -10,8 +10,8 @@ public:
 
 	void onStart() override {
 
-		Mesh* mesh = Assets::meshes().load("resources/meshes/Cube/Cube.obj");
-		Material* material = Assets::materials().load("resources/materials/Plastic/M_ScuffedPlastic.mat");
+		Mesh* mesh = Assets::meshes().getCube();
+		Material* material = Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat");
 
 		Scene* scene = SceneManager::activeScene();
 

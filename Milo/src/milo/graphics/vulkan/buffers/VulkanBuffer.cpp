@@ -157,6 +157,17 @@ namespace milo {
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
 
+	VulkanBuffer* VulkanBuffer::create(Buffer::Type type) {
+		switch(type) {
+			case Type::Vertex: return createVertexBuffer();
+			case Type::Index: return createIndexBuffer();
+			case Type::Uniform: return createUniformBuffer();
+			case Type::Storage: return createStorageBuffer();
+			default:
+				throw MILO_RUNTIME_EXCEPTION("Unsupported type of buffer");
+		}
+	}
+
 	VulkanBuffer* VulkanBuffer::createVertexBuffer() {
 		CreateInfo createInfo = {};
 		createInfo.bufferInfo = mvk::BufferCreateInfo::create(VERTEX_BUFFER_USAGE_FLAGS);

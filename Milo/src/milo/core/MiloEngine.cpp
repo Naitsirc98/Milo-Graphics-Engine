@@ -4,6 +4,7 @@
 #include "milo/graphics/Window.h"
 #include "milo/graphics/Graphics.h"
 #include "milo/input/Input.h"
+#include "milo/graphics/rendering/WorldRenderer.h"
 
 namespace milo {
 
@@ -115,13 +116,9 @@ namespace milo {
 
 	inline void MiloEngine::render() {
 
-		GraphicsPresenter* presenter = GraphicsPresenter::get();
+		WorldRenderer::render();
 
-		if(presenter->begin()) {
-			SceneManager::render();
-			renderUI();
-		}
-		presenter->end();
+		// Render editor UI
 
 		++Time::s_Fps;
 	}

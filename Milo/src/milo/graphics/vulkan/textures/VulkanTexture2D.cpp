@@ -1,5 +1,6 @@
 #include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
+#include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
 
 namespace milo {
 

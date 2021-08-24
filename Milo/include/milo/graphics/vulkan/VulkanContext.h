@@ -6,7 +6,7 @@
 #include "milo/graphics/vulkan/presentation/VulkanSwapchain.h"
 #include "VulkanAllocator.h"
 #include "milo/graphics/vulkan/presentation/VulkanPresenter.h"
-#include "milo/common/Common.h"
+#include "milo/graphics/vulkan/textures/VulkanSamplerMap.h"
 
 namespace milo {
 

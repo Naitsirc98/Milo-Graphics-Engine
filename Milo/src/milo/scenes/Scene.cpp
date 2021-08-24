@@ -61,7 +61,7 @@ namespace milo {
 	}
 
 	void Scene::lateUpdate() {
-		auto nativeScripts = m_Registry.view<NativeScriptView>();
+		const ECSComponentView<NativeScriptView> nativeScripts = m_Registry.view<NativeScriptView>();
 		for(EntityId entity : nativeScripts) {
 			auto& nativeScriptView = m_Registry.get<NativeScriptView>(entity);
 			nativeScriptView.createIfNotExists(entity);

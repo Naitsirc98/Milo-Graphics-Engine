@@ -83,7 +83,6 @@ namespace milo {
 		void createPipelineLayout();
 		void createGraphicsPipeline();
 		void allocateCommandBuffers();
-		void createVertexBuffer();
-		void createMaterials();
+		void loadMeshes();
 	};
 }

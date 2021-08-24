@@ -1,6 +1,5 @@
 #pragma once
 
-#include <milo/graphics/vulkan/rendering/VulkanSimpleRenderPass.h>
 #include "milo/graphics/rendering/GraphicsPresenter.h"
 #include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
 #include "milo/graphics/vulkan/commands/VulkanCommandPool.h"
@@ -26,8 +25,6 @@ namespace milo {
 		uint32_t m_MaxImageCount = 0;
 		uint32_t m_CurrentImageIndex = 0;
 		uint32_t m_CurrentFrame = 0;
-		// TMP
-		VulkanSimpleRenderPass* m_SimpleRenderPass = nullptr;
 	private:
 		explicit VulkanPresenter(VulkanContext* context);
 	public:
@@ -36,6 +33,7 @@ namespace milo {
 		void end() override;
 		uint32_t currentImageIndex() const;
 		uint32_t maxImageCount() const;
+		uint32_t currentFrame() const;
 	private:
 		void waitForPreviousFrameToComplete();
 		bool tryGetNextSwapchainImage();

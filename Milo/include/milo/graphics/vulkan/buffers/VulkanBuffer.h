@@ -55,6 +55,7 @@ namespace milo {
 		void mapAndRun(Function<void, void*> func) override;
 
 	public:
+		static VulkanBuffer* create(Buffer::Type type);
 		static VulkanBuffer* createVertexBuffer();
 		static VulkanBuffer* createHostVertexBuffer();
 		static VulkanBuffer* createIndexBuffer();

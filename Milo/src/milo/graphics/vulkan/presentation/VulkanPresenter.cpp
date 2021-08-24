@@ -16,8 +16,6 @@ namespace milo {
 
 		createSyncObjects();
 
-		m_SimpleRenderPass = new VulkanSimpleRenderPass(m_Swapchain);
-
 		m_Swapchain->addSwapchainRecreateCallback([&]() {
 			m_MaxImageCount = m_Swapchain->imageCount();
 			m_CurrentImageIndex = 0;
@@ -25,13 +23,10 @@ namespace milo {
 
 			destroySyncObjects();
 			createSyncObjects();
-
-			m_SimpleRenderPass->recreate();
 		});
 	}
 
 	VulkanPresenter::~VulkanPresenter() {
-		DELETE_PTR(m_SimpleRenderPass);
 		destroySyncObjects();
 	}
 
@@ -97,18 +92,6 @@ namespace milo {
 
 		VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-		VulkanSimpleRenderPass::Input executeInfo = {};
-		executeInfo.currentFrame = m_CurrentFrame;
-		executeInfo.swapchainImageIndex = m_CurrentImageIndex;
-		executeInfo.waitSemaphores = &m_ImageAvailableSemaphore[m_CurrentFrame];
-		executeInfo.waitSemaphoresCount = 1;
-		executeInfo.waitDstStageMask = &waitStages;
-		executeInfo.signalSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
-		executeInfo.signalSemaphoresCount = 1;
-		executeInfo.fence = m_FramesInFlightFences[m_CurrentFrame];
-
-		m_SimpleRenderPass->execute(executeInfo);
-
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
@@ -141,6 +124,10 @@ namespace milo {
 
 	uint32_t VulkanPresenter::maxImageCount() const {
 		return m_MaxImageCount;
+	}
+
+	uint32_t VulkanPresenter::currentFrame() const {
+		return m_CurrentFrame;
 	}
 
 	void VulkanPresenter::createSyncObjects() {

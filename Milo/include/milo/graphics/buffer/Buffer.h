@@ -6,6 +6,8 @@ namespace milo {
 
 	class Buffer {
 	public:
+		enum class Type { Undefined, Vertex, Index, Uniform, Storage, Indirect };
+
 		struct AllocInfo {
 			uint64_t size = 0;
 			const void* data = nullptr;

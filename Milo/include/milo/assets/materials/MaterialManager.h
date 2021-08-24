@@ -13,12 +13,13 @@ namespace milo {
 		MaterialManager();
 		~MaterialManager();
 	public:
-		Material* load(const String& filename);
-		bool exists(const String& filename);
-		Material* find(const String& filename);
-		void destroy(const String& filename);
+		Material* getDefault() const;
+		Material* load(const String& name, const String& filename);
+		bool exists(const String& name);
+		Material* find(const String& name);
+		void destroy(const String& name);
 	private:
-		bool load(const String& filename, Material*& material);
+		bool load(const String& name, const String& filename, Material*& material);
 	};
 
 }

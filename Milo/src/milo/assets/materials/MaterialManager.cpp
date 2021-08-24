@@ -1,30 +1,36 @@
 #include "milo/assets/materials/MaterialManager.h"
 #include "milo/io/Files.h"
-#include "milo/assets/images/Image.h"
 #define JSON_IMPLEMENTATION
 #define JSON_USE_IMPLICIT_CONVERSIONS 0
 #include <nlohmann/json.hpp>
 
+#define DEFAULT_MATERIAL_NAME "M_DefaultMaterial"
+
 namespace milo {
 
 	MaterialManager::MaterialManager() {
+		load(DEFAULT_MATERIAL_NAME, "resources/materials/M_DefaultMaterial.mat");
 	}
 
 	MaterialManager::~MaterialManager() {
-		for(auto& [filename, material] : m_Materials) {
+		for(auto& [name, material] : m_Materials) {
 			DELETE_PTR(material);
 		}
 		m_Materials.clear();
 	}
 
-	Material* MaterialManager::load(const String& filename) {
+	Material* MaterialManager::getDefault() const {
+		return m_Materials.at(DEFAULT_MATERIAL_NAME);
+	}
+
+	Material* MaterialManager::load(const String& name, const String& filename) {
 		Material* material = nullptr;
 		m_Mutex.lock();
 		{
-			if(exists(filename)) {
-				material = find(filename);
+			if(exists(name)) {
+				material = find(name);
 			} else {
-				if(load(filename, material)) {
+				if(load(name, filename, material)) {
 					m_Materials[filename] = material;
 				}
 			}
@@ -33,30 +39,30 @@ namespace milo {
 		return material;
 	}
 
-	bool MaterialManager::exists(const String& filename) {
-		return m_Materials.find(filename) != m_Materials.end();
+	bool MaterialManager::exists(const String& name) {
+		return m_Materials.find(name) != m_Materials.end();
 	}
 
-	Material* MaterialManager::find(const String& filename) {
-		return exists(filename) ? m_Materials[filename] : nullptr;
+	Material* MaterialManager::find(const String& name) {
+		return exists(name) ? m_Materials[name] : nullptr;
 	}
 
-	void MaterialManager::destroy(const String& filename) {
-		if(!exists(filename)) return;
+	void MaterialManager::destroy(const String& name) {
+		if(!exists(name)) return;
 		m_Mutex.lock();
 		{
-			Material* material = m_Materials[filename];
+			Material* material = m_Materials[name];
 			DELETE_PTR(material);
-			m_Materials.erase(filename);
+			m_Materials.erase(name);
 		}
 		m_Mutex.unlock();
 	}
 
-	bool MaterialManager::load(const String& filename, Material*& material) {
+	bool MaterialManager::load(const String& name, const String& filename, Material*& material) {
 		if(!Files::exists(filename)) return false;
 		if(Files::isDirectory(filename)) return false;
 
-		material = new Material(filename);
+		material = new Material(name);
 
 		nlohmann::json json;
 		{
