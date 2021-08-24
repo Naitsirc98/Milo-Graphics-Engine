@@ -1,4 +1,5 @@
 #include "milo/graphics/rendering/passes/FinalRenderPass.h"
+#include "milo/graphics/vulkan/rendering/passes/VulkanFinalRenderPass.h"
 
 namespace milo {
 
@@ -10,8 +11,15 @@ namespace milo {
 		return OutputDescription();
 	}
 
+	RenderPassId FinalRenderPass::getId() const {
+		return id();
+	}
+
 	FinalRenderPass* FinalRenderPass::create() {
-		return nullptr; // TODO: API specific
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+			return new VulkanFinalRenderPass();
+		}
+		throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");
 	}
 
 	size_t FinalRenderPass::id() {

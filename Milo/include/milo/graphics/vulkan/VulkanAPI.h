@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
-#include "milo/common/Common.h"
+#include "milo/graphics/Graphics.h"
 
 #define MAX_FRAMES_IN_FLIGHT 2
 #define MAX_SWAPCHAIN_IMAGE_COUNT 3

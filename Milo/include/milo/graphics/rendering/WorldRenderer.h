@@ -8,6 +8,7 @@ namespace milo {
 
 	class WorldRenderer {
 		friend class MiloEngine;
+		friend class MiloSubSystemManager;
 	private:
 		GraphicsPresenter* m_GraphicsPresenter = nullptr;
 		FrameGraphResourcePool* m_ResourcePool = nullptr;

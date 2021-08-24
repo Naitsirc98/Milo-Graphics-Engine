@@ -16,7 +16,7 @@ namespace milo {
 		createInfo.instance = m_Context->vkInstance();
 		createInfo.physicalDevice = m_Context->device()->physical();
 		createInfo.device = m_Context->device()->logical();
-		createInfo.frameInUseCount = m_Context->swapchain()->imageCount();
+		createInfo.frameInUseCount = MAX_FRAMES_IN_FLIGHT;
 		createInfo.vulkanApiVersion = VK_MAKE_VERSION(1, 2, 0);
 
 		VK_CALL(vmaCreateAllocator(&createInfo, &m_VmaAllocator));
