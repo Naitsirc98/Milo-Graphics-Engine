@@ -18,11 +18,11 @@ namespace milo {
 		};
 
 		struct MaterialData {
-
+			Color color;
 		};
 
 		struct PushConstants {
-
+			Matrix4 modelMatrix;
 		};
 	private:
 		static const uint32_t CAMERA_BUFFER_ALIGNMENT;

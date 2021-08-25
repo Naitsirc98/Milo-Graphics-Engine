@@ -54,6 +54,13 @@ namespace milo {
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		createInfo.queueCreateInfoCount = queueCreateInfos.size();
 
+		// TODO: should check for support
+		VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilLayoutsFeatures = {};
+		separateDepthStencilLayoutsFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES;
+		separateDepthStencilLayoutsFeatures.separateDepthStencilLayouts = VK_TRUE;
+
+		createInfo.pNext = &separateDepthStencilLayoutsFeatures;
+
 		VK_CALL(vkCreateDevice(m_Physical, &createInfo, nullptr, &m_Logical));
 
 		getQueues();

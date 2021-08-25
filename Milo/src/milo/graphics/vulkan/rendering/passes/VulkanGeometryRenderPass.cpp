@@ -175,6 +175,8 @@ namespace milo {
 
 	void VulkanGeometryRenderPass::createMaterialDescriptorLayout() {
 
+		// TODO: combine image samplers for material textures
+
 		Array<VkDescriptorSetLayoutBinding, 1> bindings = {};
 		bindings[0].binding = 0;
 		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
