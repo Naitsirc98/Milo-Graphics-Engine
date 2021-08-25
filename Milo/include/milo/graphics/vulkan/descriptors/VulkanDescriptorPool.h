@@ -30,6 +30,7 @@ namespace milo {
 		size_t capacity() const;
 		void allocate(size_t numSets = SIZE_MAX, const Function<void, size_t, VkDescriptorSet>& updateDescriptorSetFunction = nullptr);
 		void free(size_t numSets = SIZE_MAX);
+		VkDescriptorSet* descriptorSets() const;
 		VkDescriptorSet get(size_t index) const;
 		VkDescriptorSet operator[](size_t index) const;
 	};

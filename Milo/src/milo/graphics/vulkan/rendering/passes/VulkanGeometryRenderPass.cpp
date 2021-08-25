@@ -115,7 +115,6 @@ namespace milo {
 
 			VK_CALL(vkCreateFramebuffer(m_Device->logical(), &createInfo, nullptr, &m_Framebuffers[i]));
 		}
-
 	}
 
 	void VulkanGeometryRenderPass::createCameraUniformBuffer() {

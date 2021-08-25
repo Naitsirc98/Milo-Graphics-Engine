@@ -81,6 +81,10 @@ namespace milo {
 		m_Size -= numSets;
 	}
 
+	VkDescriptorSet* VulkanDescriptorPool::descriptorSets() const {
+		return m_DescriptorSets;
+	}
+
 	VkDescriptorSet VulkanDescriptorPool::get(size_t index) const {
 #ifdef _DEBUG
 		if(index >= m_Size) throw MILO_RUNTIME_EXCEPTION(str("Index for descriptor set is out of bounds: ") + str(index) + " >= " + str(m_Size));

@@ -4,7 +4,17 @@
 namespace milo {
 
 	RenderPass::InputDescription FinalRenderPass::inputDescription() const {
-		return InputDescription();
+
+		Size size = Window::get()->size();
+
+		InputDescription input{};
+		input.textures[0].width = size.width;
+		input.textures[0].height = size.height;
+		input.textures[0].format = PixelFormat::RGBA32F;
+		input.textures[0].usageFlags = VK_IMAGE_USAGE_SAMPLED_BIT;
+		input.textureCount = 1;
+
+		return input;
 	}
 
 	RenderPass::OutputDescription FinalRenderPass::outputDescription() const {
