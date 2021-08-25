@@ -1,6 +1,7 @@
 #include "milo/graphics/vulkan/rendering/passes/VulkanGeometryRenderPass.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/rendering/VulkanFrameGraphResourcePool.h"
+#include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 
 namespace milo {
 
@@ -124,16 +125,16 @@ namespace milo {
 
 	void VulkanGeometryRenderPass::createCameraDescriptorLayout() {
 
-		Array<VkDescriptorSetLayoutBinding, 1> bindings = {};
+		Array<VkDescriptorSetLayoutBinding, 1> bindings{};
 		bindings[0].binding = 0;
 		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		bindings[0].descriptorCount = 1;
 		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
-		VkDescriptorSetLayoutCreateInfo createInfo = {};
+		VkDescriptorSetLayoutCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		createInfo.bindingCount = bindings.size();
 		createInfo.pBindings = bindings.data();
+		createInfo.bindingCount = bindings.size();
 
 		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &createInfo, nullptr, &m_CameraDescriptorSetLayout));
 	}
@@ -175,50 +176,48 @@ namespace milo {
 
 	void VulkanGeometryRenderPass::createMaterialDescriptorLayout() {
 
-		// TODO: combine image samplers for material textures
-
-		Array<VkDescriptorSetLayoutBinding, 1> bindings = {};
+		Array<VkDescriptorSetLayoutBinding, 2> bindings{};
+		// Material Data
 		bindings[0].binding = 0;
-		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		bindings[0].descriptorCount = 1;
 		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		// Material textures
+		bindings[1].binding = 1;
+		bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		bindings[1].descriptorCount = MAX_MATERIAL_TEXTURE_COUNT;
+		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
-		VkDescriptorSetLayoutCreateInfo createInfo = {};
+		VkDescriptorSetLayoutCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		createInfo.bindingCount = bindings.size();
 		createInfo.pBindings = bindings.data();
+		createInfo.bindingCount = bindings.size();
 
 		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &createInfo, nullptr, &m_MaterialDescriptorSetLayout));
 	}
 
 	void VulkanGeometryRenderPass::createMaterialDescriptorPool() {
 
-		VulkanDescriptorPool::CreateInfo createInfo = {};
+		VulkanDescriptorPool::CreateInfo createInfo{};
 		createInfo.capacity = MAX_SWAPCHAIN_IMAGE_COUNT;
 		createInfo.layout = m_MaterialDescriptorSetLayout;
 
-		VkDescriptorPoolSize poolSize = {};
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		poolSize.descriptorCount = MAX_SWAPCHAIN_IMAGE_COUNT;
+		Array<VkDescriptorPoolSize, 2> poolSizes{};
 
-		createInfo.poolSizes.push_back(poolSize);
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		poolSizes[0].descriptorCount = MAX_SWAPCHAIN_IMAGE_COUNT;
+
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[1].descriptorCount = MAX_SWAPCHAIN_IMAGE_COUNT * MAX_MATERIAL_TEXTURE_COUNT;
+
+		createInfo.poolSizes.push_back(poolSizes[0]);
+		createInfo.poolSizes.push_back(poolSizes[1]);
 
 		m_MaterialDescriptorPool = new VulkanDescriptorPool(m_Device, createInfo);
 	}
 
 	void VulkanGeometryRenderPass::createMaterialDescriptorSets() {
-
-		m_MaterialDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
-
-			VkDescriptorBufferInfo bufferInfo = {};
-			bufferInfo.buffer = m_MaterialUniformBuffer->vkBuffer();
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(MaterialData);
-
-			VkWriteDescriptorSet writeDescriptorSet = mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(0, descriptorSet, 1, &bufferInfo);
-
-			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptorSet, 0, nullptr));
-		});
+		m_MaterialDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT); // Updated every frame
 	}
 
 	void VulkanGeometryRenderPass::createPipelineLayout() {
@@ -242,13 +241,27 @@ namespace milo {
 
 	void VulkanGeometryRenderPass::createGraphicsPipeline() {
 
+		VulkanGraphicsPipelineInfo pipelineInfo{};
+		pipelineInfo.vkPipelineLayout = m_PipelineLayout;
+		pipelineInfo.vkRenderPass = m_RenderPass;
+		pipelineInfo.vkPipelineCache = VK_NULL_HANDLE;
+
+		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
+
+		pipelineInfo.shaderInfos.push_back({"resources/shaders/geometry/geometry.vert", VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaderInfos.push_back({"resources/shaders/geometry/geometry.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+
+		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+
+		m_GraphicsPipeline = VulkanGraphicsPipeline::create("VulkanGeometryRenderPass",
+															  m_Device->logical(), pipelineInfo);
 	}
 
 	void VulkanGeometryRenderPass::createCommandPool() {
-
+		m_CommandPool = new VulkanCommandPool(m_Device->graphicsQueue(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 	}
 
 	void VulkanGeometryRenderPass::createCommandBuffers() {
-
+		m_CommandPool->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, MAX_SWAPCHAIN_IMAGE_COUNT, m_CommandBuffers);
 	}
 }

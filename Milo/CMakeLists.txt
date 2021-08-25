@@ -85,7 +85,9 @@ target_link_libraries(${PROJECT_NAME} spdlog)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} shaderc)
 
+message("Target directory is ${PROJECT_BINARY_DIR}")
+
 set(RESOURCES_DIR ${PROJECT_SOURCE_DIR}/resources)
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${PROJECT_SOURCE_DIR}/resources/ $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources)
+        ${PROJECT_SOURCE_DIR}/resources/ ${PROJECT_BINARY_DIR}/resources)

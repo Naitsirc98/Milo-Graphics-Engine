@@ -27,6 +27,7 @@ namespace milo {
 	private:
 		static const uint32_t CAMERA_BUFFER_ALIGNMENT;
 		static const uint32_t MATERIAL_BUFFER_ALIGNMENT;
+		inline static const uint32_t MAX_MATERIAL_TEXTURE_COUNT = 8;
 	private:
 		VulkanDevice* m_Device = nullptr;
 
