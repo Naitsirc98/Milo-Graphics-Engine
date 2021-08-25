@@ -60,6 +60,21 @@ namespace milo {
 			VkFramebufferCreateInfo create(VkRenderPass renderPass = VK_NULL_HANDLE, uint32_t width = 0, uint32_t height = 0) noexcept;
 		}
 
+		namespace AttachmentDescription {
+			VkAttachmentDescription createPresentSrcAttachment();
+			VkAttachmentDescription createColorAttachment(VkFormat format);
+			VkAttachmentDescription createDepthStencilAttachment(VkFormat format = VK_FORMAT_MAX_ENUM);
+		}
+
+		namespace WriteDescriptorSet {
+			VkWriteDescriptorSet create(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount);
+			VkWriteDescriptorSet createUniformBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo);
+			VkWriteDescriptorSet createDynamicUniformBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo);
+			VkWriteDescriptorSet createStorageBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo);
+			VkWriteDescriptorSet createDynamicStorageBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo);
+			VkWriteDescriptorSet createCombineImageSamplerWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorImageInfo* pImageInfo);
+		}
+
 		String getErrorName(VkResult vkResult) noexcept;
 		PixelFormat toPixelFormat(VkFormat format);
 		VkFormat fromPixelFormat(PixelFormat pixelFormat);

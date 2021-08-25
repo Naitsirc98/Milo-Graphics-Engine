@@ -4,13 +4,20 @@
 #include "milo/graphics/vulkan/VulkanDevice.h"
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
+#include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
 
 namespace milo {
 
 	class VulkanGeometryRenderPass : public GeometryRenderPass {
 		friend class GeometryRenderPass;
 	private:
-		struct MaterialUniformBufferData {
+		struct CameraData {
+			Matrix4 view;
+			Matrix4 proj;
+			Matrix4 projView;
+		};
+
+		struct MaterialData {
 
 		};
 
@@ -18,16 +25,19 @@ namespace milo {
 
 		};
 	private:
+		static const uint32_t CAMERA_BUFFER_ALIGNMENT;
+		static const uint32_t MATERIAL_BUFFER_ALIGNMENT;
+	private:
 		VulkanDevice* m_Device = nullptr;
 
 		VkFramebuffer m_Framebuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 
-		VulkanBuffer* m_CameraUniformBuffer = nullptr;
+		VulkanUniformBuffer<CameraData>* m_CameraUniformBuffer = nullptr;
 		VkDescriptorSetLayout m_CameraDescriptorSetLayout = VK_NULL_HANDLE;
 		VulkanDescriptorPool* m_CameraDescriptorPool = nullptr;
 
-		VulkanBuffer* m_MaterialUniformBuffer = nullptr;
+		VulkanUniformBuffer<MaterialData>* m_MaterialUniformBuffer = nullptr;
 		VkDescriptorSetLayout m_MaterialDescriptorSetLayout = VK_NULL_HANDLE;
 		VulkanDescriptorPool* m_MaterialDescriptorPool = nullptr;
 
@@ -46,10 +56,12 @@ namespace milo {
 		void createFramebuffers(FrameGraphResourcePool* resourcePool);
 
 		void createCameraUniformBuffer();
+		void createCameraDescriptorLayout();
 		void createCameraDescriptorPool();
 		void createCameraDescriptorSets();
 
 		void createMaterialUniformBuffer();
+		void createMaterialDescriptorLayout();
 		void createMaterialDescriptorPool();
 		void createMaterialDescriptorSets();
 

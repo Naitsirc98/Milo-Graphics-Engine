@@ -177,6 +177,108 @@ namespace milo {
 
 	// =====
 
+	VkAttachmentDescription mvk::AttachmentDescription::createPresentSrcAttachment() {
+		VkAttachmentDescription colorAttachment = {};
+		colorAttachment.format = VulkanContext::get()->swapchain()->format();
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // TODO: get samples from context
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		return colorAttachment;
+	}
+
+	VkAttachmentDescription mvk::AttachmentDescription::createColorAttachment(VkFormat format) {
+		VkAttachmentDescription colorAttachment = {};
+		colorAttachment.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // TODO: get samples from context
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		return colorAttachment;
+	}
+
+	VkAttachmentDescription mvk::AttachmentDescription::createDepthStencilAttachment(VkFormat format) {
+
+		if(format == VK_FORMAT_MAX_ENUM) {
+			format = VulkanContext::get()->device()->depthFormat();
+		}
+
+		VkAttachmentDescription depthAttachment = {};
+		depthAttachment.format = format;
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // TODO: get samples from context
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+		return depthAttachment;
+	}
+
+	// =====
+
+	namespace mvk::WriteDescriptorSet {
+
+		VkWriteDescriptorSet create(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount) {
+			VkWriteDescriptorSet writeDescriptorSet = {};
+			writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet.dstBinding = binding;
+			writeDescriptorSet.descriptorCount = descriptorCount;
+			writeDescriptorSet.dstSet = set;
+			return writeDescriptorSet;
+		}
+
+		VkWriteDescriptorSet createUniformBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo) {
+			VkWriteDescriptorSet writeDescriptorSet = create(binding, set, descriptorCount);
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeDescriptorSet.pBufferInfo = pBufferInfo;
+			return writeDescriptorSet;
+		}
+
+		VkWriteDescriptorSet createDynamicUniformBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo) {
+			VkWriteDescriptorSet writeDescriptorSet = create(binding, set, descriptorCount);
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+			writeDescriptorSet.pBufferInfo = pBufferInfo;
+			return writeDescriptorSet;
+		}
+
+		VkWriteDescriptorSet createStorageBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo) {
+			VkWriteDescriptorSet writeDescriptorSet = create(binding, set, descriptorCount);
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			writeDescriptorSet.pBufferInfo = pBufferInfo;
+			return writeDescriptorSet;
+		}
+
+		VkWriteDescriptorSet createDynamicStorageBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo) {
+			VkWriteDescriptorSet writeDescriptorSet = create(binding, set, descriptorCount);
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+			writeDescriptorSet.pBufferInfo = pBufferInfo;
+			return writeDescriptorSet;
+		}
+
+		VkWriteDescriptorSet createCombineImageSamplerWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorImageInfo* pImageInfo) {
+			VkWriteDescriptorSet writeDescriptorSet = create(binding, set, descriptorCount);
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptorSet.pImageInfo = pImageInfo;
+			return writeDescriptorSet;
+		}
+
+	}
+
+	// =====
+
+
+	// =====
+
+
+	// =====
+
 	String mvk::getErrorName(VkResult vkResult) noexcept {
 		switch (vkResult) {
 			case VK_SUCCESS: return "VK_SUCCESS";
