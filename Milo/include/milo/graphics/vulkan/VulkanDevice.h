@@ -55,12 +55,15 @@ namespace milo {
 		VkQueueFlags m_Type = VK_QUEUE_FLAG_BITS_MAX_ENUM;
 		uint32_t m_Family = UINT32_MAX;
 		uint32_t m_Index = UINT32_MAX;
+		ArrayList<VkSemaphore> m_LastSignalSemaphores;
+		VkFence m_LastFence{VK_NULL_HANDLE};
 	private:
 		VulkanQueue() = default;
 		inline void init(VulkanDevice* device, String name, VkQueueFlags type) {
 			m_Device = device;
 			m_Name = std::move(name);
 			m_Type = type;
+			m_LastSignalSemaphores.reserve(4);
 		}
 	public:
 		~VulkanQueue() = default;
@@ -70,9 +73,12 @@ namespace milo {
 		inline VkQueueFlags type() const { return m_Type; }
 		inline uint32_t family() const { return m_Family; }
 		inline uint32_t index() const { return m_Index; }
+		inline const ArrayList<VkSemaphore>& waitSemaphores() const { return m_LastSignalSemaphores;}
+		inline VkFence lastFence() const {return m_LastFence;}
 
-		void submit(uint32_t submitCount, VkSubmitInfo* submitInfos, VkFence fence);
+		void submit(const VkSubmitInfo& submitInfo, VkFence fence);
 		void awaitTermination();
+		void clear();
 
 		inline bool operator==(const VulkanQueue& rhs) const { return m_Family == rhs.m_Family && m_Index == rhs.m_Index; }
 		inline bool operator!=(const VulkanQueue& rhs) const { return !(*this == rhs); }

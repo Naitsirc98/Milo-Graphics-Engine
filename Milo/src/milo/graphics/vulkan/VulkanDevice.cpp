@@ -6,12 +6,25 @@
 
 namespace milo {
 
-	void VulkanQueue::submit(uint32_t submitCount, VkSubmitInfo* submitInfos, VkFence fence) {
-		VK_CALL(vkQueueSubmit(m_VkQueue, submitCount, submitInfos, fence));
+	void VulkanQueue::submit(const VkSubmitInfo& submitInfo, VkFence fence) {
+
+		VK_CALL(vkQueueSubmit(m_VkQueue, 1, &submitInfo, fence));
+
+		m_LastSignalSemaphores.clear();
+		for(uint32_t i = 0;i < submitInfo.signalSemaphoreCount;++i) {
+			m_LastSignalSemaphores.push_back(submitInfo.pSignalSemaphores[i]);
+		}
+
+		m_LastFence = fence;
 	}
 
 	void VulkanQueue::awaitTermination() {
 		m_Device->awaitTermination(m_VkQueue);
+	}
+
+	void VulkanQueue::clear() {
+		m_LastSignalSemaphores.clear();
+		m_LastFence = VK_NULL_HANDLE;
 	}
 
 	// =====

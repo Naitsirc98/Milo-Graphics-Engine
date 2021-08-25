@@ -22,6 +22,9 @@ namespace milo {
 		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
 		VkPipeline m_GraphicsPipeline{VK_NULL_HANDLE};
 
+		VkSemaphore m_SignalSemaphores[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
+		VkFence m_Fences[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
+
 		VulkanCommandPool* m_CommandPool{nullptr};
 		VkCommandBuffer m_CommandBuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
 	public:
@@ -40,6 +43,9 @@ namespace milo {
 
 		void createPipelineLayout();
 		void createGraphicsPipeline();
+
+		void createSemaphores();
+		void createFences();
 
 		void createCommandPool();
 		void createCommandBuffers();

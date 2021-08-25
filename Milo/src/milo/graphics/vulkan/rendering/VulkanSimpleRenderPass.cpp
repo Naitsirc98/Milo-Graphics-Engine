@@ -123,7 +123,7 @@ namespace milo {
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pWaitDstStageMask = executeInfo.waitDstStageMask;
 
-		m_Device->graphicsQueue()->submit(1, &submitInfo, executeInfo.fence);
+		m_Device->graphicsQueue()->submit(submitInfo, executeInfo.fence);
 	}
 
 	void VulkanSimpleRenderPass::updateCameraUniformBuffer(uint32_t swapchainImage, const Camera& camera) {

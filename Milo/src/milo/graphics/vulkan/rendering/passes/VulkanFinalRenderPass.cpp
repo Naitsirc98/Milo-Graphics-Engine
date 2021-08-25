@@ -32,12 +32,36 @@ namespace milo {
 		createPipelineLayout();
 		createGraphicsPipeline();
 
+		if(m_SignalSemaphores[0] == VK_NULL_HANDLE) {
+			createSemaphores();
+		}
+
+		if(m_Fences[0] == VK_NULL_HANDLE) {
+			createFences();
+		}
+
 		createCommandPool();
 		createCommandBuffers();
 	}
 
 	void VulkanFinalRenderPass::execute(Scene* scene) {
-		// TODO
+
+		VulkanQueue* queue = m_Device->graphicsQueue();
+		uint32_t imageIndex = m_Device->context()->vulkanPresenter()->currentImageIndex();
+
+		VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pWaitDstStageMask = &waitStages;
+		submitInfo.pWaitSemaphores = queue->waitSemaphores().data();
+		submitInfo.waitSemaphoreCount = queue->waitSemaphores().size();
+		submitInfo.pSignalSemaphores = &m_SignalSemaphores[imageIndex];
+		submitInfo.signalSemaphoreCount = 1;
+
+		queue->submit(submitInfo, VK_NULL_HANDLE);
 	}
 
 	void VulkanFinalRenderPass::createRenderPass() {
@@ -174,6 +198,27 @@ namespace milo {
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/fullscreen_quad/fullscreen_quad.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
 		m_GraphicsPipeline = VulkanGraphicsPipeline::create("VulkanFinalRenderPass", m_Device->logical(), pipelineInfo);
+	}
+
+	void VulkanFinalRenderPass::createSemaphores() {
+
+		VkSemaphoreCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALL(vkCreateSemaphore(m_Device->logical(), &createInfo, nullptr, &m_SignalSemaphores[i]));
+		}
+	}
+
+	void VulkanFinalRenderPass::createFences() {
+
+		VkFenceCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALL(vkCreateFence(m_Device->logical(), &createInfo, nullptr, &m_Fences[i]));
+		}
 	}
 
 	void VulkanFinalRenderPass::createCommandPool() {

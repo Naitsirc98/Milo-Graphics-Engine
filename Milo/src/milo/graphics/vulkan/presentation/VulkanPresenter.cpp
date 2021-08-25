@@ -90,18 +90,17 @@ namespace milo {
 
 	void VulkanPresenter::end() {
 
-		VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkSwapchainKHR swapchains = m_Swapchain->vkSwapchain();
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-		presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
-		presentInfo.waitSemaphoreCount = 1;
-
-		VkSwapchainKHR swapchains = m_Swapchain->vkSwapchain();
+		presentInfo.pWaitSemaphores = m_Device->graphicsQueue()->waitSemaphores().data();
+		presentInfo.waitSemaphoreCount = m_Device->graphicsQueue()->waitSemaphores().size();
+		//presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
+		//presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pSwapchains = &swapchains;
 		presentInfo.swapchainCount = 1;
-
 		presentInfo.pImageIndices = &m_CurrentImageIndex;
 
 		VkResult result = VK_CALLR(vkQueuePresentKHR(m_PresentationQueue, &presentInfo));
