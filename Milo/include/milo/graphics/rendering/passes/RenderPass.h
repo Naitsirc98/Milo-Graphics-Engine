@@ -42,5 +42,6 @@ namespace milo {
 		virtual RenderPass::OutputDescription outputDescription() const = 0;
 		virtual void compile(FrameGraphResourcePool* resourcePool) = 0;
 		virtual void execute(Scene* scene) = 0;
+		virtual const String& name() const = 0;
 	};
 }

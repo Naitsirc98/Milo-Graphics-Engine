@@ -18,7 +18,7 @@ namespace milo {
 		VkQueue m_PresentationQueue = VK_NULL_HANDLE;
 		// Synchronization objects
 		VkFence m_ImageAvailableFences[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
-		VkFence m_FramesInFlightFences[MAX_FRAMES_IN_FLIGHT]{VK_NULL_HANDLE};
+		VkFence m_FramesInFlightFences[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
 		VkSemaphore m_ImageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT]{VK_NULL_HANDLE};
 		VkSemaphore m_RenderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT]{VK_NULL_HANDLE};
 		// Current State

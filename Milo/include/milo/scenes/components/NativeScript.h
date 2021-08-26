@@ -1,5 +1,7 @@
 #pragma once
 
+#include "milo/scenes/EntityComponentSystem.h"
+
 namespace milo {
 
 	class Entity;

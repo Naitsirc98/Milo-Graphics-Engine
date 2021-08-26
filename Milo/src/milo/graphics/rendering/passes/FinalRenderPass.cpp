@@ -25,6 +25,11 @@ namespace milo {
 		return id();
 	}
 
+	const String& FinalRenderPass::name() const {
+		static const String name = "FinalRenderPass";
+		return name;
+	}
+
 	FinalRenderPass* FinalRenderPass::create() {
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 			return new VulkanFinalRenderPass();

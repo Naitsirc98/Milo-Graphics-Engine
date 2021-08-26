@@ -45,29 +45,46 @@ namespace milo {
 		m_RenderPassExecutionList.clear();
 	}
 
+	template<typename T>
+	inline static uint32_t assignResource(T& dstResource, const T& srcResource) {
+		if(dstResource != srcResource) {
+			dstResource = srcResource;
+			return 1;
+		}
+		return 0;
+	}
+
 	inline void FrameGraph::assignResources() {
 
-		for(RenderPass* renderPass : m_RenderPassExecutionList) {
+		for(RenderPass* pass : m_RenderPassExecutionList) {
 
-			RenderPass::InputDescription inputDesc = renderPass->inputDescription();
-			RenderPass::OutputDescription outputDesc = renderPass->outputDescription();
+			RenderPass::InputDescription inputDesc = pass->inputDescription();
+			RenderPass::OutputDescription outputDesc = pass->outputDescription();
 
+			uint32_t changes = 0;
+
+			// Input resources
 			for(uint8_t i = 0; i < inputDesc.bufferCount; ++i) {
-				renderPass->m_Input.buffers[i] = m_ResourcePool->getBuffer(inputDesc.buffers[i]);
+				changes += assignResource(pass->m_Input.buffers[i], m_ResourcePool->getBuffer(inputDesc.buffers[i]));
 			}
 			for(uint8_t i = 0; i < inputDesc.textureCount; ++i) {
-				renderPass->m_Input.textures[i] = m_ResourcePool->getTexture2D(inputDesc.textures[i]);
+				changes += assignResource(pass->m_Input.textures[i], m_ResourcePool->getTexture2D(inputDesc.textures[i]));
 			}
 
+			// Output resources
 			for(uint8_t i = 0; i < outputDesc.bufferCount; ++i) {
-				renderPass->m_Output.buffers[i] = m_ResourcePool->getBuffer(outputDesc.buffers[i]);
+				changes += assignResource(pass->m_Output.buffers[i], m_ResourcePool->getBuffer(outputDesc.buffers[i]));
 			}
 			for(uint8_t i = 0; i < outputDesc.textureCount; ++i) {
-				renderPass->m_Output.textures[i] = m_ResourcePool->getTexture2D(outputDesc.textures[i]);
+				changes += assignResource(pass->m_Output.textures[i], m_ResourcePool->getTexture2D(outputDesc.textures[i]));
 			}
 
-			// TODO: only compile render pass if input/output resources have changed
-			renderPass->compile(m_ResourcePool);
+			if(changes > 0) {
+#ifdef _DEBUG
+				Log::debug("Compiling render pass {}", pass->name());
+#endif
+				pass->compile(m_ResourcePool);
+			}
 		}
 	}
 

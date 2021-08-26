@@ -2,6 +2,8 @@
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/rendering/VulkanFrameGraphResourcePool.h"
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
+#include "milo/graphics/vulkan/buffers/VulkanMeshBuffers.h"
+#include "milo/scenes/Entity.h"
 
 namespace milo {
 
@@ -44,10 +46,146 @@ namespace milo {
 			createCommandPool();
 			createCommandBuffers();
 		}
+
+		if(m_SignalSemaphores[0] == VK_NULL_HANDLE) {
+			createSemaphores();
+		}
+
+		if(m_Fences[0] == VK_NULL_HANDLE) {
+			createFences();
+		}
 	}
 
 	void VulkanGeometryRenderPass::execute(Scene* scene) {
-		// TODO
+
+		const uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
+		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
+		VulkanQueue* queue = m_Device->graphicsQueue();
+
+		buildCommandBuffer(imageIndex, commandBuffer, scene);
+
+		VkPipelineStageFlags waitStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitSemaphores = queue->waitSemaphores().data();
+		submitInfo.waitSemaphoreCount = queue->waitSemaphores().size();
+		submitInfo.pSignalSemaphores = &m_SignalSemaphores[imageIndex];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pWaitDstStageMask = &waitStageMask;
+
+		VK_CALL(vkResetFences(m_Device->logical(), 1, &m_Fences[imageIndex]));
+
+		queue->submit(submitInfo, queue->lastFence());
+	}
+
+	void VulkanGeometryRenderPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
+
+		Entity cameraEntity = scene->cameraEntity();
+
+		if(!cameraEntity.valid()) {
+			// TODO
+			throw MILO_RUNTIME_EXCEPTION("Main Camera Entity is not valid");
+		}
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+		{
+			VkRenderPassBeginInfo renderPassInfo = {};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassInfo.renderPass = m_RenderPass;
+			renderPassInfo.framebuffer = m_Framebuffers[imageIndex];
+			renderPassInfo.renderArea.offset = {0, 0};
+			renderPassInfo.renderArea.extent = m_Device->context()->swapchain()->extent();
+
+			VkClearValue clearValues[2];
+			clearValues[0].color = {{0.1f, 0.1f, 0.1f, 1.0f}};
+			clearValues[1].depthStencil = {1.0f, 0};
+
+			renderPassInfo.clearValueCount = 2;
+			renderPassInfo.pClearValues = clearValues;
+
+			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
+			{
+				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline));
+
+				Size size = Window::get()->size();
+				VkViewport viewport = {};
+				viewport.x = 0;
+				viewport.y = 0;
+				viewport.minDepth = 0;
+				viewport.maxDepth = 1;
+				viewport.width = size.width;
+				viewport.height = size.height;
+
+				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
+
+				Camera& camera = cameraEntity.getComponent<Camera>();
+				Matrix4 view = camera.viewMatrix(cameraEntity.getComponent<Transform>().modelMatrix());
+				Matrix4 proj = camera.projectionMatrix();
+				Matrix4 projView = proj * view;
+
+				m_CameraUniformBuffer->update(imageIndex, {proj, view, projView});
+
+				VkDescriptorSet cameraDescriptorSet = m_CameraDescriptorPool->get(imageIndex);
+				uint32_t dynamicOffsets = 0;
+				VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
+												 0, 1, &cameraDescriptorSet, 1, &dynamicOffsets));
+
+				Mesh* lastMesh = nullptr;
+				Material* lastMaterial = nullptr;
+
+				auto components = scene->group<Transform, MeshView>();
+				for(EntityId entityId : components) {
+
+					const Transform& transform = components.get<Transform>(entityId);
+					const MeshView& meshView = components.get<MeshView>(entityId);
+
+					if(lastMaterial != meshView.material) {
+
+						MaterialData materialData = {};
+						materialData.color = meshView.material->baseColor();
+
+						VkDescriptorSet materialDescriptorSet = m_MaterialDescriptorPool->get(imageIndex);
+						dynamicOffsets = 0;
+						VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+														 m_PipelineLayout,
+														 0, 1, &materialDescriptorSet, 1, &dynamicOffsets));
+
+						lastMaterial = meshView.material;
+					}
+
+					if(lastMesh != meshView.mesh) {
+
+						VulkanMeshBuffers* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(meshView.mesh->buffers());
+
+						VkBuffer vertexBuffers[] = {meshBuffers->vertexBuffer()->vkBuffer()};
+						VkDeviceSize offsets[] = {0};
+						VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
+
+						VK_CALLV(vkCmdBindIndexBuffer(commandBuffer, meshBuffers->indexBuffer()->vkBuffer(), 0, VK_INDEX_TYPE_UINT32));
+
+						lastMesh = meshView.mesh;
+					}
+
+					PushConstants pushConstants = {transform.modelMatrix()};
+					VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
+												0, sizeof(PushConstants), &pushConstants));
+
+					if(meshView.mesh->indices().empty()) {
+						VK_CALLV(vkCmdDraw(commandBuffer, meshView.mesh->vertices().size(), 1, 0, 0));
+					} else {
+						VK_CALLV(vkCmdDrawIndexed(commandBuffer, meshView.mesh->indices().size(), 1, 0, 0, 0));
+					}
+				}
+			}
+			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
+		}
+		VK_CALLV(vkEndCommandBuffer(commandBuffer));
 	}
 
 	void VulkanGeometryRenderPass::createRenderPass() {
@@ -262,5 +400,26 @@ namespace milo {
 
 	void VulkanGeometryRenderPass::createCommandBuffers() {
 		m_CommandPool->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, MAX_SWAPCHAIN_IMAGE_COUNT, m_CommandBuffers);
+	}
+
+	void VulkanGeometryRenderPass::createSemaphores() {
+
+		VkSemaphoreCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALL(vkCreateSemaphore(m_Device->logical(), &createInfo, nullptr, &m_SignalSemaphores[i]));
+		}
+	}
+
+	void VulkanGeometryRenderPass::createFences() {
+
+		VkFenceCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALL(vkCreateFence(m_Device->logical(), &createInfo, nullptr, &m_Fences[i]));
+		}
 	}
 }

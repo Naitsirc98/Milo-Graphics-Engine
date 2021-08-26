@@ -36,6 +36,11 @@ namespace milo {
 		return id();
 	}
 
+	const String& GeometryRenderPass::name() const {
+		static const String name = "GeometryRenderPass";
+		return name;
+	}
+
 	GeometryRenderPass* GeometryRenderPass::create() {
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 			return new VulkanGeometryRenderPass();

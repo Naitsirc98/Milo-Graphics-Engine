@@ -41,7 +41,7 @@ namespace milo {
 		}
 
 		createCommandPool();
-		createCommandBuffers();
+		createCommandBuffers(resourcePool);
 	}
 
 	void VulkanFinalRenderPass::execute(Scene* scene) {
@@ -225,13 +225,17 @@ namespace milo {
 		m_CommandPool = new VulkanCommandPool(m_Device->graphicsQueue());
 	}
 
-	void VulkanFinalRenderPass::createCommandBuffers() {
+	void VulkanFinalRenderPass::createCommandBuffers(FrameGraphResourcePool* resourcePool) {
 
 		VulkanSwapchain* swapchain = m_Device->context()->swapchain();
 		VkDescriptorSet* descriptorSets = m_TextureDescriptorPool->descriptorSets();
 		Mesh* mesh = Assets::meshes().getPlane();
 		auto buffers = dynamic_cast<VulkanMeshBuffers*>(mesh->buffers());
 		VkBuffer vertexBuffer = buffers->vertexBuffer()->vkBuffer();
+
+		VulkanFrameGraphResourcePool* pool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
+
+		auto& textures = pool->getTextures2D(m_Input.textures[0].handle);
 
 		m_CommandPool->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, MAX_SWAPCHAIN_IMAGE_COUNT, m_CommandBuffers);
 
@@ -255,6 +259,18 @@ namespace milo {
 				renderPassInfo.renderArea.extent = swapchain->extent();
 				renderPassInfo.pClearValues = &clearValues;
 				renderPassInfo.clearValueCount = 1;
+
+				VulkanTexture2D* texture = dynamic_cast<VulkanTexture2D*>(textures[i].texture);
+
+				VkImageMemoryBarrier imageMemoryBarrier = mvk::ImageMemoryBarrier::create(texture->vkImage(),
+																						  texture->layout(),
+																						  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+				imageMemoryBarrier.srcAccessMask = 0;
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+				texture->transitionLayout(commandBuffer, imageMemoryBarrier,
+										  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 				VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 				{

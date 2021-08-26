@@ -4,6 +4,7 @@
 #include "milo/graphics/vulkan/VulkanDevice.h"
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/vulkan/VulkanDevice.h"
+#include "milo/graphics/vulkan/rendering/VulkanFrameGraphResourcePool.h"
 
 namespace milo {
 
@@ -48,7 +49,7 @@ namespace milo {
 		void createFences();
 
 		void createCommandPool();
-		void createCommandBuffers();
+		void createCommandBuffers(FrameGraphResourcePool* resourcePool);
 	};
 
 }

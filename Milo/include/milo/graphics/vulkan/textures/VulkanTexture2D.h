@@ -58,9 +58,10 @@ namespace milo {
 
 		void generateMipmaps() override;
 
-	private:
 		void transitionLayout(VkCommandBuffer commandBuffer, const VkImageMemoryBarrier& memoryBarrier,
 							  VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage);
+
+	private:
 		void copyFromBuffer(VkCommandBuffer commandBuffer, VulkanBuffer& buffer);
 	public:
 		static VulkanTexture2D* create();

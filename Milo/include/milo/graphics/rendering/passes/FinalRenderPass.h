@@ -10,6 +10,7 @@ namespace milo {
 		InputDescription inputDescription() const override;
 		OutputDescription outputDescription() const override;
 		RenderPassId getId() const override;
+		const String& name() const override;
 	public:
 		static FinalRenderPass* create();
 		static size_t id();

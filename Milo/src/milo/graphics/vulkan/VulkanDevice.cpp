@@ -22,6 +22,12 @@ namespace milo {
 		m_Device->awaitTermination(m_VkQueue);
 	}
 
+	void VulkanQueue::waitForFences() {
+		if(m_LastFence == VK_NULL_HANDLE) return;
+		VK_CALL(vkWaitForFences(m_Device->logical(), 1, &m_LastFence, VK_TRUE, UINT64_MAX));
+		m_LastFence = VK_NULL_HANDLE;
+	}
+
 	void VulkanQueue::clear() {
 		m_LastSignalSemaphores.clear();
 		m_LastFence = VK_NULL_HANDLE;

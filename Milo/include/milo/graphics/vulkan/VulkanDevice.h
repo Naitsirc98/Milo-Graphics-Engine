@@ -74,10 +74,16 @@ namespace milo {
 		inline uint32_t family() const { return m_Family; }
 		inline uint32_t index() const { return m_Index; }
 		inline const ArrayList<VkSemaphore>& waitSemaphores() const { return m_LastSignalSemaphores;}
+		inline void setWaitSemaphores(VkSemaphore* semaphores, uint32_t count) {
+			m_LastSignalSemaphores.clear();
+			for(uint32_t i = 0;i < count;++i) m_LastSignalSemaphores.push_back(semaphores[i]);
+		}
 		inline VkFence lastFence() const {return m_LastFence;}
+		inline void setFence(VkFence fence) {m_LastFence = fence;}
 
 		void submit(const VkSubmitInfo& submitInfo, VkFence fence);
 		void awaitTermination();
+		void waitForFences();
 		void clear();
 
 		inline bool operator==(const VulkanQueue& rhs) const { return m_Family == rhs.m_Family && m_Index == rhs.m_Index; }

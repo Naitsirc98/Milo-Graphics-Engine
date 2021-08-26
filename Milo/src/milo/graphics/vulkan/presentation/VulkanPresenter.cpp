@@ -36,17 +36,21 @@ namespace milo {
 
 		m_CurrentFrame = advanceToNextFrame();
 
+		LOG_DEBUG("waitForPreviousFrameToComplete");
 		waitForPreviousFrameToComplete();
 
+		LOG_DEBUG("tryGetNextSwapchainImage");
 		if(!tryGetNextSwapchainImage()) return false;
 
+		LOG_DEBUG("setCurrentFrameInFlight");
 		setCurrentFrameInFlight();
 
 		return true;
 	}
 
 	inline void VulkanPresenter::waitForPreviousFrameToComplete() {
-		VK_CALL(vkWaitForFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
+		//VK_CALL(vkWaitForFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
+		m_Device->graphicsQueue()->waitForFences();
 	}
 
 	inline bool VulkanPresenter::tryGetNextSwapchainImage() {
@@ -79,13 +83,16 @@ namespace milo {
 		if (m_ImageAvailableFences[m_CurrentImageIndex] != VK_NULL_HANDLE)
 			VK_CALL(vkWaitForFences(dv, 1, &m_ImageAvailableFences[m_CurrentImageIndex], VK_TRUE, UINT64_MAX));
 
-		m_ImageAvailableFences[m_CurrentImageIndex] = m_FramesInFlightFences[m_CurrentFrame];
+		m_ImageAvailableFences[m_CurrentImageIndex] = m_FramesInFlightFences[m_CurrentImageIndex];
+
+		m_Device->graphicsQueue()->setWaitSemaphores(&imgSemaphore, 1);
+		m_Device->graphicsQueue()->setFence(m_FramesInFlightFences[m_CurrentImageIndex]);
 
 		return success;
 	}
 
 	inline void VulkanPresenter::setCurrentFrameInFlight() {
-		VK_CALL(vkResetFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentFrame]));
+		VK_CALL(vkResetFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentImageIndex]));
 	}
 
 	void VulkanPresenter::end() {
@@ -115,6 +122,8 @@ namespace milo {
 			default:
 				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + mvk::getErrorName(result));
 		}
+
+		//m_Device->graphicsQueue()->clear();
 	}
 
 	uint32_t VulkanPresenter::currentImageIndex() const {
@@ -145,6 +154,9 @@ namespace milo {
 		for(uint32_t i = 0;i < MAX_FRAMES_IN_FLIGHT;++i) {
 			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
 			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
+		}
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 			VK_CALL(vkCreateFence(device, &fenceInfo, nullptr, &m_FramesInFlightFences[i]));
 		}
 	}
@@ -154,8 +166,12 @@ namespace milo {
 		for(uint32_t i = 0;i < MAX_FRAMES_IN_FLIGHT;++i) {
 			VK_CALLV(vkDestroySemaphore(device, m_ImageAvailableSemaphore[i], nullptr));
 			VK_CALLV(vkDestroySemaphore(device, m_RenderFinishedSemaphore[i], nullptr));
+		}
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 			VK_CALLV(vkDestroyFence(device, m_FramesInFlightFences[i], nullptr));
 		}
+
 		memset(m_ImageAvailableFences, NULL, MAX_SWAPCHAIN_IMAGE_COUNT * sizeof(VkFence));
 	}
 

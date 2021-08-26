@@ -17,7 +17,7 @@ namespace milo {
 
 	void VulkanSimpleRenderPass::execute(const VulkanSimpleRenderPass::Input& executeInfo) {
 
-		uint32_t imageIndex=executeInfo.swapchainImageIndex;uint32_t swapchainImageIndex = imageIndex;
+		uint32_t imageIndex = executeInfo.swapchainImageIndex;uint32_t swapchainImageIndex = imageIndex;
 
 		Vector3 cameraPos   = Vector3(0.0f, 0.0f,  3.0f);
 		Vector3 cameraFront = Vector3(0.0f, 0.0f, -1.0f);

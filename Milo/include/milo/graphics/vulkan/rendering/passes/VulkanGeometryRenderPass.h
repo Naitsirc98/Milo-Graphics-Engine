@@ -12,8 +12,8 @@ namespace milo {
 		friend class GeometryRenderPass;
 	private:
 		struct CameraData {
-			Matrix4 view;
 			Matrix4 proj;
+			Matrix4 view;
 			Matrix4 projView;
 		};
 
@@ -47,6 +47,9 @@ namespace milo {
 
 		VulkanCommandPool* m_CommandPool = nullptr;
 		VkCommandBuffer m_CommandBuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
+
+		VkSemaphore m_SignalSemaphores[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
+		VkFence m_Fences[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
 	public:
 		VulkanGeometryRenderPass();
 		~VulkanGeometryRenderPass();
@@ -71,6 +74,11 @@ namespace milo {
 
 		void createCommandPool();
 		void createCommandBuffers();
+
+		void createSemaphores();
+		void createFences();
+
+		void buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
 	};
 
 }

@@ -114,6 +114,14 @@ namespace milo {
 		BufferDescription description = {};
 		Buffer* buffer = nullptr;
 
+		bool operator==(const FrameGraphBuffer& rhs) const {
+			return handle == rhs.handle;
+		}
+
+		bool operator!=(const FrameGraphBuffer& rhs) const {
+			return !(rhs == *this);
+		}
+
 		inline bool operator==(ResourceHandle handle) const noexcept {
 			return this->handle == handle;
 		}
@@ -133,6 +141,14 @@ namespace milo {
 		ResourceHandle handle = NULL;
 		Texture2DDescription description = {};
 		Texture2D* texture = nullptr;
+
+		bool operator==(const FrameGraphTexture2D& rhs) const {
+			return handle == rhs.handle;
+		}
+
+		bool operator!=(const FrameGraphTexture2D& rhs) const {
+			return !(rhs == *this);
+		}
 
 		inline bool operator==(ResourceHandle handle) const noexcept {
 			return this->handle == handle;
