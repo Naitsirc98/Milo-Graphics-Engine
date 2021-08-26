@@ -1,5 +1,6 @@
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
-#include "milo/graphics/shaders/SPIRVCompiler.h"
+#include "milo/assets/AssetManager.h"
+#include "milo/graphics/vulkan/shaders/VulkanShader.h"
 
 namespace milo {
 
@@ -9,7 +10,6 @@ namespace milo {
 		if(info.vkPipelineLayout == VK_NULL_HANDLE) throw MILO_RUNTIME_EXCEPTION("Pipeline Layout has not been set");
 		if(info.vkRenderPass == VK_NULL_HANDLE) throw MILO_RUNTIME_EXCEPTION("Render Pass has not been set");
 		if(info.shaderInfos.empty()) throw MILO_RUNTIME_EXCEPTION("Graphics Pipeline has no shaders");
-		Log::debug("Creating GraphicsPipeline {}", name);
 #endif
 
 		ArrayList<VkShaderModule> shaderModules = toShaderModules(device, info.shaderInfos);
@@ -56,7 +56,7 @@ namespace milo {
 		VkPipeline vkPipeline;
 		VK_CALL(vkCreateGraphicsPipelines(device, info.vkPipelineCache, 1, &pipelineInfo, nullptr, &vkPipeline));
 
-		Log::debug("vkCreateGraphicsPipelines finished after {} ms", Time::millis() - start);
+		Log::debug("{} pipeline created after {} ms", name, Time::millis() - start);
 
 		for(VkShaderModule shaderModule : shaderModules) {
 			VK_CALLV(vkDestroyShaderModule(device, shaderModule, nullptr));
@@ -81,26 +81,14 @@ namespace milo {
 		return shaderStages;
 	}
 
-	inline shaderc_shader_kind getShaderStage(const VulkanShaderInfo& shaderInfo) {
-		switch(shaderInfo.stage) {
-			case VK_SHADER_STAGE_VERTEX_BIT: return shaderc_vertex_shader;
-			case VK_SHADER_STAGE_FRAGMENT_BIT: return shaderc_fragment_shader;
-			case VK_SHADER_STAGE_COMPUTE_BIT: return shaderc_compute_shader;
-			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT: return shaderc_tess_control_shader;
-			case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT: return shaderc_tess_evaluation_shader;
-		}
-		throw MILO_RUNTIME_EXCEPTION(str("Unknown shader type ") + str(shaderInfo.stage));
-	}
-
 	VkShaderModule VulkanGraphicsPipeline::createShaderModule(VkDevice device, const VulkanShaderInfo& shaderInfo) {
 
-		SPIRVCompiler compiler;
-		SPIRV spirv = compiler.compile(shaderInfo.filename, getShaderStage(shaderInfo));
+		VulkanShader* shader = dynamic_cast<VulkanShader*>(Assets::shaders().load(shaderInfo.filename));
 
 		VkShaderModuleCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = spirv.length();
-		createInfo.pCode = spirv.code();
+		createInfo.codeSize = shader->bytecodeLength();
+		createInfo.pCode = (uint32_t*)shader->bytecode();
 
 		VkShaderModule shaderModule;
 		VK_CALL(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));

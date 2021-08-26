@@ -1,11 +1,13 @@
 #pragma once
 
+#include "Shader.h"
+#include "milo/io/Files.h"
 #include <shaderc/shaderc.h>
-#include "milo/common/Common.h"
 
 namespace milo {
 
 	struct SPIRV {
+
 		shaderc_compilation_result_t compilationResult;
 
 		SPIRV(shaderc_compilation_result_t compilationResult);
@@ -15,7 +17,7 @@ namespace milo {
 		SPIRV& operator=(const SPIRV& other) = delete;
 		SPIRV& operator=(SPIRV&& other);
 
-		const uint32_t* code() const;
+		const byte_t* code() const;
 		size_t length() const;
 	};
 
@@ -25,6 +27,6 @@ namespace milo {
 	public:
 		SPIRVCompiler();
 		~SPIRVCompiler();
-		SPIRV compile(const String& filename, shaderc_shader_kind shaderKind);
+		SPIRV compile(const String& filename, Shader::Type type);
 	};
 }

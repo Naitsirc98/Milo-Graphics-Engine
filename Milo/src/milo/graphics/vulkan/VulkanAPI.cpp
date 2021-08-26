@@ -538,4 +538,24 @@ namespace milo {
 				throw MILO_RUNTIME_EXCEPTION("Unsupported pixel format");
 		}
 	}
+
+	VkShaderStageFlags mvk::fromShaderType(Shader::Type type) {
+		switch(type) {
+			case Shader::Type::Vertex:
+				return VK_SHADER_STAGE_VERTEX_BIT;
+			case Shader::Type::Fragment:
+				return VK_SHADER_STAGE_FRAGMENT_BIT;
+			case Shader::Type::Geometry:
+				return VK_SHADER_STAGE_GEOMETRY_BIT;
+			case Shader::Type::TessControl:
+				return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+			case Shader::Type::TessEvaluation:
+				return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+			case Shader::Type::Compute:
+				return VK_SHADER_STAGE_COMPUTE_BIT;
+			case Shader::Type::Undefined:
+			default:
+			throw MILO_RUNTIME_EXCEPTION("Unknown shader type");
+		}
+	}
 }

@@ -5,6 +5,7 @@
 
 #include "milo/graphics/Graphics.h"
 #include "milo/assets/images/PixelFormat.h"
+#include "milo/assets/shaders/Shader.h"
 
 #define MAX_FRAMES_IN_FLIGHT 2
 #define MAX_SWAPCHAIN_IMAGE_COUNT 3
@@ -78,6 +79,7 @@ namespace milo {
 		String getErrorName(VkResult vkResult) noexcept;
 		PixelFormat toPixelFormat(VkFormat format);
 		VkFormat fromPixelFormat(PixelFormat pixelFormat);
+		VkShaderStageFlags fromShaderType(Shader::Type type);
 	}
 }
 

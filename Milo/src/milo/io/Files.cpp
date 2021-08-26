@@ -1,6 +1,22 @@
 #include "milo/io/Files.h"
+#include "milo/logging/Log.h"
+#include <regex>
 
 namespace milo {
+
+	String Files::getName(const String& filename) {
+		return Path(filename).filename().string();
+	}
+
+	String Files::normalize(const String& filename) {
+		static const std::regex REGEX{R"(\\)"};
+		return std::regex_replace(filename, REGEX, "/");
+	}
+
+	String Files::resource(const String& filename) {
+		static const String RESOURCE_DIR = "resources/";
+		return RESOURCE_DIR + filename;
+	}
 
 	bool Files::exists(const String& filename) {
 		return std::filesystem::exists(filename);
@@ -41,11 +57,26 @@ namespace milo {
 		return parent + '/' + child;
 	}
 
-	ArrayList<String> Files::listFiles(const String& directory) {
+	ArrayList<String> Files::getDirectoryContents(const String& directory) {
 		if(!isDirectory(directory)) return {};
 		ArrayList<String> files;
 		for (const auto& entry : std::filesystem::directory_iterator(Path(directory)))
 			files.push_back(entry.path().string());
+		return files;
+	}
+
+	ArrayList<String> Files::listFiles(const String& directory, bool recursively) {
+		if(!isDirectory(directory)) return {};
+		ArrayList<String> files;
+		for (const auto& entry : std::filesystem::directory_iterator(Path(directory))) {
+			const Path& child = entry.path();
+			if(recursively && std::filesystem::is_directory(child)) {
+				ArrayList<String> contents = listFiles(child.string(), recursively);
+				files.insert(files.end(), contents.begin(), contents.end());
+			} else {
+				files.push_back(normalize(entry.path().string()));
+			}
+		}
 		return files;
 	}
 
@@ -82,16 +113,22 @@ namespace milo {
 	}
 
 	void Files::writeAllBytes(const String& filename, const int8* bytes, uint32 size) {
+		createDirectory(Path(filename).parent_path().string());
 		OutputStream outputStream(filename, OutputStream::binary);
+		if(!outputStream) {
+			throw MILO_RUNTIME_EXCEPTION(fmt::format("Failed to open file {}", filename));
+		}
 		outputStream.write((char*)bytes, size);
 	}
 
 	void Files::writeAllText(const String& filename, const String& str) {
+		createDirectory(Path(filename).parent_path().string());
 		OutputStream outputStream(filename);
 		outputStream.write(str.c_str(), static_cast<std::streamsize>(str.length()));
 	}
 
 	void Files::writeAllLines(const String& filename, const ArrayList<String>& lines) {
+		createDirectory(Path(filename).parent_path().string());
 		OutputStream outputStream(filename);
 		for(const String& line : lines) {
 			outputStream << line << '\n';

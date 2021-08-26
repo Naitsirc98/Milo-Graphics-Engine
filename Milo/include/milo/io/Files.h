@@ -15,6 +15,9 @@ namespace milo {
 
 	class Files {
 	public:
+		static String getName(const String& filename);
+		static String normalize(const String& filename);
+		static String resource(const String& filename);
 		static bool exists(const String& filename);
 		static void create(const String& filename);
 		static void createDirectory(const String& filename);
@@ -24,7 +27,8 @@ namespace milo {
 		static String extension(const String& filename);
 		static String parentOf(const String& filename);
 		static String append(const String& parent, const String& child);
-		static ArrayList<String> listFiles(const String& directory);
+		static ArrayList<String> getDirectoryContents(const String& directory);
+		static ArrayList<String> listFiles(const String& directory, bool recursively = true);
 		static ArrayList<int8> readAllBytes(const String& filename);
 		static String readAllText(const String& filename);
 		static ArrayList<String> readAllLines(const String& filename, uint32_t numLinesAprox = 16);

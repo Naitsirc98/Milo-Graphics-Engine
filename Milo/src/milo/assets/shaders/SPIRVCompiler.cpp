@@ -1,5 +1,5 @@
 #include <milo/logging/Log.h>
-#include "milo/graphics/shaders/SPIRVCompiler.h"
+#include "milo/assets/shaders/SPIRVCompiler.h"
 #include "milo/io/Files.h"
 
 namespace milo {
@@ -13,7 +13,19 @@ namespace milo {
 		m_Compiler = nullptr;
 	}
 
-	SPIRV SPIRVCompiler::compile(const String& filename, shaderc_shader_kind shaderKind) {
+	inline static shaderc_shader_kind toShaderKind(Shader::Type type) {
+		switch(type) {
+			case Shader::Type::Vertex: return shaderc_vertex_shader;
+			case Shader::Type::Fragment: return shaderc_fragment_shader;
+			case Shader::Type::Geometry: return shaderc_geometry_shader;
+			case Shader::Type::TessControl: return shaderc_tess_control_shader;
+			case Shader::Type::TessEvaluation: return shaderc_tess_evaluation_shader;
+			case Shader::Type::Compute: return shaderc_compute_shader;
+			case Shader::Type::Undefined: default: throw MILO_RUNTIME_EXCEPTION("Unknown shader type");
+		}
+	}
+
+	SPIRV SPIRVCompiler::compile(const String& filename, Shader::Type type) {
 
 		float start = Time::millis();
 
@@ -22,7 +34,8 @@ namespace milo {
 		shaderc_compile_options_t options = shaderc_compile_options_initialize();
 		shaderc_compile_options_set_source_language(options, shaderc_source_language_glsl);
 
-		shaderc_compilation_result_t result = shaderc_compile_into_spv(m_Compiler, srcCode.c_str(), srcCode.size(), shaderKind, filename.c_str(), "main", options);
+		shaderc_compilation_result_t result = shaderc_compile_into_spv(m_Compiler, srcCode.c_str(), srcCode.size(),
+																	   toShaderKind(type), filename.c_str(), "main", options);
 
 		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
 			const char* errorMessage = shaderc_result_get_error_message(result);
@@ -51,8 +64,8 @@ namespace milo {
 		return *this;
 	}
 
-	const uint32_t* SPIRV::code() const {
-		return (uint32_t*)shaderc_result_get_bytes(compilationResult);
+	const byte_t* SPIRV::code() const {
+		return (byte_t*)shaderc_result_get_bytes(compilationResult);
 	}
 
 	size_t SPIRV::length() const {
