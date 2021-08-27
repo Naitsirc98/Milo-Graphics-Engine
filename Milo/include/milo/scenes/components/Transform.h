@@ -5,6 +5,7 @@
 namespace milo {
 
 	struct Transform {
+
 		Vector3 translation;
 		Vector3 scale;
 		Quaternion rotation;

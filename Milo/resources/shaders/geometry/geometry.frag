@@ -1,10 +1,6 @@
 #version 450 core
 
-#define MAX_MATERIAL_TEXTURE_COUNT 8
-
-layout(push_constant) uniform PushConstants {
-    mat4 u_MVP;
-};
+#define MAX_MATERIAL_TEXTURE_COUNT 1
 
 layout(std140, set = 1, binding = 0) uniform MaterialUniformBuffer {
     vec4 color;

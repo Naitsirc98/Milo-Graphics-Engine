@@ -1,6 +1,7 @@
 #pragma once
 
 #include "milo/common/Common.h"
+#include "milo/graphics/Window.h"
 
 namespace milo {
 
@@ -84,7 +85,7 @@ namespace milo {
 			return lookAt({x, y}, sensitivity);
 		}
 
-		inline Camera& lookAt(const Vector2& position, float sensitivity = 1.0f) {
+		inline Camera& lookAt(const Vector2& position, float sensitivity = 0.2f) {
 
 			if(position == m_LastPosition) return *this;
 
@@ -102,13 +103,17 @@ namespace milo {
 			m_Pitch = clamp(yOffset + m_Pitch, MIN_PITCH, MAX_PITCH);
 		}
 
-		inline const Matrix4 viewMatrix(const Matrix4& transform) const { return inverse(transform);} // TODO
+		inline const Matrix4 viewMatrix(const Vector3& position) const {
+			return milo::lookAt(position, position + m_Forward, m_Up);
+		}
 
 		inline const Matrix4 projectionMatrix() const {
 
 			updateOrientation();
 
-			float aspect = m_Viewport.w == 0 ? 0 : m_Viewport.z / m_Viewport.w;
+			//float aspect = m_Viewport.w == 0 ? 0 : m_Viewport.z / m_Viewport.w;
+
+			float aspect = Window::get()->aspectRatio();
 
 			if(m_ProjectionType == ProjectionType::Perspective) {
 				return perspective(m_Fov, aspect, m_NearPlane, m_FarPlane);

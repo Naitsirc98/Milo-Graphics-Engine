@@ -79,10 +79,14 @@ namespace milo {
 		vmaAllocInfo.usage = m_Usage;
 		vmaAllocInfo.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
+
 		m_VkImageInfo.extent = {allocInfo.width, allocInfo.height, 1};
 		if(allocInfo.mipLevels == AUTO_MIP_LEVELS) {
 			m_VkImageInfo.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(allocInfo.width, allocInfo.height)))) + 1;
 		}
+
+		m_VkImageInfo.format = mvk::fromPixelFormat(allocInfo.format);
+		m_VkImageViewInfo.format = m_VkImageInfo.format;
 
 		VulkanAllocator::get()->allocateImage(m_VkImageInfo, vmaAllocInfo, m_VkImage, m_Allocation);
 

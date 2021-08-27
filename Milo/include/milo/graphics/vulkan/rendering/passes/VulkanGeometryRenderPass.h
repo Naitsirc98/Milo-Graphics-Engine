@@ -27,7 +27,7 @@ namespace milo {
 	private:
 		static const uint32_t CAMERA_BUFFER_ALIGNMENT;
 		static const uint32_t MATERIAL_BUFFER_ALIGNMENT;
-		inline static const uint32_t MAX_MATERIAL_TEXTURE_COUNT = 8;
+		inline static const uint32_t MAX_MATERIAL_TEXTURE_COUNT = 1;
 	private:
 		VulkanDevice* m_Device = nullptr;
 
@@ -56,6 +56,8 @@ namespace milo {
 		void compile(FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:
+		void updateMaterialDescriptorSet(VkDescriptorSet materialDescriptorSet, uint32_t imageIndex, Material* material);
+
 		void createRenderPass();
 		void createFramebuffers(FrameGraphResourcePool* resourcePool);
 

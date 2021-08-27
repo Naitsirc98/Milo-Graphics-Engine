@@ -12,7 +12,20 @@ namespace milo {
 	}
 
 	VulkanFrameGraphResourcePool::~VulkanFrameGraphResourcePool() {
-		// Resources will be automatically deleted via shared_ptr
+
+		VulkanContext::get()->device()->awaitTermination();
+
+		for(auto& buffers : m_Buffers) {
+			for(auto& buffer : buffers) {
+				DELETE_PTR(buffer.buffer)
+			}
+		}
+
+		for(auto& textures : m_Textures) {
+			for(auto& texture : textures) {
+				DELETE_PTR(texture.texture)
+			}
+		}
 	}
 
 	void VulkanFrameGraphResourcePool::clearReferences() {
@@ -23,7 +36,7 @@ namespace milo {
 			}
 		}
 
-		for(auto& textures : m_Buffers) {
+		for(auto& textures : m_Textures) {
 			for(auto& texture : textures) {
 				texture.useCount = 0;
 			}

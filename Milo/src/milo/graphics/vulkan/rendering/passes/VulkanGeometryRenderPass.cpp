@@ -12,7 +12,37 @@ namespace milo {
 	}
 
 	VulkanGeometryRenderPass::~VulkanGeometryRenderPass() {
-		// TODO
+
+		m_Device->awaitTermination();
+
+		VkDevice device = m_Device->logical();
+
+		VK_CALLV(vkDestroyRenderPass(device, m_RenderPass, nullptr));
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALLV(vkDestroyFramebuffer(device, m_Framebuffers[i], nullptr));
+		}
+
+		DELETE_PTR(m_CameraUniformBuffer);
+		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_CameraDescriptorSetLayout, nullptr));
+		DELETE_PTR(m_CameraDescriptorPool);
+
+		DELETE_PTR(m_MaterialUniformBuffer);
+		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_MaterialDescriptorSetLayout, nullptr));
+		DELETE_PTR(m_MaterialDescriptorPool);
+
+		VK_CALLV(vkDestroyPipeline(device, m_GraphicsPipeline, nullptr));
+		VK_CALLV(vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr));
+
+		DELETE_PTR(m_CommandPool);
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALLV(vkDestroySemaphore(device, m_SignalSemaphores[i], nullptr));
+		}
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALLV(vkDestroyFence(device, m_Fences[i], nullptr));
+		}
 	}
 
 	void VulkanGeometryRenderPass::compile(FrameGraphResourcePool* resourcePool) {
@@ -78,7 +108,9 @@ namespace milo {
 
 		VK_CALL(vkResetFences(m_Device->logical(), 1, &m_Fences[imageIndex]));
 
-		queue->submit(submitInfo, queue->lastFence());
+		VkFence fence = queue->lastFence();
+		queue->submit(submitInfo, VK_NULL_HANDLE);
+		queue->setFence(fence);
 	}
 
 	void VulkanGeometryRenderPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
@@ -103,7 +135,7 @@ namespace milo {
 			renderPassInfo.renderArea.extent = m_Device->context()->swapchain()->extent();
 
 			VkClearValue clearValues[2];
-			clearValues[0].color = {{0.1f, 0.1f, 0.1f, 1.0f}};
+			clearValues[0].color = {0.05f, 0.05f, 0.05f, 1};
 			clearValues[1].depthStencil = {1.0f, 0};
 
 			renderPassInfo.clearValueCount = 2;
@@ -125,16 +157,17 @@ namespace milo {
 				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
 
 				Camera& camera = cameraEntity.getComponent<Camera>();
-				Matrix4 view = camera.viewMatrix(cameraEntity.getComponent<Transform>().modelMatrix());
-				Matrix4 proj = camera.projectionMatrix();
-				Matrix4 projView = proj * view;
 
-				m_CameraUniformBuffer->update(imageIndex, {proj, view, projView});
+				CameraData cameraData;
+				cameraData.proj = camera.projectionMatrix();
+				cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+				cameraData.projView = cameraData.proj * cameraData.view;
+
+				m_CameraUniformBuffer->update(imageIndex, cameraData);
 
 				VkDescriptorSet cameraDescriptorSet = m_CameraDescriptorPool->get(imageIndex);
-				uint32_t dynamicOffsets = 0;
-				VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
-												 0, 1, &cameraDescriptorSet, 1, &dynamicOffsets));
+				//VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
+												 //0, 1, &cameraDescriptorSet, 1, &dynamicOffsets));
 
 				Mesh* lastMesh = nullptr;
 				Material* lastMaterial = nullptr;
@@ -147,14 +180,15 @@ namespace milo {
 
 					if(lastMaterial != meshView.material) {
 
-						MaterialData materialData = {};
-						materialData.color = meshView.material->baseColor();
-
 						VkDescriptorSet materialDescriptorSet = m_MaterialDescriptorPool->get(imageIndex);
-						dynamicOffsets = 0;
+
+						updateMaterialDescriptorSet(materialDescriptorSet, imageIndex, meshView.material);
+
+						VkDescriptorSet descriptorSets[] = {cameraDescriptorSet, materialDescriptorSet};
+						uint32_t dynamicOffsets[] = {imageIndex * m_CameraUniformBuffer->elementSize(), imageIndex * m_MaterialUniformBuffer->elementSize()};
 						VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 														 m_PipelineLayout,
-														 0, 1, &materialDescriptorSet, 1, &dynamicOffsets));
+														 0, 2, descriptorSets, 2, dynamicOffsets));
 
 						lastMaterial = meshView.material;
 					}
@@ -167,7 +201,9 @@ namespace milo {
 						VkDeviceSize offsets[] = {0};
 						VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
 
-						VK_CALLV(vkCmdBindIndexBuffer(commandBuffer, meshBuffers->indexBuffer()->vkBuffer(), 0, VK_INDEX_TYPE_UINT32));
+						if(!meshView.mesh->indices().empty()) {
+							VK_CALLV(vkCmdBindIndexBuffer(commandBuffer, meshBuffers->indexBuffer()->vkBuffer(), 0, VK_INDEX_TYPE_UINT32));
+						}
 
 						lastMesh = meshView.mesh;
 					}
@@ -186,6 +222,33 @@ namespace milo {
 			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
 		}
 		VK_CALLV(vkEndCommandBuffer(commandBuffer));
+	}
+
+	inline static VkImageView getImageView(Texture2D* texture) {
+		if(texture == nullptr) return VK_NULL_HANDLE;
+		return dynamic_cast<VulkanTexture2D*>(texture)->vkImageView();
+	}
+
+	inline static VkSampler getSampler(Texture2D* texture) {
+		if(texture == nullptr) return VK_NULL_HANDLE;
+		return dynamic_cast<VulkanTexture2D*>(texture)->vkSampler();
+	}
+
+	void VulkanGeometryRenderPass::updateMaterialDescriptorSet(VkDescriptorSet materialDescriptorSet, uint32_t imageIndex, Material* material) {
+
+		MaterialData materialData = {};
+		materialData.color = material->baseColor();
+
+		m_MaterialUniformBuffer->update(imageIndex, materialData);
+
+		VkDescriptorImageInfo imageInfo = {};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = getImageView(material->baseColorTexture());
+		imageInfo.sampler = getSampler(material->baseColorTexture());
+
+		VkWriteDescriptorSet writeDescriptorSet = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, materialDescriptorSet, 1, &imageInfo);
+
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptorSet, 0, nullptr));
 	}
 
 	void VulkanGeometryRenderPass::createRenderPass() {
@@ -354,7 +417,18 @@ namespace milo {
 	}
 
 	void VulkanGeometryRenderPass::createMaterialDescriptorSets() {
-		m_MaterialDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT); // Updated every frame
+
+		m_MaterialDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
+
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = m_MaterialUniformBuffer->vkBuffer();
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(MaterialData);
+
+			VkWriteDescriptorSet writeDescriptorSet = mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(0, descriptorSet, 1, &bufferInfo);
+
+			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptorSet, 0, nullptr));
+		});
 	}
 
 	void VulkanGeometryRenderPass::createPipelineLayout() {
@@ -364,7 +438,7 @@ namespace milo {
 		VkPushConstantRange pushConstants = {};
 		pushConstants.offset = 0;
 		pushConstants.size = sizeof(PushConstants);
-		pushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		pushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 		VkPipelineLayoutCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

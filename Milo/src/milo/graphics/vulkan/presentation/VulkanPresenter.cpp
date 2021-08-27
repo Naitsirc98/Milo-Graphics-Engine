@@ -36,13 +36,10 @@ namespace milo {
 
 		m_CurrentFrame = advanceToNextFrame();
 
-		LOG_DEBUG("waitForPreviousFrameToComplete");
 		waitForPreviousFrameToComplete();
 
-		LOG_DEBUG("tryGetNextSwapchainImage");
 		if(!tryGetNextSwapchainImage()) return false;
 
-		LOG_DEBUG("setCurrentFrameInFlight");
 		setCurrentFrameInFlight();
 
 		return true;
@@ -122,8 +119,6 @@ namespace milo {
 			default:
 				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + mvk::getErrorName(result));
 		}
-
-		//m_Device->graphicsQueue()->clear();
 	}
 
 	uint32_t VulkanPresenter::currentImageIndex() const {
@@ -151,19 +146,21 @@ namespace milo {
 
 		memset(m_ImageAvailableFences, NULL, MAX_SWAPCHAIN_IMAGE_COUNT * sizeof(VkFence));
 
-		for(uint32_t i = 0;i < MAX_FRAMES_IN_FLIGHT;++i) {
-			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
-			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
-		}
+		//for(uint32_t i = 0;i < MAX_FRAMES_IN_FLIGHT;++i) {
+		//	VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
+		//	VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
+		//}
 
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
+			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
 			VK_CALL(vkCreateFence(device, &fenceInfo, nullptr, &m_FramesInFlightFences[i]));
 		}
 	}
 
 	void VulkanPresenter::destroySyncObjects() {
 		VkDevice device = m_Device->logical();
-		for(uint32_t i = 0;i < MAX_FRAMES_IN_FLIGHT;++i) {
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 			VK_CALLV(vkDestroySemaphore(device, m_ImageAvailableSemaphore[i], nullptr));
 			VK_CALLV(vkDestroySemaphore(device, m_RenderFinishedSemaphore[i], nullptr));
 		}

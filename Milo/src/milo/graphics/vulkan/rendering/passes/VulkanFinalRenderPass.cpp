@@ -12,7 +12,32 @@ namespace milo {
 	}
 
 	VulkanFinalRenderPass::~VulkanFinalRenderPass() {
-		// TODO
+
+		m_Device->awaitTermination();
+
+		VkDevice device = m_Device->logical();
+
+		VK_CALLV(vkDestroyRenderPass(device, m_RenderPass, nullptr));
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALLV(vkDestroyFramebuffer(device, m_Framebuffers[i], nullptr));
+		}
+
+		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_TextureDescriptorSetLayout, nullptr));
+		DELETE_PTR(m_TextureDescriptorPool);
+
+		VK_CALLV(vkDestroyPipeline(device, m_GraphicsPipeline, nullptr));
+		VK_CALLV(vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr));
+
+		DELETE_PTR(m_CommandPool);
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALLV(vkDestroySemaphore(device, m_SignalSemaphores[i], nullptr));
+		}
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALLV(vkDestroyFence(device, m_Fences[i], nullptr));
+		}
 	}
 
 	void VulkanFinalRenderPass::compile(FrameGraphResourcePool* resourcePool) {
@@ -61,7 +86,7 @@ namespace milo {
 		submitInfo.pSignalSemaphores = &m_SignalSemaphores[imageIndex];
 		submitInfo.signalSemaphoreCount = 1;
 
-		queue->submit(submitInfo, VK_NULL_HANDLE);
+		queue->submit(submitInfo, queue->lastFence());
 	}
 
 	void VulkanFinalRenderPass::createRenderPass() {
@@ -169,7 +194,10 @@ namespace milo {
 			imageInfo.imageView = texture->vkImageView();
 			imageInfo.sampler = sampler;
 
-			VkWriteDescriptorSet writeDescriptorSet = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &imageInfo);
+			VkWriteDescriptorSet writeDescriptorSet = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0,
+																											  descriptorSet,
+																											  1,
+																											  &imageInfo);
 
 			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptorSet, 0, nullptr));
 		});
@@ -229,9 +257,10 @@ namespace milo {
 
 		VulkanSwapchain* swapchain = m_Device->context()->swapchain();
 		VkDescriptorSet* descriptorSets = m_TextureDescriptorPool->descriptorSets();
-		Mesh* mesh = Assets::meshes().getPlane();
+		Mesh* mesh = Assets::meshes().getQuad();
 		auto buffers = dynamic_cast<VulkanMeshBuffers*>(mesh->buffers());
 		VkBuffer vertexBuffer = buffers->vertexBuffer()->vkBuffer();
+		VkBuffer indexBuffer = mesh->indices().empty() ? VK_NULL_HANDLE : buffers->indexBuffer()->vkBuffer();
 
 		VulkanFrameGraphResourcePool* pool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
 
@@ -249,7 +278,7 @@ namespace milo {
 			VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 			{
 				VkClearValue clearValues{};
-				clearValues.color = {{0.1f, 0.1f, 0.1f, 1.0f}};
+				clearValues.color = {0, 0, 0, 1};
 
 				VkRenderPassBeginInfo renderPassInfo = {};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -282,7 +311,15 @@ namespace milo {
 					VkDeviceSize offsets = 0;
 					VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &offsets));
 
-					VK_CALLV(vkCmdDraw(commandBuffer, mesh->vertices().size(), 1, 0, 0));
+					if(!mesh->indices().empty()) {
+						VK_CALLV(vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32));
+					}
+
+					if(mesh->indices().empty()) {
+						VK_CALLV(vkCmdDraw(commandBuffer, mesh->vertices().size(), 1, 0, 0));
+					} else {
+						VK_CALLV(vkCmdDrawIndexed(commandBuffer, mesh->indices().size(), 1, 0, 0, 0));
+					}
 				}
 				VK_CALLV(vkCmdEndRenderPass(commandBuffer));
 			}

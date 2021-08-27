@@ -9,6 +9,8 @@ namespace milo {
 	class Camera;
 
 	class CameraController : public NativeScript {
+	private:
+		float m_LogPosLastTime = 0;
 	protected:
 		void onLateUpdate(EntityId entityId) override;
 	private:

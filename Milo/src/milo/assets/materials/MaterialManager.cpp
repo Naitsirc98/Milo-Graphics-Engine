@@ -31,7 +31,7 @@ namespace milo {
 				material = find(name);
 			} else {
 				if(load(name, filename, material)) {
-					m_Materials[filename] = material;
+					m_Materials[name] = material;
 				}
 			}
 		}
@@ -82,7 +82,7 @@ namespace milo {
 				texturePath = Files::append(Files::parentOf(filename), texturePath);
 			}
 			if(Files::exists(texturePath)) {
-				Image* image = Image::loadImage(texturePath, PixelFormat::RGBA8);
+				Image* image = Image::loadImage(texturePath, PixelFormat::SRGBA);
 				Texture2D* texture = Texture2D::create();
 
 				Texture2D::AllocInfo allocInfo = {};

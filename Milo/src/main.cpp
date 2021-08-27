@@ -10,17 +10,25 @@ public:
 
 	void onStart() override {
 
-		Mesh* mesh = Assets::meshes().getCube();
+		Mesh* mesh = Assets::meshes().getSphere();
 		Material* material = Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat");
 
 		Scene* scene = SceneManager::activeScene();
 
 		Entity entity = scene->createEntity();
 
+		MeshView& meshView = entity.createComponent<MeshView>();
+		meshView.mesh = mesh;
+		meshView.material = material;
+
+		Transform& transform = entity.getComponent<Transform>();
+		transform.translation.z = 1;
+
 		struct MyScript : public NativeScript {
 
 			void onUpdate(EntityId entityId) override {
-				//Log::debug("OnUpdate");
+				//Entity entity = SceneManager::activeScene()->find(entityId);
+				//entity.getComponent<Transform>().translation -= 0.1f;
 			}
 		};
 

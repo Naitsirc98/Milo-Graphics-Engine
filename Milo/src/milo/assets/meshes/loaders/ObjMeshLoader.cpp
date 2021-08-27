@@ -16,7 +16,7 @@ namespace milo {
 		String warn;
 		String err;
 
-		tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), nullptr);
+		tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), nullptr, true);
 
 		if (!warn.empty()) {
 			Log::warn("{}: {}", filename, warn);
@@ -34,7 +34,7 @@ namespace milo {
 			size_t idxOffset = 0;
 			for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
 
-				// Force triangles
+				// Triangulate is on
 				size_t fv = 3;
 
 				// Loop over vertices in the face.
@@ -57,11 +57,13 @@ namespace milo {
 					vertex.uv.y = attrib.texcoords[2 * idx.texcoord_index + 1];
 
 					mesh->m_Vertices.push_back(vertex);
+					//mesh->m_Indices.push_back(idx.vertex_index);
 				}
 				idxOffset += fv;
 			}
 
 			mesh->m_Vertices.shrink_to_fit();
+			//mesh->m_Indices.shrink_to_fit();
 
 			return mesh;
 		}

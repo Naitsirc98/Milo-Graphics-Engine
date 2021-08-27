@@ -15,6 +15,7 @@ namespace milo {
 		MeshManager();
 		~MeshManager();
 	public:
+		Mesh* getQuad() const;
 		Mesh* getPlane() const;
 		Mesh* getCube() const;
 		Mesh* getSphere() const;

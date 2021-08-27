@@ -18,6 +18,11 @@ namespace milo {
 
 		handleMovement(transform, camera);
 		handleDirection(transform, camera);
+
+		if(Time::seconds() - m_LogPosLastTime > 3) {
+			Log::debug("Camera: pos = {}, dir = {}", str(transform.translation), str(camera.forward()));
+			m_LogPosLastTime = Time::seconds();
+		}
 	}
 
 	void CameraController::handleMovement(Transform& transform, Camera& camera) {
@@ -55,6 +60,15 @@ namespace milo {
 	}
 
 	void CameraController::handleDirection(Transform& transform, Camera& camera) {
+
+		if(Input::isKeyActive(Key::Key_Escape)) {
+			if(Window::get()->cursorMode() == CursorMode::Normal) {
+				Window::get()->cursorMode(CursorMode::Captured);
+			} else {
+				Window::get()->cursorMode(CursorMode::Normal);
+			}
+		}
+
 		if(Window::get()->cursorMode() == CursorMode::Captured) {
 			camera.lookAt(Input::getMousePosition());
 			camera.zoom(Input::getMouseScroll().y);

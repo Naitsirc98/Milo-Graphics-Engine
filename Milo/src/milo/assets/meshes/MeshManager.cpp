@@ -6,6 +6,7 @@
 #define CUBE_MESH_NAME "SM_Cube"
 #define SPHERE_MESH_NAME "SM_Sphere"
 #define PLANE_MESH_NAME "SM_Plane"
+#define QUAD_MESH_NAME "SM_Quad"
 #define CYLINDER_MESH_NAME "SM_Cylinder"
 #define MONKEY_MESH_NAME "SM_Monkey"
 
@@ -15,6 +16,7 @@ namespace milo {
 		load(CUBE_MESH_NAME, "resources/meshes/Cube.obj");
 		load(SPHERE_MESH_NAME, "resources/meshes/Sphere.obj");
 		load(PLANE_MESH_NAME, "resources/meshes/Plane.obj");
+		load(QUAD_MESH_NAME, "resources/meshes/Quad.obj");
 		load(CYLINDER_MESH_NAME, "resources/meshes/Cylinder.obj");
 		load(MONKEY_MESH_NAME, "resources/meshes/Monkey.obj");
 	}
@@ -24,6 +26,10 @@ namespace milo {
 			DELETE_PTR(mesh);
 		}
 		m_Meshes.clear();
+	}
+
+	Mesh* MeshManager::getQuad() const {
+		return m_Meshes.at(QUAD_MESH_NAME);
 	}
 
 	Mesh* MeshManager::getPlane() const {
