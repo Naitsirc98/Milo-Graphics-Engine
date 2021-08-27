@@ -69,7 +69,7 @@ namespace milo {
 	}
 
 	VkPresentModeKHR VulkanWindowSurfaceDetails::getDefaultPresentMode() const {
-		return VK_PRESENT_MODE_IMMEDIATE_KHR;//VK_PRESENT_MODE_FIFO_KHR;
+		return VK_PRESENT_MODE_MAILBOX_KHR;//VK_PRESENT_MODE_FIFO_KHR;
 	}
 
 	VkExtent2D VulkanWindowSurfaceDetails::extent() const {

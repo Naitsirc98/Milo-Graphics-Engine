@@ -12,14 +12,14 @@ namespace milo {
 
 		m_MaxImageCount = m_Swapchain->imageCount();
 		m_CurrentImageIndex = 0;
-		m_CurrentFrame = 0;
+		m_CurrentFrame = -1;
 
 		createSyncObjects();
 
 		m_Swapchain->addSwapchainRecreateCallback([&]() {
 			m_MaxImageCount = m_Swapchain->imageCount();
 			m_CurrentImageIndex = 0;
-			m_CurrentFrame = 0;
+			m_CurrentFrame = -1;
 
 			destroySyncObjects();
 			createSyncObjects();
@@ -46,8 +46,7 @@ namespace milo {
 	}
 
 	inline void VulkanPresenter::waitForPreviousFrameToComplete() {
-		//VK_CALL(vkWaitForFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
-		m_Device->graphicsQueue()->waitForFences();
+		VK_CALL(vkWaitForFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
 	}
 
 	inline bool VulkanPresenter::tryGetNextSwapchainImage() {
@@ -80,16 +79,13 @@ namespace milo {
 		if (m_ImageAvailableFences[m_CurrentImageIndex] != VK_NULL_HANDLE)
 			VK_CALL(vkWaitForFences(dv, 1, &m_ImageAvailableFences[m_CurrentImageIndex], VK_TRUE, UINT64_MAX));
 
-		m_ImageAvailableFences[m_CurrentImageIndex] = m_FramesInFlightFences[m_CurrentImageIndex];
-
-		m_Device->graphicsQueue()->setWaitSemaphores(&imgSemaphore, 1);
-		m_Device->graphicsQueue()->setFence(m_FramesInFlightFences[m_CurrentImageIndex]);
+		m_ImageAvailableFences[m_CurrentImageIndex] = m_FramesInFlightFences[m_CurrentFrame];
 
 		return success;
 	}
 
 	inline void VulkanPresenter::setCurrentFrameInFlight() {
-		VK_CALL(vkResetFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentImageIndex]));
+		VK_CALL(vkResetFences(m_Device->logical(), 1, &m_FramesInFlightFences[m_CurrentFrame]));
 	}
 
 	void VulkanPresenter::end() {
@@ -99,10 +95,10 @@ namespace milo {
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-		presentInfo.pWaitSemaphores = m_Device->graphicsQueue()->waitSemaphores().data();
-		presentInfo.waitSemaphoreCount = m_Device->graphicsQueue()->waitSemaphores().size();
-		//presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
-		//presentInfo.waitSemaphoreCount = 1;
+		//presentInfo.pWaitSemaphores = m_Device->graphicsQueue()->waitSemaphores().data();
+		//presentInfo.waitSemaphoreCount = m_Device->graphicsQueue()->waitSemaphores().size();
+		presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphore[m_CurrentFrame];
+		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pSwapchains = &swapchains;
 		presentInfo.swapchainCount = 1;
 		presentInfo.pImageIndices = &m_CurrentImageIndex;
@@ -133,6 +129,18 @@ namespace milo {
 		return m_CurrentFrame;
 	}
 
+	VkFence VulkanPresenter::frameInFlightFence() const {
+		return m_FramesInFlightFences[m_CurrentFrame];
+	}
+
+	VkSemaphore VulkanPresenter::imageAvailableSemaphore() const {
+		return m_ImageAvailableSemaphore[m_CurrentFrame];
+	}
+
+	VkSemaphore VulkanPresenter::renderFinishedSemaphore() const {
+		return m_RenderFinishedSemaphore[m_CurrentFrame];
+	}
+
 	void VulkanPresenter::createSyncObjects() {
 
 		VkDevice device = m_Device->logical();
@@ -144,32 +152,38 @@ namespace milo {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		memset(m_ImageAvailableFences, NULL, MAX_SWAPCHAIN_IMAGE_COUNT * sizeof(VkFence));
+		m_ImageAvailableFences.fill(VK_NULL_HANDLE);
 
-		//for(uint32_t i = 0;i < MAX_FRAMES_IN_FLIGHT;++i) {
-		//	VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
-		//	VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
-		//}
+		for(auto& semaphore : m_ImageAvailableSemaphore) {
+			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore));
+		}
 
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore[i]));
-			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore[i]));
-			VK_CALL(vkCreateFence(device, &fenceInfo, nullptr, &m_FramesInFlightFences[i]));
+		for(auto& semaphore : m_RenderFinishedSemaphore) {
+			VK_CALL(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore));
+		}
+
+		for(auto& fence : m_FramesInFlightFences) {
+			VK_CALL(vkCreateFence(device, &fenceInfo, nullptr, &fence));
 		}
 	}
 
 	void VulkanPresenter::destroySyncObjects() {
+
 		VkDevice device = m_Device->logical();
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALLV(vkDestroySemaphore(device, m_ImageAvailableSemaphore[i], nullptr));
-			VK_CALLV(vkDestroySemaphore(device, m_RenderFinishedSemaphore[i], nullptr));
+
+		for(auto& semaphore : m_ImageAvailableSemaphore) {
+			VK_CALLV(vkDestroySemaphore(device, semaphore, nullptr));
 		}
 
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALLV(vkDestroyFence(device, m_FramesInFlightFences[i], nullptr));
+		for(auto& semaphore : m_RenderFinishedSemaphore) {
+			VK_CALLV(vkDestroySemaphore(device, semaphore, nullptr));
 		}
 
-		memset(m_ImageAvailableFences, NULL, MAX_SWAPCHAIN_IMAGE_COUNT * sizeof(VkFence));
+		for(auto& fence : m_FramesInFlightFences) {
+			VK_CALLV(vkDestroyFence(device, fence, nullptr));
+		}
+
+		m_ImageAvailableFences.fill(VK_NULL_HANDLE);
 	}
 
 	uint32_t VulkanPresenter::advanceToNextFrame() {

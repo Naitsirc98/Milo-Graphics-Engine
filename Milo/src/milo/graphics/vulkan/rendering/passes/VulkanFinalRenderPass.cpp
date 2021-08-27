@@ -72,21 +72,35 @@ namespace milo {
 	void VulkanFinalRenderPass::execute(Scene* scene) {
 
 		VulkanQueue* queue = m_Device->graphicsQueue();
-		uint32_t imageIndex = m_Device->context()->vulkanPresenter()->currentImageIndex();
+		VulkanPresenter* presenter = m_Device->context()->vulkanPresenter();
+		uint32_t imageIndex = presenter->currentImageIndex();
+		VkFence frameFence = presenter->frameInFlightFence();
+		VkSemaphore imageSemaphore = presenter->imageAvailableSemaphore();
+		VkSemaphore renderFinishedSemaphore = presenter->renderFinishedSemaphore();
 
-		VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		// This render pass have to wait for:
+		// 1: offscreen rendering pass to complete to sample the resulting texture
+		// 2: swapchain image to render to
+
+		VkPipelineStageFlags waitStages[] = {
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+		};
+
+		queue->waitSemaphores().push_back(imageSemaphore);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pWaitDstStageMask = &waitStages;
 		submitInfo.pWaitSemaphores = queue->waitSemaphores().data();
 		submitInfo.waitSemaphoreCount = queue->waitSemaphores().size();
-		submitInfo.pSignalSemaphores = &m_SignalSemaphores[imageIndex];
+		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 		submitInfo.signalSemaphoreCount = 1;
 
-		queue->submit(submitInfo, queue->lastFence());
+		queue->submit(submitInfo, frameFence);
+		queue->clear();
 	}
 
 	void VulkanFinalRenderPass::createRenderPass() {
