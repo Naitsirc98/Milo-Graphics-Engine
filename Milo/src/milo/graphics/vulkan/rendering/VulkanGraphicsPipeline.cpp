@@ -180,6 +180,7 @@ namespace milo {
 	}
 
 	void VulkanGraphicsPipelineInfo::initViewportState() {
+
 		const Size windowSize = Window::get()->size();
 
 		viewport.x = 0;

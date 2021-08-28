@@ -124,15 +124,21 @@ namespace milo {
 				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline));
 
 				Size size = Window::get()->size();
-				VkViewport viewport = {};
+
+				VkViewport viewport{};
 				viewport.x = 0;
 				viewport.y = 0;
+				viewport.width = (float)size.width;
+				viewport.height = (float)size.height;
 				viewport.minDepth = 0;
 				viewport.maxDepth = 1;
-				viewport.width = size.width;
-				viewport.height = size.height;
+
+				VkRect2D scissor{};
+				scissor.offset = {0, 0};
+				scissor.extent = {(uint32_t)size.width, (uint32_t)size.height};
 
 				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
+				VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
 
 				Camera& camera = cameraEntity.getComponent<Camera>();
 
@@ -363,6 +369,7 @@ namespace milo {
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/geometry/geometry.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
 
 		m_GraphicsPipeline = VulkanGraphicsPipeline::create("VulkanGeometryRenderPass",
 															  m_Device->logical(), pipelineInfo);

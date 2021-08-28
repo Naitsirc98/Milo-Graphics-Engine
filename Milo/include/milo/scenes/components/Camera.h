@@ -85,7 +85,7 @@ namespace milo {
 			return lookAt({x, y}, sensitivity);
 		}
 
-		inline Camera& lookAt(const Vector2& position, float sensitivity = 0.2f) {
+		inline Camera& lookAt(const Vector2& position, float sensitivity = 0.05f) {
 
 			if(position == m_LastPosition) return *this;
 

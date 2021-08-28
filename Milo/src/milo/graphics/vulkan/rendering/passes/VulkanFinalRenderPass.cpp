@@ -238,7 +238,7 @@ namespace milo {
 			VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 			{
 				VkClearValue clearValues{};
-				clearValues.color = {0, 0, 0, 1};
+				clearValues.color = {1, 0, 0, 1};
 
 				VkRenderPassBeginInfo renderPassInfo = {};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

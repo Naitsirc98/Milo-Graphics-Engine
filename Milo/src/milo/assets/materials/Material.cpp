@@ -5,9 +5,7 @@ namespace milo {
 	Material::Material(String name, String filename) : m_Name(std::move(name)), m_Filename(std::move(filename)) {
 	}
 
-	Material::~Material() {
-		// TODO
-	}
+	Material::~Material() = default;
 
 	const String& Material::name() const {
 		return m_Name;
