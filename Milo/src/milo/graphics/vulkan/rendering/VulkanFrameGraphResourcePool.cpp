@@ -197,6 +197,9 @@ namespace milo {
 		for(auto it = m_Buffers.begin();it != m_Buffers.end();) {
 			auto& buffers = *it;
 			if(buffers[0].useCount == 0) {
+				for(auto& buffer : buffers) {
+					DELETE_PTR(buffer.buffer);
+				}
 				it = m_Buffers.erase(it);
 			} else {
 				++it;
@@ -206,6 +209,9 @@ namespace milo {
 		for(auto it = m_Textures.begin();it != m_Textures.end();) {
 			auto& textures = *it;
 			if(textures[0].useCount == 0) {
+				for(auto& texture : textures) {
+					DELETE_PTR(texture.texture);
+				}
 				it = m_Textures.erase(it);
 			} else {
 				++it;
