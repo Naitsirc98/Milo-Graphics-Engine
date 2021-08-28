@@ -26,7 +26,7 @@ namespace milo {
 		Mesh* find(const String& name);
 		void destroy(const String& name);
 	private:
-		static Shared<MeshLoader> getMeshLoaderOf(const String& filename);
+		static Ref<MeshLoader> getMeshLoaderOf(const String& filename);
 		static void createGraphicsBuffers(const String& filename, Mesh* mesh);
 		static void createBoundingVolume(const String& filename, Mesh* mesh);
 	};

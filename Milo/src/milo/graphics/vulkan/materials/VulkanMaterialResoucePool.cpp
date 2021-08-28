@@ -18,14 +18,14 @@ namespace milo {
 		VK_CALLV(vkDestroyDescriptorSetLayout(m_Device->logical(), m_DescriptorSetLayout, nullptr));
 	}
 
-	inline static VkImageView getImageView(Texture2D* texture) {
+	inline static VkImageView getImageView(Ref<Texture2D> texture) {
 		if(texture == nullptr) return VK_NULL_HANDLE;
-		return dynamic_cast<VulkanTexture2D*>(texture)->vkImageView();
+		return dynamic_cast<VulkanTexture2D*>(texture.get())->vkImageView();
 	}
 
-	inline static VkSampler getSampler(Texture2D* texture) {
+	inline static VkSampler getSampler(Ref<Texture2D> texture) {
 		if(texture == nullptr) return VK_NULL_HANDLE;
-		return dynamic_cast<VulkanTexture2D*>(texture)->vkSampler();
+		return dynamic_cast<VulkanTexture2D*>(texture.get())->vkSampler();
 	}
 
 	void VulkanMaterialResourcePool::allocateMaterialResources(Material* material) {

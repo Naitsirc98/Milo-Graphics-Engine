@@ -3,7 +3,7 @@
 
 namespace milo {
 
-	Shared<spdlog::logger> Log::s_Logger = nullptr;
+	Ref<spdlog::logger> Log::s_Logger = nullptr;
 #ifdef _DEBUG
 	Log::Level Log::s_Level = Log::Level::Debug;
 #else

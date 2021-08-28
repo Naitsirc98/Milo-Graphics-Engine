@@ -136,7 +136,7 @@ namespace milo {
 
 				Camera& camera = cameraEntity.getComponent<Camera>();
 
-				CameraData cameraData;
+				CameraData cameraData{};
 				cameraData.proj = camera.projectionMatrix();
 				cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
 				cameraData.projView = cameraData.proj * cameraData.view;
@@ -146,6 +146,8 @@ namespace milo {
 				VkDescriptorSet cameraDescriptorSet = m_CameraDescriptorPool->get(imageIndex);
 
 				uint32_t dynamicOffsets[] = {imageIndex * m_CameraUniformBuffer->elementSize(), 0};
+
+				auto& materialResources = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
 
 				Mesh* lastMesh = nullptr;
 				Material* lastMaterial = nullptr;
@@ -158,9 +160,7 @@ namespace milo {
 
 					if(lastMaterial != meshView.material) {
 
-						auto resourcePool = meshView.material->resourcePool<VulkanMaterialResourcePool>();
-
-						VkDescriptorSet materialDescriptorSet = resourcePool->descriptorSetOf(meshView.material, dynamicOffsets[1]);
+						VkDescriptorSet materialDescriptorSet = materialResources.descriptorSetOf(meshView.material, dynamicOffsets[1]);
 						VkDescriptorSet descriptorSets[] = {cameraDescriptorSet, materialDescriptorSet};
 
 						VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,

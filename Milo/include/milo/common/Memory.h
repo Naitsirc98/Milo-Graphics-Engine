@@ -28,10 +28,7 @@ void operator delete[](void* ptr);
 namespace milo {
 
 	template<typename T>
-	using Unique = std::unique_ptr<T>;
-
-	template<typename T>
-	using Shared = std::shared_ptr<T>;
+	using Ref = std::shared_ptr<T>;
 
 	// TODO: make this thread safe
 	class MemoryTracker {

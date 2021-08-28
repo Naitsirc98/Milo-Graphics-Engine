@@ -7,7 +7,6 @@ namespace milo {
 
 	Material::~Material() {
 		// TODO
-		//DELETE_PTR(m_AlbedoMap);
 	}
 
 	const String& Material::name() const {
@@ -22,7 +21,7 @@ namespace milo {
 		return m_Data.albedo;
 	}
 
-	Texture2D* Material::albedoMap() const {
+	Ref<Texture2D> Material::albedoMap() const {
 		return m_AlbedoMap;
 	}
 

@@ -30,14 +30,13 @@ namespace milo {
 		String m_Filename;
 		Material::Data m_Data{};
 		// Textures
-		Texture2D* m_AlbedoMap{nullptr};
-		Texture2D* m_MetallicMap{nullptr};
-		Texture2D* m_RoughnessMap{nullptr};
-		Texture2D* m_MetallicRoughnessMap{nullptr};
-		Texture2D* m_OcclusionMap{nullptr};
-		Texture2D* m_EmissiveMap{nullptr};
-		Texture2D* m_NormalMap{nullptr};
-		MaterialResourcePool* m_ResourcePool{nullptr};
+		Ref<Texture2D> m_AlbedoMap{nullptr};
+		Ref<Texture2D> m_MetallicMap{nullptr};
+		Ref<Texture2D> m_RoughnessMap{nullptr};
+		Ref<Texture2D> m_MetallicRoughnessMap{nullptr};
+		Ref<Texture2D> m_OcclusionMap{nullptr};
+		Ref<Texture2D> m_EmissiveMap{nullptr};
+		Ref<Texture2D> m_NormalMap{nullptr};
 	private:
 		explicit Material(String name, String filename);
 		~Material();
@@ -45,12 +44,7 @@ namespace milo {
 		const String& name() const;
 		const String& filename() const;
 		const Color& albedo() const;
-		Texture2D* albedoMap() const;
+		Ref<Texture2D> albedoMap() const;
 		const Material::Data& data() const;
-
-		template<typename T>
-		inline T* resourcePool() const {
-			return (T*) m_ResourcePool;
-		}
 	};
 }

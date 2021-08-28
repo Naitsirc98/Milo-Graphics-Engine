@@ -59,7 +59,7 @@ namespace milo {
 			if(exists(name)) {
 				mesh = find(name);
 			} else {
-				Shared<MeshLoader> loader = getMeshLoaderOf(filename);
+				Ref<MeshLoader> loader = getMeshLoaderOf(filename);
 				if(loader) {
 					mesh = loader->load(filename);
 					createGraphicsBuffers(filename, mesh);
@@ -91,7 +91,7 @@ namespace milo {
 		m_Mutex.unlock();
 	}
 
-	Shared<MeshLoader> MeshManager::getMeshLoaderOf(const String& filename) {
+	Ref<MeshLoader> MeshManager::getMeshLoaderOf(const String& filename) {
 
 		switch(MeshFormats::formatOf(filename)) {
 			case MeshFormat::Obj:

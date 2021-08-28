@@ -6,11 +6,12 @@
 
 namespace milo {
 
+	// TODO: make this scalable
+
 	class VulkanMaterialResourcePool : public MaterialResourcePool {
 		friend class MaterialManager;
 		friend class MaterialResourcePool;
 	private:
-		// TODO: support more materials
 		VulkanDevice* m_Device{nullptr};
 		VulkanUniformBuffer<Material::Data>* m_UniformBuffer{nullptr};
 		uint64_t m_MaxMaterialCount{0};

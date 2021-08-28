@@ -12,16 +12,13 @@ namespace milo {
 
 		m_ResourcePool = MaterialResourcePool::create();
 
-		m_WhiteTexture = createWhiteTexture();
-		m_BlackTexture = createBlackTexture();
+		m_WhiteTexture = Ref<Texture2D>(createWhiteTexture());
+		m_BlackTexture = Ref<Texture2D>(createBlackTexture());
 
 		load(DEFAULT_MATERIAL_NAME, "resources/materials/M_DefaultMaterial.mat");
 	}
 
 	MaterialManager::~MaterialManager() {
-
-		DELETE_PTR(m_WhiteTexture);
-		DELETE_PTR(m_BlackTexture);
 
 		for(auto& [name, material] : m_Materials) {
 			DELETE_PTR(material);
@@ -45,7 +42,6 @@ namespace milo {
 				if(load(name, filename, material)) {
 					m_Materials[name] = material;
 					m_ResourcePool->allocateMaterialResources(material);
-					material->m_ResourcePool = m_ResourcePool;
 				}
 			}
 		}
@@ -102,11 +98,11 @@ namespace milo {
 		return true;
 	}
 
-	Texture2D* MaterialManager::loadTexture2D(void* pJson, const String& textureName, const String& materialFile) {
+	Ref<Texture2D> MaterialManager::loadTexture2D(void* pJson, const String& textureName, const String& materialFile) {
 
 		nlohmann::json& json = *(nlohmann::json*)pJson;
 
-		Texture2D* texture = m_WhiteTexture;
+		Ref<Texture2D> texture = m_WhiteTexture;
 
 		if(json.contains(textureName)) {
 
@@ -118,7 +114,7 @@ namespace milo {
 			if(Files::exists(texturePath)) {
 
 				Image* image = Image::loadImage(texturePath, PixelFormat::SRGBA);
-				texture = Texture2D::create();
+				texture = Ref<Texture2D>(Texture2D::create());
 
 				Texture2D::AllocInfo allocInfo = {};
 				allocInfo.width = image->width();

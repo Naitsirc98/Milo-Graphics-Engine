@@ -70,7 +70,7 @@ namespace milo {
 		static void shutdown();
 
 	private:
-		static Shared<spdlog::logger> s_Logger;
+		static Ref<spdlog::logger> s_Logger;
 		static Level s_Level;
 	};
 
