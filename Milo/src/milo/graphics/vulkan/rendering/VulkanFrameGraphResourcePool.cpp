@@ -2,13 +2,12 @@
 #include "milo/graphics/vulkan/presentation/VulkanPresenter.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
-#include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
 
 namespace milo {
 
 	VulkanFrameGraphResourcePool::VulkanFrameGraphResourcePool() {
-		m_Buffers.reserve(128);
-		m_Textures.reserve(128);
+		m_Buffers.reserve(64);
+		m_Textures.reserve(64);
 	}
 
 	VulkanFrameGraphResourcePool::~VulkanFrameGraphResourcePool() {
@@ -198,7 +197,7 @@ namespace milo {
 		for(auto it = m_Buffers.begin();it != m_Buffers.end();) {
 			auto& buffers = *it;
 			if(buffers[0].useCount == 0) {
-				m_Buffers.erase(it);
+				it = m_Buffers.erase(it);
 			} else {
 				++it;
 			}
@@ -207,7 +206,7 @@ namespace milo {
 		for(auto it = m_Textures.begin();it != m_Textures.end();) {
 			auto& textures = *it;
 			if(textures[0].useCount == 0) {
-				m_Textures.erase(it);
+				it = m_Textures.erase(it);
 			} else {
 				++it;
 			}

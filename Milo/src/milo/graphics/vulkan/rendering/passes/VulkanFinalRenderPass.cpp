@@ -1,6 +1,5 @@
 #include "milo/graphics/vulkan/rendering/passes/VulkanFinalRenderPass.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
-#include "milo/graphics/vulkan/rendering/VulkanFrameGraphResourcePool.h"
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 #include "milo/assets/AssetManager.h"
 #include "milo/graphics/vulkan/buffers/VulkanMeshBuffers.h"
@@ -8,45 +7,21 @@
 namespace milo {
 
 	VulkanFinalRenderPass::VulkanFinalRenderPass() {
+
 		m_Device = VulkanContext::get()->device();
+
+		createRenderPass();
 	}
 
 	VulkanFinalRenderPass::~VulkanFinalRenderPass() {
-
-		m_Device->awaitTermination();
-
-		VkDevice device = m_Device->logical();
-
-		VK_CALLV(vkDestroyRenderPass(device, m_RenderPass, nullptr));
-
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALLV(vkDestroyFramebuffer(device, m_Framebuffers[i], nullptr));
-		}
-
-		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_TextureDescriptorSetLayout, nullptr));
-		DELETE_PTR(m_TextureDescriptorPool);
-
-		VK_CALLV(vkDestroyPipeline(device, m_GraphicsPipeline, nullptr));
-		VK_CALLV(vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr));
-
+		destroyTransientResources();
+		VK_CALLV(vkDestroyRenderPass(m_Device->logical(), m_RenderPass, nullptr));
 		DELETE_PTR(m_CommandPool);
-
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALLV(vkDestroySemaphore(device, m_SignalSemaphores[i], nullptr));
-		}
-
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALLV(vkDestroyFence(device, m_Fences[i], nullptr));
-		}
 	}
 
 	void VulkanFinalRenderPass::compile(FrameGraphResourcePool* resourcePool) {
 
-		// TODO: destroy recreated resources
-
-		if(m_RenderPass == VK_NULL_HANDLE) {
-			createRenderPass();
-		}
+		destroyTransientResources();
 
 		createFramebuffers();
 
@@ -56,14 +31,6 @@ namespace milo {
 
 		createPipelineLayout();
 		createGraphicsPipeline();
-
-		if(m_SignalSemaphores[0] == VK_NULL_HANDLE) {
-			createSemaphores();
-		}
-
-		if(m_Fences[0] == VK_NULL_HANDLE) {
-			createFences();
-		}
 
 		createCommandPool();
 		createCommandBuffers(resourcePool);
@@ -152,7 +119,7 @@ namespace milo {
 
 		const VulkanSwapchainImage* swapchainImages = swapchain->images();
 		
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+		for(uint32_t i = 0;i < m_Framebuffers.size();++i) {
 			const VulkanSwapchainImage& colorTexture = swapchainImages[i];
 			VkImageView attachments[] = {colorTexture.vkImageView};
 			framebufferInfo.pAttachments = attachments;
@@ -236,31 +203,10 @@ namespace milo {
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_FALSE;
 
-		pipelineInfo.shaderInfos.push_back({"resources/shaders/fullscreen_quad/fullscreen_quad.vert", VK_SHADER_STAGE_VERTEX_BIT});
-		pipelineInfo.shaderInfos.push_back({"resources/shaders/fullscreen_quad/fullscreen_quad.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+		pipelineInfo.shaderInfos.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.vert"), VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaderInfos.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.frag"), VK_SHADER_STAGE_FRAGMENT_BIT});
 
 		m_GraphicsPipeline = VulkanGraphicsPipeline::create("VulkanFinalRenderPass", m_Device->logical(), pipelineInfo);
-	}
-
-	void VulkanFinalRenderPass::createSemaphores() {
-
-		VkSemaphoreCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALL(vkCreateSemaphore(m_Device->logical(), &createInfo, nullptr, &m_SignalSemaphores[i]));
-		}
-	}
-
-	void VulkanFinalRenderPass::createFences() {
-
-		VkFenceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALL(vkCreateFence(m_Device->logical(), &createInfo, nullptr, &m_Fences[i]));
-		}
 	}
 
 	void VulkanFinalRenderPass::createCommandPool() {
@@ -339,5 +285,24 @@ namespace milo {
 			}
 			VK_CALL(vkEndCommandBuffer(commandBuffer));
 		}
+	}
+
+	void VulkanFinalRenderPass::destroyTransientResources() {
+
+		m_Device->awaitTermination();
+
+		VkDevice device = m_Device->logical();
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALLV(vkDestroyFramebuffer(device, m_Framebuffers[i], nullptr));
+		}
+
+		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_TextureDescriptorSetLayout, nullptr));
+		DELETE_PTR(m_TextureDescriptorPool);
+
+		VK_CALLV(vkDestroyPipeline(device, m_GraphicsPipeline, nullptr));
+		VK_CALLV(vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr));
+
+		DELETE_PTR(m_CommandPool);
 	}
 }

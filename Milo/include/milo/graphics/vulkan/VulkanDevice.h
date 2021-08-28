@@ -22,6 +22,8 @@ namespace milo {
 		ArrayList<VkLayerProperties> layers() const;
 		uint32_t uniformBufferAlignment() const;
 		uint32_t storageBufferAlignment() const;
+		uint32_t uniformBufferMaxSize() const;
+		uint32_t storageBufferMaxSize() const;
 	};
 
 	enum DeviceUsageFlags {

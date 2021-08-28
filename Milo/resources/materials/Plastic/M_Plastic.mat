@@ -1,4 +1,4 @@
 {
-  "baseColor": [1, 1, 1, 1],
-  "baseColorTexture": "../../textures/Plastic/T_Plastic_Red.png"
+  "albedo": [1, 1, 1, 1],
+  "albedoMap": "../../textures/Plastic/T_Plastic_Red.png"
 }

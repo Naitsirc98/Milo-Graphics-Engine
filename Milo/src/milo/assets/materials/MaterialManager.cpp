@@ -9,14 +9,26 @@
 namespace milo {
 
 	MaterialManager::MaterialManager() {
+
+		m_ResourcePool = MaterialResourcePool::create();
+
+		m_WhiteTexture = createWhiteTexture();
+		m_BlackTexture = createBlackTexture();
+
 		load(DEFAULT_MATERIAL_NAME, "resources/materials/M_DefaultMaterial.mat");
 	}
 
 	MaterialManager::~MaterialManager() {
+
+		DELETE_PTR(m_WhiteTexture);
+		DELETE_PTR(m_BlackTexture);
+
 		for(auto& [name, material] : m_Materials) {
 			DELETE_PTR(material);
 		}
 		m_Materials.clear();
+
+		DELETE_PTR(m_ResourcePool);
 	}
 
 	Material* MaterialManager::getDefault() const {
@@ -32,6 +44,8 @@ namespace milo {
 			} else {
 				if(load(name, filename, material)) {
 					m_Materials[name] = material;
+					m_ResourcePool->allocateMaterialResources(material);
+					material->m_ResourcePool = m_ResourcePool;
 				}
 			}
 		}
@@ -54,15 +68,20 @@ namespace milo {
 			Material* material = m_Materials[name];
 			DELETE_PTR(material);
 			m_Materials.erase(name);
+			m_ResourcePool->freeMaterialResources(material);
 		}
 		m_Mutex.unlock();
+	}
+
+	MaterialResourcePool& MaterialManager::resourcePool() const {
+		return *m_ResourcePool;
 	}
 
 	bool MaterialManager::load(const String& name, const String& filename, Material*& material) {
 		if(!Files::exists(filename)) return false;
 		if(Files::isDirectory(filename)) return false;
 
-		material = new Material(name);
+		material = new Material(name, filename);
 
 		nlohmann::json json;
 		{
@@ -70,20 +89,36 @@ namespace milo {
 			inputStream >> json;
 		}
 
-		if(json.contains("baseColor")) {
+		if(json.contains("albedo")) {
 			float color[4];
-			json["baseColor"].get_to(color);
-			material->m_BaseColor = {color[0], color[1], color[2], color[3]};
+			json["albedo"].get_to(color);
+			material->m_Data.albedo = {color[0], color[1], color[2], color[3]};
 		}
 
-		if(json.contains("baseColorTexture")) {
-			String texturePath = json["baseColorTexture"].get<String>();
+		material->m_AlbedoMap = loadTexture2D(&json, "albedoMap", filename);
+
+		// TODO
+
+		return true;
+	}
+
+	Texture2D* MaterialManager::loadTexture2D(void* pJson, const String& textureName, const String& materialFile) {
+
+		nlohmann::json& json = *(nlohmann::json*)pJson;
+
+		Texture2D* texture = m_WhiteTexture;
+
+		if(json.contains(textureName)) {
+
+			String texturePath = json[textureName].get<String>();
 			if(!Files::isAbsolute(texturePath)) {
-				texturePath = Files::append(Files::parentOf(filename), texturePath);
+				texturePath = Files::append(Files::parentOf(materialFile), texturePath);
 			}
+
 			if(Files::exists(texturePath)) {
+
 				Image* image = Image::loadImage(texturePath, PixelFormat::SRGBA);
-				Texture2D* texture = Texture2D::create();
+				texture = Texture2D::create();
 
 				Texture2D::AllocInfo allocInfo = {};
 				allocInfo.width = image->width();
@@ -94,14 +129,48 @@ namespace milo {
 				texture->allocate(allocInfo);
 				texture->generateMipmaps();
 
-				material->m_BaseColorTexture = texture;
-
 				DELETE_PTR(image);
 			}
 		}
 
-		// TODO
+		return texture;
+	}
 
-		return true;
+	Texture2D* MaterialManager::createWhiteTexture() {
+
+		Texture2D* texture = Texture2D::create();
+
+		Image* image = Image::createWhite(PixelFormat::SRGBA);
+
+		Texture2D::AllocInfo allocInfo = {};
+		allocInfo.width = image->width();
+		allocInfo.height = image->height();
+		allocInfo.format = image->format();
+		allocInfo.pixels = image->pixels();
+
+		texture->allocate(allocInfo);
+
+		DELETE_PTR(image);
+
+		return texture;
+	}
+
+	Texture2D* MaterialManager::createBlackTexture() {
+
+		Texture2D* texture = Texture2D::create();
+
+		Image* image = Image::createBlack(PixelFormat::SRGBA);
+
+		Texture2D::AllocInfo allocInfo = {};
+		allocInfo.width = image->width();
+		allocInfo.height = image->height();
+		allocInfo.format = image->format();
+		allocInfo.pixels = image->pixels();
+
+		texture->allocate(allocInfo);
+
+		DELETE_PTR(image);
+
+		return texture;
 	}
 }

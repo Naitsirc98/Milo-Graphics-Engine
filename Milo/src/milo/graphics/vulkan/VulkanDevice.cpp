@@ -405,6 +405,14 @@ namespace milo {
 		return properties().limits.minStorageBufferOffsetAlignment;
 	}
 
+	uint32_t VulkanPhysicalDeviceInfo::uniformBufferMaxSize() const {
+		return properties().limits.maxUniformBufferRange;
+	}
+
+	uint32_t VulkanPhysicalDeviceInfo::storageBufferMaxSize() const {
+		return properties().limits.maxStorageBufferRange;
+	}
+
 	VkPhysicalDeviceLimits VulkanPhysicalDeviceInfo::limits() const {
 		return properties().limits;
 	}

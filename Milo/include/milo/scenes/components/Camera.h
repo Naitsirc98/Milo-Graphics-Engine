@@ -101,6 +101,8 @@ namespace milo {
 
 			m_Yaw += xOffset;
 			m_Pitch = clamp(yOffset + m_Pitch, MIN_PITCH, MAX_PITCH);
+
+			return *this;
 		}
 
 		inline const Matrix4 viewMatrix(const Vector3& position) const {

@@ -2,22 +2,31 @@
 
 namespace milo {
 
-	Material::Material(String filename) : m_Filename(std::move(filename)) {
+	Material::Material(String name, String filename) : m_Name(std::move(name)), m_Filename(std::move(filename)) {
 	}
 
 	Material::~Material() {
-		DELETE_PTR(m_BaseColorTexture);
+		// TODO
+		//DELETE_PTR(m_AlbedoMap);
+	}
+
+	const String& Material::name() const {
+		return m_Name;
 	}
 
 	const String& Material::filename() const {
 		return m_Filename;
 	}
 
-	const Color& Material::baseColor() const {
-		return m_BaseColor;
+	const Color& Material::albedo() const {
+		return m_Data.albedo;
 	}
 
-	Texture2D* Material::baseColorTexture() const {
-		return m_BaseColorTexture;
+	Texture2D* Material::albedoMap() const {
+		return m_AlbedoMap;
+	}
+
+	const Material::Data& Material::data() const {
+		return m_Data;
 	}
 }

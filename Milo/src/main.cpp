@@ -10,10 +10,22 @@ public:
 
 	void onStart() override {
 
-		Mesh* mesh = Assets::meshes().getSphere();
-		Material* material = Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat");
-
 		Scene* scene = SceneManager::activeScene();
+
+		createSphere(scene, {0, 0, -3}, Assets::materials().getDefault());
+		createSphere(scene, {3, 0, -3}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
+
+		Entity camera = scene->createEntity();
+		camera.createComponent<Camera>();
+		auto& camScript = camera.createComponent<NativeScriptView>();
+		camScript.bind<CameraController>();
+
+		scene->setMainCamera(camera.id());
+	}
+
+	void createSphere(Scene* scene, const Vector3& position, Material* material) {
+
+		Mesh* mesh = Assets::meshes().getSphere();
 
 		Entity entity = scene->createEntity();
 
@@ -22,25 +34,7 @@ public:
 		meshView.material = material;
 
 		Transform& transform = entity.getComponent<Transform>();
-		transform.translation.z = 1;
-
-		struct MyScript : public NativeScript {
-
-			void onUpdate(EntityId entityId) override {
-				//Entity entity = SceneManager::activeScene()->find(entityId);
-				//entity.getComponent<Transform>().translation -= 0.1f;
-			}
-		};
-
-		NativeScriptView& script = entity.createComponent<NativeScriptView>();
-		script.bind<MyScript>();
-
-		Entity camera = scene->createEntity();
-		camera.createComponent<Camera>();
-		auto& camScript = camera.createComponent<NativeScriptView>();
-		camScript.bind<CameraController>();
-
-		scene->setMainCamera(camera.id());
+		transform.translation = position;
 	}
 
 };

@@ -15,16 +15,13 @@ namespace milo {
 
 		VkRenderPass m_RenderPass{VK_NULL_HANDLE};
 
-		VkFramebuffer m_Framebuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
+		Array<VkFramebuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_Framebuffers{};
 
 		VkDescriptorSetLayout m_TextureDescriptorSetLayout{VK_NULL_HANDLE};
 		VulkanDescriptorPool* m_TextureDescriptorPool{nullptr};
 
 		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
 		VkPipeline m_GraphicsPipeline{VK_NULL_HANDLE};
-
-		VkSemaphore m_SignalSemaphores[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
-		VkFence m_Fences[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
 
 		VulkanCommandPool* m_CommandPool{nullptr};
 		VkCommandBuffer m_CommandBuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
@@ -45,11 +42,10 @@ namespace milo {
 		void createPipelineLayout();
 		void createGraphicsPipeline();
 
-		void createSemaphores();
-		void createFences();
-
 		void createCommandPool();
 		void createCommandBuffers(FrameGraphResourcePool* resourcePool);
+
+		void destroyTransientResources();
 	};
 
 }
