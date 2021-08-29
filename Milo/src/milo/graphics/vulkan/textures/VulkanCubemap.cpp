@@ -1,37 +1,24 @@
-#include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
+#include "milo/graphics/vulkan/textures/VulkanCubemap.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
-#include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
 
 namespace milo {
 
-	VulkanTexture2D::VulkanTexture2D(const VulkanTexture::CreateInfo& createInfo) : VulkanTexture(createInfo) {
+	VulkanCubemap::VulkanCubemap(const VulkanTexture::CreateInfo& createInfo) : VulkanTexture(createInfo) {
 
-		m_ViewInfo.format = m_ImageInfo.format;
-
-		m_VkSampler = VulkanSamplerMap::get()->getDefaultSampler();
+		if(createInfo.arrayLayers != 6) throw MILO_RUNTIME_EXCEPTION("Cubemaps must have 6 array layers");
 	}
 
-	VulkanTexture2D::~VulkanTexture2D() {
+	VulkanCubemap::~VulkanCubemap() = default;
 
-		VulkanAllocator::get()->freeImage(m_VkImage, m_Allocation);
-
-		VK_CALLV(vkDestroyImageView(m_Device->logical(), m_VkImageView, nullptr));
-
-		m_Allocation = VK_NULL_HANDLE;
-		m_VkImage = VK_NULL_HANDLE;
-		m_VkImageView = VK_NULL_HANDLE;
-		m_VkSampler = VK_NULL_HANDLE;
-	}
-
-	uint32_t VulkanTexture2D::width() const {
+	uint32_t VulkanCubemap::width() const {
 		return m_ImageInfo.extent.width;
 	}
 
-	uint32_t VulkanTexture2D::height() const {
+	uint32_t VulkanCubemap::height() const {
 		return m_ImageInfo.extent.height;
 	}
 
-	void VulkanTexture2D::allocate(const AllocInfo& allocInfo) {
+	void VulkanCubemap::allocate(const Cubemap::AllocInfo& allocInfo) {
 
 		VulkanTexture::allocate(allocInfo.width, allocInfo.height, allocInfo.format, allocInfo.mipLevels);
 
@@ -43,7 +30,7 @@ namespace milo {
 		}
 	}
 
-	void VulkanTexture2D::update(const UpdateInfo& updateInfo) {
+	void VulkanCubemap::update(const Cubemap::UpdateInfo& updateInfo) {
 
 		VulkanBuffer* stagingBuffer = VulkanBuffer::createStagingBuffer(updateInfo.pixels, updateInfo.size);
 
@@ -81,7 +68,7 @@ namespace milo {
 		DELETE_PTR(stagingBuffer);
 	}
 
-	void VulkanTexture2D::generateMipmaps() {
+	void VulkanCubemap::generateMipmaps() {
 
 		if(m_VkImage == VK_NULL_HANDLE) return;
 		if(m_ImageInfo.mipLevels == 1) return;
@@ -104,7 +91,11 @@ namespace milo {
 			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barrier.image = m_VkImage;
-			barrier.subresourceRange = m_ViewInfo.subresourceRange;
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = m_ImageInfo.mipLevels;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = m_ImageInfo.arrayLayers;
 
 			// Transition all levels to DST OPTIMAL
 			if(m_ImageLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
@@ -137,22 +128,22 @@ namespace milo {
 				VkImageBlit blit = {};
 				blit.srcOffsets[0] = {0, 0, 0};
 				blit.srcOffsets[1] = {mipWidth, mipHeight, 1};
-				blit.srcSubresource.aspectMask = m_ViewInfo.subresourceRange.aspectMask;
+				blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				blit.srcSubresource.mipLevel = i - 1;
 				blit.srcSubresource.baseArrayLayer = 0;
-				blit.srcSubresource.layerCount = 1;
+				blit.srcSubresource.layerCount = m_ImageInfo.arrayLayers;
 				blit.dstOffsets[0] = {0, 0, 0};
 				blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
 				blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				blit.dstSubresource.mipLevel = i;
 				blit.dstSubresource.baseArrayLayer = 0;
-				blit.dstSubresource.layerCount = 1;
+				blit.dstSubresource.layerCount = m_ImageInfo.arrayLayers;
 
 				VK_CALLV(vkCmdBlitImage(commandBuffer,
-							   m_VkImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-							   m_VkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-							   1, &blit,
-							   VK_FILTER_LINEAR));
+										m_VkImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+										m_VkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+										1, &blit,
+										VK_FILTER_LINEAR));
 
 				barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 				barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -160,10 +151,10 @@ namespace milo {
 				barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
 				VK_CALLV(vkCmdPipelineBarrier(commandBuffer,
-									 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-									 0, nullptr,
-									 0, nullptr,
-									 1, &barrier));
+											  VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+											  0, nullptr,
+											  0, nullptr,
+											  1, &barrier));
 
 				if (mipWidth > 1) mipWidth /= 2;
 				if (mipHeight > 1) mipHeight /= 2;
@@ -176,10 +167,10 @@ namespace milo {
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
 			VK_CALLV(vkCmdPipelineBarrier(commandBuffer,
-								 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-								 0, nullptr,
-								 0, nullptr,
-								 1, &barrier));
+										  VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+										  0, nullptr,
+										  0, nullptr,
+										  1, &barrier));
 
 			m_ImageLayout = barrier.newLayout;
 		};
@@ -187,14 +178,14 @@ namespace milo {
 		m_Device->graphicsCommandPool()->execute(task);
 	}
 
-	VulkanTexture2D* VulkanTexture2D::create(TextureUsageFlags usage) {
+	VulkanCubemap* VulkanCubemap::create(TextureUsageFlags usage) {
 
 		CreateInfo createInfo{};
-		createInfo.usage = usage;
-		createInfo.arrayLayers = 1;
-		createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		createInfo.arrayLayers = CUBEMAP_ARRAY_LAYERS_COUNT;
+		createInfo.usage = usage;
 
-		return new VulkanTexture2D(createInfo);
+		return new VulkanCubemap(createInfo);
 	}
 }

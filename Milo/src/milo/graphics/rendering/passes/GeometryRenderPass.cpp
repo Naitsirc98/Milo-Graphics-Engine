@@ -21,7 +21,7 @@ namespace milo {
 		output.textures[0].format = PixelFormat::RGBA32F;
 		output.textures[0].mipLevels = 1;
 
-		output.textures[1].usageFlags = TEXTURE_USAGE_DEPTH_ATTACHMENT_BIT | TEXTURE_USAGE_SAMPLED_BIT;
+		output.textures[1].usageFlags = TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | TEXTURE_USAGE_SAMPLED_BIT;
 		output.textures[1].width = size.width;
 		output.textures[1].height = size.height;
 		output.textures[1].format = PixelFormat::DEPTH;

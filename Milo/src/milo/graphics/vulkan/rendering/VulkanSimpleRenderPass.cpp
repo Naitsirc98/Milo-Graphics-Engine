@@ -265,7 +265,7 @@ namespace milo {
 
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 
-			VulkanTexture2D* texture = VulkanTexture2D::createDepthAttachment();
+			VulkanTexture2D* texture = VulkanTexture2D::create(TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 			Texture2D::AllocInfo allocInfo = {};
 			allocInfo.width = size.width;

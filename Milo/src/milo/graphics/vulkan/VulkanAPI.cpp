@@ -63,7 +63,7 @@ namespace milo {
 		}
 
 
-		VkImageCreateInfo ImageCreateInfo::create() noexcept {
+		VkImageCreateInfo ImageCreateInfo::create(TextureUsageFlags usage) noexcept {
 			VkImageCreateInfo imageInfo = {};
 			imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 			imageInfo.arrayLayers = 1;
@@ -73,21 +73,25 @@ namespace milo {
 			imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 			imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+			if((usage & TEXTURE_USAGE_SAMPLED_BIT) != 0) imageInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+			if((usage & TEXTURE_USAGE_COLOR_ATTACHMENT_BIT) != 0) imageInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+			if((usage & TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) imageInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
 			imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 			return imageInfo;
 		}
 
 		VkImageCreateInfo ImageCreateInfo::colorAttachment() noexcept {
-			VkImageCreateInfo imageInfo = create();
-			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			VkImageCreateInfo imageInfo = create(TEXTURE_USAGE_COLOR_ATTACHMENT_BIT);
 			imageInfo.format = VulkanContext::get()->swapchain()->format();
 			return imageInfo;
 		}
 
 		VkImageCreateInfo ImageCreateInfo::depthStencilAttachment() noexcept {
-			VkImageCreateInfo imageInfo = create();
-			imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+			VkImageCreateInfo imageInfo = create(TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 			imageInfo.format = VulkanContext::get()->device()->depthFormat();
 			return imageInfo;
 		}
@@ -107,6 +111,10 @@ namespace milo {
 			viewInfo.subresourceRange.levelCount = levelCount;
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
+			viewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+			viewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+			viewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+			viewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
 			return viewInfo;
 		}
 

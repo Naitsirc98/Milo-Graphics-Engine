@@ -6,6 +6,7 @@
 #include "milo/graphics/Graphics.h"
 #include "milo/assets/images/PixelFormat.h"
 #include "milo/assets/shaders/Shader.h"
+#include "milo/graphics/textures/Texture.h"
 
 #define MAX_FRAMES_IN_FLIGHT 2
 #define MAX_SWAPCHAIN_IMAGE_COUNT 3
@@ -38,7 +39,7 @@ namespace milo {
 		}
 
 		namespace ImageCreateInfo {
-			VkImageCreateInfo create() noexcept;
+			VkImageCreateInfo create(TextureUsageFlags usage = TEXTURE_USAGE_SAMPLED_BIT) noexcept;
 			VkImageCreateInfo colorAttachment() noexcept;
 			VkImageCreateInfo depthStencilAttachment() noexcept;
 		}

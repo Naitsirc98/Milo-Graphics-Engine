@@ -147,7 +147,7 @@ namespace milo {
 
 				resource.handle = handle;
 				resource.description = desc;
-				resource.texture = VulkanTexture2D::create(desc.format, desc.usageFlags);
+				resource.texture = VulkanTexture2D::create(desc.usageFlags);
 
 				Texture2D::AllocInfo allocInfo = {};
 				allocInfo.width = desc.width;
