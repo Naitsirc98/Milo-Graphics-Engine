@@ -24,7 +24,6 @@ namespace milo {
 			m_ViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		}
 
-
 		m_VkSampler = VulkanContext::get()->samplerMap()->getDefaultSampler();
 	}
 

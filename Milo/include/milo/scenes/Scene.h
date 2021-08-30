@@ -2,6 +2,7 @@
 
 #include "EntityComponentSystem.h"
 #include "milo/scenes/Components.h"
+#include "milo/assets/skybox/Skybox.h"
 
 namespace milo {
 
@@ -12,6 +13,7 @@ namespace milo {
 		const String m_Name;
 		ECSRegistry m_Registry;
 		EntityId m_MainCameraEntity = NULL_ENTITY;
+		Skybox* m_Skybox{nullptr};
 	private:
 		explicit Scene(const String& name);
 		explicit Scene(String&& name);
@@ -25,6 +27,8 @@ namespace milo {
 		void destroyEntity(EntityId entityId) noexcept;
 		Entity cameraEntity() noexcept;
 		void setMainCamera(EntityId id) noexcept;
+		Skybox* skybox() const;
+		void setSkybox(Skybox* skybox);
 
 		template<typename Component>
 		ECSComponentView<Component> view() {

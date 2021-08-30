@@ -79,8 +79,10 @@ namespace milo {
 			if((usage & TEXTURE_USAGE_SAMPLED_BIT) != 0) imageInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 			if((usage & TEXTURE_USAGE_COLOR_ATTACHMENT_BIT) != 0) imageInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 			if((usage & TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) imageInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+			if((usage & TEXTURE_USAGE_STORAGE_BIT) != 0) imageInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
 
 			imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+
 			return imageInfo;
 		}
 
@@ -273,6 +275,14 @@ namespace milo {
 		VkWriteDescriptorSet createCombineImageSamplerWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorImageInfo* pImageInfo) {
 			VkWriteDescriptorSet writeDescriptorSet = create(binding, set, descriptorCount);
 			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptorSet.pImageInfo = pImageInfo;
+			return writeDescriptorSet;
+		}
+
+		VkWriteDescriptorSet createStorageImageWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorImageInfo* pImageInfo) {
+
+			VkWriteDescriptorSet writeDescriptorSet = create(binding, set, descriptorCount);
+			writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 			writeDescriptorSet.pImageInfo = pImageInfo;
 			return writeDescriptorSet;
 		}

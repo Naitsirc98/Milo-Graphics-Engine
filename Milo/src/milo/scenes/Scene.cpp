@@ -51,6 +51,14 @@ namespace milo {
 		return m_Registry;
 	}
 
+	Skybox* Scene::skybox() const {
+		return m_Skybox;
+	}
+
+	void Scene::setSkybox(Skybox* skybox) {
+		m_Skybox = skybox;
+	}
+
 	void Scene::update() {
 		auto nativeScripts = m_Registry.view<NativeScriptView>();
 		for(EntityId entity : nativeScripts) {

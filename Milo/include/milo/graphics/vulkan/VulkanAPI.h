@@ -75,6 +75,7 @@ namespace milo {
 			VkWriteDescriptorSet createStorageBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo);
 			VkWriteDescriptorSet createDynamicStorageBufferWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorBufferInfo* pBufferInfo);
 			VkWriteDescriptorSet createCombineImageSamplerWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorImageInfo* pImageInfo);
+			VkWriteDescriptorSet createStorageImageWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorImageInfo* pImageInfo);
 		}
 
 		String getErrorName(VkResult vkResult) noexcept;

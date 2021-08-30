@@ -91,11 +91,7 @@ namespace milo {
 			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			barrier.image = m_VkImage;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = m_ImageInfo.mipLevels;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = m_ImageInfo.arrayLayers;
+			barrier.subresourceRange = m_ViewInfo.subresourceRange;
 
 			// Transition all levels to DST OPTIMAL
 			if(m_ImageLayout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
@@ -131,13 +127,13 @@ namespace milo {
 				blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				blit.srcSubresource.mipLevel = i - 1;
 				blit.srcSubresource.baseArrayLayer = 0;
-				blit.srcSubresource.layerCount = m_ImageInfo.arrayLayers;
+				blit.srcSubresource.layerCount = m_ViewInfo.subresourceRange.layerCount;
 				blit.dstOffsets[0] = {0, 0, 0};
 				blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
 				blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				blit.dstSubresource.mipLevel = i;
 				blit.dstSubresource.baseArrayLayer = 0;
-				blit.dstSubresource.layerCount = m_ImageInfo.arrayLayers;
+				blit.dstSubresource.layerCount = m_ViewInfo.subresourceRange.layerCount;
 
 				VK_CALLV(vkCmdBlitImage(commandBuffer,
 										m_VkImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
