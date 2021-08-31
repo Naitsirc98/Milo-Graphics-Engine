@@ -258,7 +258,7 @@ namespace milo {
 		pipelineInfo.vkPipelineCache = VK_NULL_HANDLE;
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
-		//pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/skybox/skybox.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/skybox/skybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT});

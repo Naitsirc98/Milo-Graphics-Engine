@@ -63,9 +63,7 @@ namespace milo {
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 										 0, 1, &descriptorSet, 0, nullptr));
 
-		uint32_t workgroups = mapSize / 32;
-
-		VK_CALLV(vkCmdDispatch(commandBuffer, workgroups, workgroups, 6)); // TODO
+		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 6));
 
 		environmentMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 								  VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
