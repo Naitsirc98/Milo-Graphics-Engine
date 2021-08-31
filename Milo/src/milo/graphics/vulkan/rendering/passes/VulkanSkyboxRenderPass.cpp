@@ -17,17 +17,41 @@ namespace milo {
 		createDescriptorPool();
 		createUniformBuffer();
 		createDescriptorSets();
+
+		createPipelineLayout();
+
+		createSemaphores();
+
+		m_Framebuffers.fill(VK_NULL_HANDLE);
+		m_CommandBuffers.fill(VK_NULL_HANDLE);
 	}
 
 	VulkanSkyboxRenderPass::~VulkanSkyboxRenderPass() {
-		// TODO
+
+		destroyTransientResources();
+
+		VkDevice device = m_Device->logical();
+
+		VK_CALLV(vkDestroyRenderPass(device, m_RenderPass, nullptr));
+
+		DELETE_PTR(m_UniformBuffer);
+		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, nullptr));
+		DELETE_PTR(m_DescriptorPool);
+
+		VK_CALLV(vkDestroyPipeline(device, m_GraphicsPipeline, nullptr));
+		VK_CALLV(vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr));
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALLV(vkDestroySemaphore(device, m_SignalSemaphores[i], nullptr));
+		}
 	}
 
 	void VulkanSkyboxRenderPass::compile(FrameGraphResourcePool* resourcePool) {
 
+		destroyTransientResources();
+
 		createFramebuffers(resourcePool);
 
-		createPipelineLayout();
 		createGraphicsPipeline();
 
 		createCommandBuffers();
@@ -37,31 +61,33 @@ namespace milo {
 
 		uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
 
-		updateDescriptorSets(scene);
-
 		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
 
 		VulkanQueue* queue = m_Device->graphicsQueue();
+
+		VkPipelineStageFlags waitDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pWaitSemaphores = queue->waitSemaphores().data();
 		submitInfo.waitSemaphoreCount = queue->waitSemaphores().size();
+		submitInfo.pWaitDstStageMask = &waitDstStageFlags;
+		submitInfo.pSignalSemaphores = &m_SignalSemaphores[imageIndex];
+		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
 		submitInfo.commandBufferCount = 1;
 
 		queue->submit(submitInfo, VK_NULL_HANDLE);
 	}
 
-	void VulkanSkyboxRenderPass::updateDescriptorSets(Scene* scene) {
-
-		uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
-
-		Skybox* skybox = scene->skybox();
+	void VulkanSkyboxRenderPass::updateDescriptorSets(Skybox* skybox, uint32_t imageIndex, VkDescriptorSet descriptorSet) {
 
 		auto* environmentMap = dynamic_cast<VulkanCubemap*>(skybox->environmentMap());
 
-		VkDescriptorSet descriptorSet = m_DescriptorPool->get(imageIndex);
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = m_UniformBuffer->vkBuffer();
+		bufferInfo.offset = imageIndex * m_UniformBuffer->elementSize();
+		bufferInfo.range = sizeof(UniformBuffer);
 
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.imageView = environmentMap->vkImageView();
@@ -76,18 +102,23 @@ namespace milo {
 	void VulkanSkyboxRenderPass::createRenderPass() {
 
 		VkAttachmentDescription colorAttachment = mvk::AttachmentDescription::createColorAttachment(VK_FORMAT_R32G32B32A32_SFLOAT);
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription depthAttachment = mvk::AttachmentDescription::createDepthStencilAttachment();
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference colorAttachmentRef = {};
+		VkAttachmentReference colorAttachmentRef{};
 		colorAttachmentRef.attachment = 0;
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference depthAttachmentRef = {};
+		VkAttachmentReference depthAttachmentRef{};
 		depthAttachmentRef.attachment = 1;
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		VkSubpassDependency dependency = {};
+		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
 		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
@@ -95,7 +126,7 @@ namespace milo {
 		dependency.srcAccessMask = 0;
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-		VkSubpassDescription subpass = {};
+		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.pColorAttachments = &colorAttachmentRef;
 		subpass.colorAttachmentCount = 1;
@@ -103,7 +134,7 @@ namespace milo {
 
 		VkAttachmentDescription attachments[] = {colorAttachment, depthAttachment};
 
-		VkRenderPassCreateInfo renderPassInfo = {};
+		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.pAttachments = attachments;
 		renderPassInfo.attachmentCount = 2;
@@ -126,7 +157,7 @@ namespace milo {
 		auto& colorTextures = pool->getTextures2D(m_Input.textures[0].handle);
 		auto& depthTextures = pool->getTextures2D(m_Input.textures[1].handle);
 
-		for(uint32_t i = 0;i < colorTextures.size();++i) {
+		for(uint32_t i = 0;i < m_Framebuffers.size();++i) {
 
 			const VulkanTexture2D* colorTexture = dynamic_cast<const VulkanTexture2D*>(colorTextures[i].texture);
 			const VulkanTexture2D* depthTexture = dynamic_cast<const VulkanTexture2D*>(depthTextures[i].texture);
@@ -219,6 +250,7 @@ namespace milo {
 		pipelineInfo.vkPipelineCache = VK_NULL_HANDLE;
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
+		pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/skybox/skybox.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/skybox/skybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
@@ -231,6 +263,9 @@ namespace milo {
 	}
 
 	void VulkanSkyboxRenderPass::createCommandBuffers() {
+
+		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+												  m_CommandBuffers.size(), m_CommandBuffers.data());
 
 		Scene* scene = SceneManager::activeScene();
 
@@ -248,7 +283,8 @@ namespace milo {
 		Matrix4 view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
 
 		UniformBuffer uniformBufferData{};
-		uniformBufferData.inverseProjViewMatrix = inverse(proj * view);
+		uniformBufferData.viewMatrix = view;
+		uniformBufferData.projMatrix = proj;
 		uniformBufferData.textureLOD = skybox->prefilterLODBias();
 		uniformBufferData.intensity = 1; // TODO
 
@@ -297,6 +333,8 @@ namespace milo {
 
 					VkDescriptorSet descriptorSet = m_DescriptorPool->get(imageIndex);
 
+					updateDescriptorSets(skybox, imageIndex, descriptorSet);
+
 					VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 													 m_PipelineLayout,
 													 0, 1, &descriptorSet, 0, nullptr));
@@ -318,6 +356,33 @@ namespace milo {
 				VK_CALLV(vkCmdEndRenderPass(commandBuffer));
 			}
 			VK_CALLV(vkEndCommandBuffer(commandBuffer));
+		}
+	}
+
+	void VulkanSkyboxRenderPass::createSemaphores() {
+
+		VkSemaphoreCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
+			VK_CALL(vkCreateSemaphore(m_Device->logical(), &createInfo, nullptr, &m_SignalSemaphores[i]));
+		}
+	}
+
+	void VulkanSkyboxRenderPass::destroyTransientResources() {
+
+		m_Device->awaitTermination();
+
+		if(m_Framebuffers[0] != VK_NULL_HANDLE) {
+			for(uint32_t i = 0; i < m_Framebuffers.size(); ++i) {
+				VK_CALLV(vkDestroyFramebuffer(m_Device->logical(), m_Framebuffers[i], nullptr));
+				m_Framebuffers[i] = VK_NULL_HANDLE;
+			}
+		}
+
+		if(m_CommandBuffers[0] != VK_NULL_HANDLE) {
+			m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());
+			m_CommandBuffers.fill(VK_NULL_HANDLE);
 		}
 	}
 }

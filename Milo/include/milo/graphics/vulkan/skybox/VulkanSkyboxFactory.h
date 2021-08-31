@@ -27,7 +27,7 @@ namespace milo {
 		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
 		VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
 	public:
-		VulkanEnvironmentMapPass(VulkanDevice* device);
+		explicit VulkanEnvironmentMapPass(VulkanDevice* device);
 		~VulkanEnvironmentMapPass();
 		void execute(const VulkanSkyboxPassExecuteInfo& execInfo);
 	private:
@@ -46,7 +46,7 @@ namespace milo {
 		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
 		VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
 	public:
-		VulkanIrradianceMapPass(VulkanDevice* device);
+		explicit VulkanIrradianceMapPass(VulkanDevice* device);
 		~VulkanIrradianceMapPass();
 		void execute(const VulkanSkyboxPassExecuteInfo& execInfo);
 	private:
@@ -65,7 +65,7 @@ namespace milo {
 		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
 		VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
 	public:
-		VulkanPrefilterMapPass(VulkanDevice* device);
+		explicit VulkanPrefilterMapPass(VulkanDevice* device);
 		~VulkanPrefilterMapPass();
 		void execute(const VulkanSkyboxPassExecuteInfo& execInfo);
 	private:
@@ -84,7 +84,7 @@ namespace milo {
 		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
 		VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
 	public:
-		VulkanBRDFPass(VulkanDevice* device);
+		explicit VulkanBRDFPass(VulkanDevice* device);
 		~VulkanBRDFPass();
 		void execute(const VulkanSkyboxPassExecuteInfo& execInfo);
 	private:
@@ -109,6 +109,6 @@ namespace milo {
 	public:
 		Skybox* create(const String& name, const String& imageFile, const SkyboxLoadInfo& loadInfo = DEFAULT_SKYBOX_LOAD_INFO) override;
 	private:
-		VulkanTexture2D* createEquirectangularTexture(const String imageFile);
+		VulkanTexture2D* createEquirectangularTexture(const String& imageFile);
 	};
 }

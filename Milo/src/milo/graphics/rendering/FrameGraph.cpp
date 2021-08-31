@@ -28,6 +28,11 @@ namespace milo {
 		m_ResourcePool->clearReferences();
 
 		push<GeometryRenderPass>();
+
+		if(scene->skybox() != nullptr) {
+			push<SkyboxRenderPass>();
+		}
+
 		push<FinalRenderPass>();
 	}
 

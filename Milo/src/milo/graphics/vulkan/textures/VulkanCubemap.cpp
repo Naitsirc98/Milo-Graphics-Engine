@@ -6,6 +6,9 @@ namespace milo {
 	VulkanCubemap::VulkanCubemap(const VulkanTexture::CreateInfo& createInfo) : VulkanTexture(createInfo) {
 
 		if(createInfo.arrayLayers != 6) throw MILO_RUNTIME_EXCEPTION("Cubemaps must have 6 array layers");
+
+		m_ImageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		m_ViewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 	}
 
 	VulkanCubemap::~VulkanCubemap() = default;

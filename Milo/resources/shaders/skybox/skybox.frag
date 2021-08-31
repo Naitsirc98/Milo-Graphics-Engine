@@ -13,5 +13,5 @@ layout (location = 0) in vec3 in_Position;
 layout(location = 0) out vec4 out_FragColor;
 
 void main() {
-    out_FragColor = textureLod(u_Texture, in_Position, u_TextureLOD) * u_Intensity;
+    out_FragColor = textureLod(u_Texture, in_Position, 0);
 }

@@ -30,10 +30,11 @@ namespace milo {
 		static VkResult pushVkCall(StackTrace&& stackTrace, const char* function, const char* file, uint32_t line, VkResult vkResult);
 	};
 
+
 	namespace mvk {
 
 		namespace ImageMemoryBarrier {
-			VkImageMemoryBarrier create(VkImage image = VK_NULL_HANDLE,
+			VkImageMemoryBarrier create(const VkImageViewCreateInfo& viewInfo = {},
 										VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 										VkImageLayout newLayout = VK_IMAGE_LAYOUT_UNDEFINED) noexcept;
 		}

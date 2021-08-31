@@ -4,7 +4,8 @@
 namespace milo {
 
 	SkyboxManager::SkyboxManager() {
-		load(DEFAULT_SKYBOX_NAME, Files::resource("skybox/...")); // TODO
+		m_SkyboxFactory = SkyboxFactory::create();
+		load(DEFAULT_SKYBOX_NAME, Files::resource("textures/skybox/indoor.hdr"));
 	}
 
 	SkyboxManager::~SkyboxManager() {
@@ -23,13 +24,13 @@ namespace milo {
 
 		String extension = Files::extension(filename);
 
-		Skybox* skybox;
+		Skybox* skybox = nullptr;
 
 		if(extension == ".skybox") {
 			// TODO: load from skybox file
 		} else {
 			// Load from equirectangular image
-
+			skybox = m_SkyboxFactory->create(name, filename);
 		}
 
 		m_Skyboxes[name] = skybox;

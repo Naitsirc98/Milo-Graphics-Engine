@@ -60,12 +60,12 @@ namespace milo {
 
 		// Equirectangular image
 		bindings[0].binding = 0;
-		bindings[0].stageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		bindings[0].descriptorCount = 1;
 		// Environment map
 		bindings[1].binding = 1;
-		bindings[1].stageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		bindings[1].descriptorCount = 1;
 
@@ -120,11 +120,13 @@ namespace milo {
 		VK_CALL(vkCreateShaderModule(m_Device->logical(), &shaderModuleCreateInfo, nullptr, &shaderModule));
 
 		VkPipelineShaderStageCreateInfo shaderStage{};
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStage.module = shaderModule;
 		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 		shaderStage.pName = "main";
 
 		VkComputePipelineCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		createInfo.layout = m_PipelineLayout;
 		createInfo.stage = shaderStage;
 

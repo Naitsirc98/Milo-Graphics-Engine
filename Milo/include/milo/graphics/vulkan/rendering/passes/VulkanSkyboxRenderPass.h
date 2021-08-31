@@ -11,9 +11,11 @@
 namespace milo {
 
 	class VulkanSkyboxRenderPass : public SkyboxRenderPass {
+		friend class SkyboxRenderPass;
 	public:
 		struct UniformBuffer {
-			Matrix4 inverseProjViewMatrix;
+			Matrix4 viewMatrix;
+			Matrix4 projMatrix;
 			float textureLOD;
 			float intensity;
 		};
@@ -33,13 +35,16 @@ namespace milo {
 
 		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_CommandBuffers{};
 
-	public:
+		Array<VkSemaphore, MAX_SWAPCHAIN_IMAGE_COUNT> m_SignalSemaphores{};
+
+	private:
 		VulkanSkyboxRenderPass();
 		~VulkanSkyboxRenderPass() override;
+	public:
 		void compile(FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:
-		void updateDescriptorSets(Scene* scene);
+		void updateDescriptorSets(Skybox* skybox, uint32_t imageIndex, VkDescriptorSet descriptorSet);
 		void createRenderPass();
 		void createFramebuffers(FrameGraphResourcePool* resourcePool);
 		void createDescriptorSetLayout();
@@ -49,6 +54,8 @@ namespace milo {
 		void createPipelineLayout();
 		void createGraphicsPipeline();
 		void createCommandBuffers();
+		void createSemaphores();
+		void destroyTransientResources();
 	};
 
 }

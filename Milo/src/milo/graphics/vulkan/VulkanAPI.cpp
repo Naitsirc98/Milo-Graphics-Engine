@@ -30,21 +30,17 @@ namespace milo {
 
 	namespace mvk {
 
-		VkImageMemoryBarrier ImageMemoryBarrier::create(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout) noexcept {
+		VkImageMemoryBarrier ImageMemoryBarrier::create(const VkImageViewCreateInfo& viewInfo,
+														VkImageLayout oldLayout, VkImageLayout newLayout) noexcept {
 
 			// GENERIC, MAY BE CHANGED BY CALLER
-			VkImageSubresourceRange range;
-			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			range.baseMipLevel = 0;
-			range.levelCount = 1;
-			range.baseArrayLayer = 0;
-			range.layerCount = 1;
+			VkImageSubresourceRange range = viewInfo.subresourceRange;
 
 			VkImageMemoryBarrier barrier = {};
 			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 			barrier.subresourceRange = range;
 
-			barrier.image = image;
+			barrier.image = viewInfo.image;
 			barrier.oldLayout = oldLayout;
 			barrier.newLayout = newLayout;
 

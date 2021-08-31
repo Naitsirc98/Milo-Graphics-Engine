@@ -251,7 +251,7 @@ namespace milo {
 
 				VulkanTexture2D* texture = dynamic_cast<VulkanTexture2D*>(textures[i].texture);
 
-				VkImageMemoryBarrier imageMemoryBarrier = mvk::ImageMemoryBarrier::create(texture->vkImage(),
+				VkImageMemoryBarrier imageMemoryBarrier = mvk::ImageMemoryBarrier::create(texture->vkImageViewInfo(),
 																						  texture->layout(),
 																						  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 

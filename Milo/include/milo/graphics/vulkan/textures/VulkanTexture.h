@@ -55,6 +55,10 @@ namespace milo {
 		VmaMemoryUsage usage() const;
 
 		void transitionLayout(VkCommandBuffer commandBuffer, const VkImageMemoryBarrier& barrier, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage);
+
+		void setLayout(VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
+		void setLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
+
 	protected:
 		void allocate(uint32_t width, uint32_t height, PixelFormat format, uint32_t mipLevels);
 		void copyFromBuffer(VkCommandBuffer commandBuffer, VulkanBuffer& buffer);

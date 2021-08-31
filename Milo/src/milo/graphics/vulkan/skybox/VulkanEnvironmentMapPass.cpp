@@ -23,11 +23,35 @@ namespace milo {
 
 	void VulkanEnvironmentMapPass::execute(const VulkanSkyboxPassExecuteInfo& execInfo) {
 
-		VK_CALLV(vkCmdBindPipeline(execInfo.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
+		VkCommandBuffer commandBuffer = execInfo.commandBuffer;
+
+		VulkanCubemap* environmentMap = execInfo.environmentMap;
+
+		uint32_t mapSize = execInfo.loadInfo->environmentMapSize;
+
+		Cubemap::AllocInfo allocInfo{};
+		allocInfo.width = mapSize;
+		allocInfo.height = mapSize;
+		allocInfo.format = PixelFormat::RGBA16F;
+		allocInfo.mipLevels = 1;
+
+		environmentMap->allocate(allocInfo);
+
+		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
+
+		environmentMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_GENERAL,
+								  VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 		updateDescriptorSet(execInfo);
 
-		VK_CALLV(vkCmdDispatch(execInfo.commandBuffer, 32, 32, 32)); // TODO
+		VkDescriptorSet descriptorSet = m_DescriptorPool->get(0);
+		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+										 0, 1, &descriptorSet, 0, nullptr));
+
+		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 1)); // TODO
+
+		environmentMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+								  VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	}
 
 	void VulkanEnvironmentMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo) {
@@ -60,12 +84,12 @@ namespace milo {
 
 		// Equirectangular image
 		bindings[0].binding = 0;
-		bindings[0].stageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		bindings[0].descriptorCount = 1;
 		// Environment map
 		bindings[1].binding = 1;
-		bindings[1].stageFlags = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		bindings[1].descriptorCount = 1;
 
@@ -90,6 +114,7 @@ namespace milo {
 		VulkanDescriptorPool::CreateInfo createInfo{};
 		createInfo.layout = m_DescriptorSetLayout;
 		createInfo.capacity = 1;
+		createInfo.initialSize = 1;
 		createInfo.poolSizes.push_back(poolSizes[0]);
 		createInfo.poolSizes.push_back(poolSizes[1]);
 
@@ -120,11 +145,13 @@ namespace milo {
 		VK_CALL(vkCreateShaderModule(m_Device->logical(), &shaderModuleCreateInfo, nullptr, &shaderModule));
 
 		VkPipelineShaderStageCreateInfo shaderStage{};
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStage.module = shaderModule;
 		shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 		shaderStage.pName = "main";
 
 		VkComputePipelineCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		createInfo.layout = m_PipelineLayout;
 		createInfo.stage = shaderStage;
 

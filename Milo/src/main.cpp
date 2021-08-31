@@ -12,6 +12,10 @@ public:
 
 		Scene* scene = SceneManager::activeScene();
 
+		Skybox* skybox = Assets::skybox().getDefault();
+
+		scene->setSkybox(skybox);
+
 		createSphere(scene, {0, 0, -3}, Assets::materials().getDefault());
 		createSphere(scene, {3, 0, -3}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
 

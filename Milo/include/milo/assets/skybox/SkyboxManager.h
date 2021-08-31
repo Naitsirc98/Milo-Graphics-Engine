@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Skybox.h"
+#include "SkyboxFactory.h"
 
 namespace milo {
 
