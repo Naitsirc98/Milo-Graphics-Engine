@@ -1,5 +1,6 @@
 #include "milo/graphics/vulkan/skybox/VulkanSkyboxFactory.h"
 #include "milo/graphics/vulkan/shaders/VulkanShader.h"
+#include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/assets/AssetManager.h"
 
 namespace milo {
@@ -33,9 +34,23 @@ namespace milo {
 		allocInfo.width = mapSize;
 		allocInfo.height = mapSize;
 		allocInfo.format = PixelFormat::RGBA16F;
-		allocInfo.mipLevels = 1;
+		allocInfo.mipLevels = 4;
 
 		environmentMap->allocate(allocInfo);
+		environmentMap->generateMipmaps();
+
+		VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+
+		VkSampler sampler = VulkanContext::get()->samplerMap()->get(samplerInfo);
+
+		environmentMap->vkSampler(sampler);
 
 		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
 
@@ -48,7 +63,9 @@ namespace milo {
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 										 0, 1, &descriptorSet, 0, nullptr));
 
-		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 1)); // TODO
+		uint32_t workgroups = mapSize / 32;
+
+		VK_CALLV(vkCmdDispatch(commandBuffer, workgroups, workgroups, 6)); // TODO
 
 		environmentMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 								  VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);

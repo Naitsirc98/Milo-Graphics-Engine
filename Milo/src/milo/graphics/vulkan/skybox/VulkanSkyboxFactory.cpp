@@ -55,12 +55,14 @@ namespace milo {
 		skybox->m_PrefilterLODBias = loadInfo.lodBias;
 		skybox->m_MaxPrefilterLOD = loadInfo.maxLOD;
 
+		DELETE_PTR(equirectangularTexture);
+
 		return skybox;
 	}
 
 	VulkanTexture2D* VulkanSkyboxFactory::createEquirectangularTexture(const String& imageFile) {
 
-		Image* image = Image::loadImage(imageFile, PixelFormat::RGBA16F);
+		Image* image = Image::loadImage(imageFile, PixelFormat::RGBA32F);
 
 		VulkanTexture2D* texture = VulkanTexture2D::create(TEXTURE_USAGE_SAMPLED_BIT);
 
@@ -72,6 +74,16 @@ namespace milo {
 		allocInfo.mipLevels = 1;
 
 		texture->allocate(allocInfo);
+
+		VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+		texture->vkSampler(VulkanContext::get()->samplerMap()->get(samplerInfo));
 
 		DELETE_PTR(image);
 

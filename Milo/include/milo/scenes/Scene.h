@@ -26,6 +26,7 @@ namespace milo {
 		Entity find(EntityId id) const;
 		void destroyEntity(EntityId entityId) noexcept;
 		Entity cameraEntity() noexcept;
+		Camera* camera() noexcept;
 		void setMainCamera(EntityId id) noexcept;
 		Skybox* skybox() const;
 		void setSkybox(Skybox* skybox);

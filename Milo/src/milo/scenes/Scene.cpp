@@ -43,6 +43,12 @@ namespace milo {
 		return Entity(m_MainCameraEntity, *this);
 	}
 
+	Camera* Scene::camera() noexcept {
+		Entity entity = cameraEntity();
+		if(entity.valid()) return &entity.getComponent<Camera>();
+		return nullptr;
+	}
+
 	void Scene::setMainCamera(EntityId id) noexcept {
 		m_MainCameraEntity = id;
 	}

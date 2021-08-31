@@ -60,10 +60,18 @@ namespace milo {
 	void VulkanSkyboxRenderPass::execute(Scene* scene) {
 
 		uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
-
 		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
-
 		VulkanQueue* queue = m_Device->graphicsQueue();
+
+		Camera* camera = scene->camera();
+
+		UniformBuffer uniformBufferData{};
+		uniformBufferData.viewMatrix = camera->viewMatrix(scene->cameraEntity().getComponent<Transform>().translation);
+		uniformBufferData.projMatrix = camera->projectionMatrix();
+		uniformBufferData.textureLOD = scene->skybox()->prefilterLODBias();
+		uniformBufferData.intensity = 1; // TODO
+
+		m_UniformBuffer->update(imageIndex, uniformBufferData);
 
 		VkPipelineStageFlags waitDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
@@ -250,7 +258,7 @@ namespace milo {
 		pipelineInfo.vkPipelineCache = VK_NULL_HANDLE;
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
-		pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		//pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/skybox/skybox.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaderInfos.push_back({"resources/shaders/skybox/skybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT});

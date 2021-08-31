@@ -18,7 +18,7 @@ void main() {
     out_Position = in_Position;
 
     mat4 rotatedView = mat4(mat3(u_ViewMatrix));
-    vec4 clipPosition = u_ProjectionMatrix * rotatedView * vec4(in_Position, 1.0);
+    vec4 clipPosition = u_ProjectionMatrix * u_ViewMatrix * vec4(in_Position, 1.0);
 
-    gl_Position = clipPosition.xyww;
+    gl_Position = clipPosition.xyzw;
 }
