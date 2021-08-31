@@ -90,7 +90,7 @@ namespace milo {
 
 	void VulkanSkyboxRenderPass::updateDescriptorSets(Skybox* skybox, uint32_t imageIndex, VkDescriptorSet descriptorSet) {
 
-		auto* environmentMap = dynamic_cast<VulkanCubemap*>(skybox->irradianceMap());
+		auto* environmentMap = dynamic_cast<VulkanCubemap*>(skybox->environmentMap());
 
 		VkDescriptorBufferInfo bufferInfo{};
 		bufferInfo.buffer = m_UniformBuffer->vkBuffer();

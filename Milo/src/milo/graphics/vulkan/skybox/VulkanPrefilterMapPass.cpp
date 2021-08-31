@@ -1,6 +1,7 @@
 #include "milo/graphics/vulkan/skybox/VulkanSkyboxFactory.h"
 #include "milo/graphics/vulkan/shaders/VulkanShader.h"
 #include "milo/assets/AssetManager.h"
+#include "milo/graphics/vulkan/VulkanContext.h"
 
 namespace milo {
 
@@ -23,11 +24,52 @@ namespace milo {
 
 	void VulkanPrefilterMapPass::execute(const VulkanSkyboxPassExecuteInfo& execInfo) {
 
-		VK_CALLV(vkCmdBindPipeline(execInfo.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
+		VkCommandBuffer commandBuffer = execInfo.commandBuffer;
+
+		VulkanCubemap* prefilterMap = execInfo.prefilterMap;
+
+		uint32_t mapSize = execInfo.loadInfo->prefilterMapSize;
+
+		Cubemap::AllocInfo allocInfo{};
+		allocInfo.width = mapSize;
+		allocInfo.height = mapSize;
+		allocInfo.format = PixelFormat::RGBA32F;
+		allocInfo.mipLevels = 4;
+
+		prefilterMap->allocate(allocInfo);
+		prefilterMap->generateMipmaps();
+
+		VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+
+		VkSampler sampler = VulkanContext::get()->samplerMap()->get(samplerInfo);
+
+		prefilterMap->vkSampler(sampler);
+
+		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
+
+		prefilterMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_GENERAL,
+								VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 		updateDescriptorSet(execInfo);
 
-		VK_CALLV(vkCmdDispatch(execInfo.commandBuffer, 32, 32, 32)); // TODO
+		VkDescriptorSet descriptorSet = m_DescriptorPool->get(0);
+		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+										 0, 1, &descriptorSet, 0, nullptr));
+
+		uint32_t samples = 8;
+		VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(samples), &samples));
+
+		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 6));
+
+		prefilterMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+								VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	}
 
 	void VulkanPrefilterMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo) {
@@ -43,8 +85,8 @@ namespace milo {
 
 		VkDescriptorImageInfo environmentMapInfo{};
 		environmentMapInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		environmentMapInfo.imageView = execInfo.environmentMap->vkImageView();
-		environmentMapInfo.sampler = execInfo.environmentMap->vkSampler();
+		environmentMapInfo.imageView = execInfo.prefilterMap->vkImageView();
+		environmentMapInfo.sampler = execInfo.prefilterMap->vkSampler();
 
 		VkWriteDescriptorSet equirectangularTextureWrite = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &equirectangularTextureInfo);
 		VkWriteDescriptorSet environmentMapWrite = mvk::WriteDescriptorSet::createStorageImageWrite(1, descriptorSet, 1, &environmentMapInfo);
@@ -94,14 +136,23 @@ namespace milo {
 		createInfo.poolSizes.push_back(poolSizes[1]);
 
 		m_DescriptorPool = new VulkanDescriptorPool(m_Device, createInfo);
+
+		m_DescriptorPool->allocate(1);
 	}
 
 	void VulkanPrefilterMapPass::createPipelineLayout() {
+
+		VkPushConstantRange pushConstants{};
+		pushConstants.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		pushConstants.offset = 0;
+		pushConstants.size = sizeof(uint32_t);
 
 		VkPipelineLayoutCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		createInfo.setLayoutCount = 1;
 		createInfo.pSetLayouts = &m_DescriptorSetLayout;
+		createInfo.pPushConstantRanges = &pushConstants;
+		createInfo.pushConstantRangeCount = 1;
 
 		VK_CALL(vkCreatePipelineLayout(m_Device->logical(), &createInfo, nullptr, &m_PipelineLayout));
 	}
