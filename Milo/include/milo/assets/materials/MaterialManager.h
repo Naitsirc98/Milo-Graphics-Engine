@@ -10,8 +10,6 @@ namespace milo {
 	private:
 		HashMap<String, Material*> m_Materials;
 		Mutex m_Mutex;
-		Ref<Texture2D> m_WhiteTexture;
-		Ref<Texture2D> m_BlackTexture;
 		MaterialResourcePool* m_ResourcePool{nullptr};
 	private:
 		MaterialManager();
@@ -26,9 +24,6 @@ namespace milo {
 	private:
 		bool load(const String& name, const String& filename, Material*& material);
 		Ref<Texture2D> loadTexture2D(void* pJson, const String& textureName, const String& materialFile);
-	private:
-		static Texture2D* createWhiteTexture();
-		static Texture2D* createBlackTexture();
 	};
 
 }

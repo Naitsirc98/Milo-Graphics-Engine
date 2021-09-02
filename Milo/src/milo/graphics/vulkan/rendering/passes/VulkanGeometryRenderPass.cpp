@@ -207,16 +207,6 @@ namespace milo {
 		VK_CALLV(vkEndCommandBuffer(commandBuffer));
 	}
 
-	inline static VkImageView getImageView(Texture2D* texture) {
-		if(texture == nullptr) return VK_NULL_HANDLE;
-		return dynamic_cast<VulkanTexture2D*>(texture)->vkImageView();
-	}
-
-	inline static VkSampler getSampler(Texture2D* texture) {
-		if(texture == nullptr) return VK_NULL_HANDLE;
-		return dynamic_cast<VulkanTexture2D*>(texture)->vkSampler();
-	}
-
 	void VulkanGeometryRenderPass::createRenderPass() {
 
 		VkAttachmentDescription colorAttachment = mvk::AttachmentDescription::createColorAttachment(VK_FORMAT_R32G32B32A32_SFLOAT);

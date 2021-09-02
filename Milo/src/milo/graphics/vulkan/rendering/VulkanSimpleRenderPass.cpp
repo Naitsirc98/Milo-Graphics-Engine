@@ -29,7 +29,7 @@ namespace milo {
 
 		// This should be a per frame or per pass descriptor set
 		//Camera cameraData = {view, proj, projView};
-		//updateCameraUniformBuffer(executeInfo.swapchainImageIndex, cameraData);
+		//updateCameraDescriptorSet(executeInfo.swapchainImageIndex, cameraData);
 
 		VkCommandBuffer commandBuffer = m_VkCommandBuffers[swapchainImageIndex];
 

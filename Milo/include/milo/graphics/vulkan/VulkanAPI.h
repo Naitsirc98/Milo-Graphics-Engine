@@ -33,6 +33,11 @@ namespace milo {
 
 	namespace mvk {
 
+		VkImageView getImageView(Texture2D* texture);
+		VkImageView getImageView(Cubemap* cubemap);
+		VkSampler getSampler(Texture2D* texture);
+		VkSampler getSampler(Cubemap* cubemap);
+
 		namespace ImageMemoryBarrier {
 			VkImageMemoryBarrier create(const VkImageViewCreateInfo& viewInfo = {},
 										VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,

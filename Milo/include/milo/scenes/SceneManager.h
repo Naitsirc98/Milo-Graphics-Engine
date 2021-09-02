@@ -15,8 +15,6 @@ namespace milo {
 	private:
 		static void update();
 		static void lateUpdate();
-		static void render();
-		static void renderUI();
 
 		static void init();
 		static void shutdown();

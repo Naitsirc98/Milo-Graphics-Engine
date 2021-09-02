@@ -65,6 +65,14 @@ namespace milo {
 		m_Skybox = skybox;
 	}
 
+	const LightEnvironment& Scene::lightEnvironment() const noexcept {
+		return m_LightEnvironment;
+	}
+
+	LightEnvironment& Scene::lightEnvironment() noexcept {
+		return m_LightEnvironment;
+	}
+
 	void Scene::update() {
 		auto nativeScripts = m_Registry.view<NativeScriptView>();
 		for(EntityId entity : nativeScripts) {
@@ -81,13 +89,5 @@ namespace milo {
 			nativeScriptView.createIfNotExists(entity);
 			nativeScriptView.script->onLateUpdate(entity);
 		}
-	}
-
-	void Scene::render() {
-
-	}
-
-	void Scene::renderUI() {
-
 	}
 }

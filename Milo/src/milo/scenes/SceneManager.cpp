@@ -16,14 +16,6 @@ namespace milo {
 		s_ActiveScene->lateUpdate();
 	}
 
-	void SceneManager::render() {
-		s_ActiveScene->render();
-	}
-
-	void SceneManager::renderUI() {
-		s_ActiveScene->renderUI();
-	}
-
 	void SceneManager::init() {
 		// TODO
 		s_ActiveScene = new Scene("Default Scene");

@@ -3,6 +3,7 @@
 #define JSON_IMPLEMENTATION
 #define JSON_USE_IMPLICIT_CONVERSIONS 0
 #include <nlohmann/json.hpp>
+#include "milo/assets/AssetManager.h"
 
 #define DEFAULT_MATERIAL_NAME "M_DefaultMaterial"
 
@@ -11,9 +12,6 @@ namespace milo {
 	MaterialManager::MaterialManager() {
 
 		m_ResourcePool = MaterialResourcePool::create();
-
-		m_WhiteTexture = Ref<Texture2D>(createWhiteTexture());
-		m_BlackTexture = Ref<Texture2D>(createBlackTexture());
 
 		load(DEFAULT_MATERIAL_NAME, "resources/materials/M_DefaultMaterial.mat");
 	}
@@ -102,7 +100,7 @@ namespace milo {
 
 		nlohmann::json& json = *(nlohmann::json*)pJson;
 
-		Ref<Texture2D> texture = m_WhiteTexture;
+		Ref<Texture2D> texture = Assets::textures().whiteTexture();
 
 		if(json.contains(textureName)) {
 
@@ -132,41 +130,4 @@ namespace milo {
 		return texture;
 	}
 
-	Texture2D* MaterialManager::createWhiteTexture() {
-
-		Texture2D* texture = Texture2D::create();
-
-		Image* image = Image::createWhite(PixelFormat::SRGBA);
-
-		Texture2D::AllocInfo allocInfo = {};
-		allocInfo.width = image->width();
-		allocInfo.height = image->height();
-		allocInfo.format = image->format();
-		allocInfo.pixels = image->pixels();
-
-		texture->allocate(allocInfo);
-
-		DELETE_PTR(image);
-
-		return texture;
-	}
-
-	Texture2D* MaterialManager::createBlackTexture() {
-
-		Texture2D* texture = Texture2D::create();
-
-		Image* image = Image::createBlack(PixelFormat::SRGBA);
-
-		Texture2D::AllocInfo allocInfo = {};
-		allocInfo.width = image->width();
-		allocInfo.height = image->height();
-		allocInfo.format = image->format();
-		allocInfo.pixels = image->pixels();
-
-		texture->allocate(allocInfo);
-
-		DELETE_PTR(image);
-
-		return texture;
-	}
 }

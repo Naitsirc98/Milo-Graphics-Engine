@@ -30,6 +30,22 @@ namespace milo {
 
 	namespace mvk {
 
+		VkImageView getImageView(Texture2D* texture) {
+			return ((VulkanTexture*)texture)->vkImageView();
+		}
+
+		VkImageView mvk::getImageView(Cubemap* cubemap) {
+			return ((VulkanTexture*)cubemap)->vkImageView();
+		}
+
+		VkSampler getSampler(Texture2D* texture) {
+			return ((VulkanTexture*)texture)->vkSampler();
+		}
+
+		VkSampler mvk::getSampler(Cubemap* cubemap) {
+			return ((VulkanTexture*)cubemap)->vkSampler();
+		}
+
 		VkImageMemoryBarrier ImageMemoryBarrier::create(const VkImageViewCreateInfo& viewInfo,
 														VkImageLayout oldLayout, VkImageLayout newLayout) noexcept {
 

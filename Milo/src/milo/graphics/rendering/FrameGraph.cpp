@@ -22,12 +22,12 @@ namespace milo {
 	}
 
 	void FrameGraph::setup(Scene* scene) {
-		// TODO: add render passes by analyzing the scene composition at this frame
-		// For now, lets simply add a GeometryRenderPass and a FinalRenderPass
 
 		m_ResourcePool->clearReferences();
 
 		push<GeometryRenderPass>();
+
+		//push<PBRForwardRenderPass>();
 
 		if(scene->skybox() != nullptr) {
 			push<SkyboxRenderPass>();
@@ -43,7 +43,7 @@ namespace milo {
 	}
 
 	void FrameGraph::execute(Scene* scene) {
-		// TODO
+
 		for(RenderPass* renderPass : m_RenderPassExecutionList) {
 			renderPass->execute(scene);
 		}

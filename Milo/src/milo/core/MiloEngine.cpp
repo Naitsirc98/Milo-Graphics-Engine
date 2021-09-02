@@ -118,7 +118,7 @@ namespace milo {
 
 		WorldRenderer::render();
 
-		// Render editor UI
+		// TODO: Render editor UI
 
 		++Time::s_Fps;
 	}
