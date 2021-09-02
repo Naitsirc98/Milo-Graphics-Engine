@@ -22,6 +22,7 @@ namespace milo {
 		EntityId m_MainCameraEntity = NULL_ENTITY;
 		Skybox* m_Skybox{nullptr};
 		LightEnvironment m_LightEnvironment{};
+		Viewport m_Viewport{};
 	private:
 		explicit Scene(const String& name);
 		explicit Scene(String&& name);

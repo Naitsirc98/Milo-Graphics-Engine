@@ -31,7 +31,6 @@ namespace milo {
 		static void run();
 		static void update(float& updateDelay, float& lastUpdate);
 		static void render();
-		static void renderUI();
 		static void init();
 		static void shutdown();
 		static void showDebugInfo(float& debugTime);

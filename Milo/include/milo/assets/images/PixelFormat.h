@@ -65,6 +65,7 @@ namespace milo {
 		SRGBA,
 
 		DEPTH,
+		DEPTH32,
 
 		MAX_ENUM
 	};

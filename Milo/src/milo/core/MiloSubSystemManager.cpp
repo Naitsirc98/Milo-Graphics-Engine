@@ -6,6 +6,7 @@
 #include "milo/input/Input.h"
 #include "milo/assets/AssetManager.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
+#include "milo/editor/MiloEditor.h"
 
 #define INIT(system) Log::info("Initializing {}...", #system); system::init(); Log::info("{} initialized", #system)
 #define SHUTDOWN(system) Log::info("Terminating {}...", #system); system::shutdown(); Log::info("{} terminated", #system)
@@ -22,9 +23,11 @@ namespace milo {
 		INIT(SceneManager);
 		INIT(AssetManager);
 		INIT(WorldRenderer);
+		INIT(MiloEditor);
 	}
 
 	void MiloSubSystemManager::shutdown() {
+		SHUTDOWN(MiloEditor);
 		SHUTDOWN(WorldRenderer);
 		SHUTDOWN(AssetManager);
 		SHUTDOWN(SceneManager);

@@ -18,15 +18,9 @@ namespace milo {
 	}
 
 	void WorldRenderer::render(Scene* scene) {
-
-		if(m_GraphicsPresenter->begin()) {
-
-			m_FrameGraph.setup(scene);
-			m_FrameGraph.compile(scene);
-			m_FrameGraph.execute(scene);
-
-			m_GraphicsPresenter->end();
-		}
+		m_FrameGraph.setup(scene);
+		m_FrameGraph.compile(scene);
+		m_FrameGraph.execute(scene);
 	}
 
 	void WorldRenderer::render() {

@@ -33,6 +33,8 @@ namespace milo {
 
 	namespace mvk {
 
+		void checkVkResult(VkResult vkResult);
+
 		VkImageView getImageView(Texture2D* texture);
 		VkImageView getImageView(Cubemap* cubemap);
 		VkSampler getSampler(Texture2D* texture);

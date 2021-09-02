@@ -195,6 +195,9 @@ namespace milo {
 			case PixelFormat::DEPTH:
 				return DEPTH_INFO;
 
+			case PixelFormat::DEPTH32: // TODO
+				return DEPTH_INFO;
+
 			default:
 				return UNDEFINED_INFO;
 		}

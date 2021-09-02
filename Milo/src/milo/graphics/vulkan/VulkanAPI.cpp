@@ -30,6 +30,12 @@ namespace milo {
 
 	namespace mvk {
 
+		void checkVkResult(VkResult vkResult) {
+			if(vkResult != VK_SUCCESS) {
+				Log::error("Vulkan call returned {}", getErrorName(vkResult));
+			}
+		}
+
 		VkImageView getImageView(Texture2D* texture) {
 			return ((VulkanTexture*)texture)->vkImageView();
 		}
@@ -354,6 +360,11 @@ namespace milo {
 	}
 
 	PixelFormat mvk::toPixelFormat(VkFormat format) {
+
+		if(format == VulkanContext::get()->device()->depthFormat()) {
+			return PixelFormat::DEPTH;
+		}
+
 		switch (format) {
 			case VK_FORMAT_R8_UNORM:
 				return PixelFormat::R8;
@@ -455,6 +466,8 @@ namespace milo {
 				return PixelFormat::SRGB;
 			case VK_FORMAT_R8G8B8A8_SRGB:
 				return PixelFormat::SRGBA;
+			case VK_FORMAT_D32_SFLOAT:
+				return PixelFormat::DEPTH32;
 			default:
 				throw MILO_RUNTIME_EXCEPTION("Unsupported pixel format");
 		}
@@ -564,6 +577,8 @@ namespace milo {
 				return VK_FORMAT_R8G8B8A8_SRGB;
 			case PixelFormat::DEPTH:
 				return VulkanContext::get()->device()->depthFormat();
+			case PixelFormat::DEPTH32:
+				return VK_FORMAT_D32_SFLOAT;
 			default:
 				throw MILO_RUNTIME_EXCEPTION("Unsupported pixel format");
 		}

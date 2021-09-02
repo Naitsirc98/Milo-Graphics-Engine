@@ -11,12 +11,21 @@ namespace milo {
 		m_Device = VulkanContext::get()->device();
 
 		createRenderPass();
+
+		createSemaphores();
 	}
 
 	VulkanFinalRenderPass::~VulkanFinalRenderPass() {
+
 		destroyTransientResources();
-		VK_CALLV(vkDestroyRenderPass(m_Device->logical(), m_RenderPass, nullptr));
+
+		for(VkSemaphore semaphore : m_SignalSemaphores) {
+			VK_CALLV(vkDestroySemaphore(m_Device->logical(), semaphore, nullptr));
+		}
+
 		DELETE_PTR(m_CommandPool);
+
+		VK_CALLV(vkDestroyRenderPass(m_Device->logical(), m_RenderPass, nullptr));
 	}
 
 	void VulkanFinalRenderPass::compile(FrameGraphResourcePool* resourcePool) {
@@ -41,9 +50,9 @@ namespace milo {
 		VulkanQueue* queue = m_Device->graphicsQueue();
 		VulkanPresenter* presenter = m_Device->context()->vulkanPresenter();
 		uint32_t imageIndex = presenter->currentImageIndex();
-		VkFence frameFence = presenter->frameInFlightFence();
-		VkSemaphore imageSemaphore = presenter->imageAvailableSemaphore();
-		VkSemaphore renderFinishedSemaphore = presenter->renderFinishedSemaphore();
+		//VkFence frameFence = presenter->frameInFlightFence();
+		//queue->waitSemaphores().push_back(presenter->imageAvailableSemaphore());
+		//VkSemaphore renderFinishedSemaphore = presenter->renderFinishedSemaphore();
 
 		// This render pass have to wait for:
 		// 1: offscreen rendering pass to complete to sample the resulting texture
@@ -51,10 +60,8 @@ namespace milo {
 
 		VkPipelineStageFlags waitStages[] = {
 				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+				//VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
 		};
-
-		queue->waitSemaphores().push_back(imageSemaphore);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -63,11 +70,10 @@ namespace milo {
 		submitInfo.pWaitSemaphores = queue->waitSemaphores().data();
 		submitInfo.waitSemaphoreCount = queue->waitSemaphores().size();
 		submitInfo.pWaitDstStageMask = waitStages;
-		submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
+		submitInfo.pSignalSemaphores = &m_SignalSemaphores[imageIndex];//&renderFinishedSemaphore;
 		submitInfo.signalSemaphoreCount = 1;
 
-		queue->submit(submitInfo, frameFence);
-		queue->clear();
+		queue->submit(submitInfo, VK_NULL_HANDLE);
 	}
 
 	void VulkanFinalRenderPass::createRenderPass() {
@@ -284,6 +290,16 @@ namespace milo {
 				VK_CALLV(vkCmdEndRenderPass(commandBuffer));
 			}
 			VK_CALL(vkEndCommandBuffer(commandBuffer));
+		}
+	}
+
+	void VulkanFinalRenderPass::createSemaphores() {
+
+		VkSemaphoreCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		for(uint32_t i = 0;i < m_SignalSemaphores.size();++i) {
+			VK_CALL(vkCreateSemaphore(m_Device->logical(), &createInfo, nullptr, &m_SignalSemaphores[i]));
 		}
 	}
 

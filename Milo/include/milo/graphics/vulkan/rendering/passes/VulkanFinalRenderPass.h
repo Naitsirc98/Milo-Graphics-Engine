@@ -25,6 +25,8 @@ namespace milo {
 
 		VulkanCommandPool* m_CommandPool{nullptr};
 		VkCommandBuffer m_CommandBuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
+
+		Array<VkSemaphore, MAX_SWAPCHAIN_IMAGE_COUNT> m_SignalSemaphores{};
 	public:
 		VulkanFinalRenderPass();
 		~VulkanFinalRenderPass();
@@ -44,6 +46,8 @@ namespace milo {
 
 		void createCommandPool();
 		void createCommandBuffers(FrameGraphResourcePool* resourcePool);
+
+		void createSemaphores();
 
 		void destroyTransientResources();
 	};

@@ -14,6 +14,9 @@ find_package(Vulkan REQUIRED)
 
 message("Vulkan found ${Vulkan_INCLUDE_DIRS} ${Vulkan_LIBRARIES}")
 
+# DEPENDENCIES
+set(PROJECT_DEPENDENCIES_DIR ${PROJECT_SOURCE_DIR}/dependencies)
+
 file(GLOB_RECURSE ENGINE_SOURCE_FILES
         src/*.cpp
         src/*.c
@@ -26,14 +29,15 @@ file(GLOB_RECURSE ENGINE_HEADER_FILES
         include/*.hpp
         )
 
+file(GLOB_RECURSE IMGUI_SOURCE_FILES
+        ${PROJECT_DEPENDENCIES_DIR}/imgui/*.cpp
+        )
+
 # Build this project as a library
 # add_library(${PROJECT_NAME} STATIC ${ENGINE_HEADER_FILES} ${ENGINE_SOURCE_FILES})
 
 # Build this project as an executable
-add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES})
-
-# DEPENDENCIES
-set(PROJECT_DEPENDENCIES_DIR ${PROJECT_SOURCE_DIR}/dependencies)
+add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} ${IMGUI_SOURCE_FILES})
 
 # CMAKE PROJECT DEPENDENCIES
 message("Handling Milo Engine dependencies...")
@@ -84,6 +88,7 @@ target_link_libraries(${PROJECT_NAME} glm)
 target_link_libraries(${PROJECT_NAME} spdlog)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} shaderc)
+
 
 message("Target directory is ${PROJECT_BINARY_DIR}")
 
