@@ -59,8 +59,8 @@ namespace milo {
 		// 2: swapchain image to render to
 
 		VkPipelineStageFlags waitStages[] = {
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				//VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+				//VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
 		};
 
 		VkSubmitInfo submitInfo{};
@@ -79,6 +79,7 @@ namespace milo {
 	void VulkanFinalRenderPass::createRenderPass() {
 
 		VkAttachmentDescription colorAttachment = mvk::AttachmentDescription::createPresentSrcAttachment();
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentReference attachmentRef{};
 		attachmentRef.attachment = 0;
@@ -208,6 +209,9 @@ namespace milo {
 		pipelineInfo.vkPipelineCache = VK_NULL_HANDLE;
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_FALSE;
+
+		pipelineInfo.viewport = {300, 300, 500, 500};
+		pipelineInfo.scissor = {{300, 300}, {500, 500}};
 
 		pipelineInfo.shaderInfos.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.vert"), VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaderInfos.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.frag"), VK_SHADER_STAGE_FRAGMENT_BIT});

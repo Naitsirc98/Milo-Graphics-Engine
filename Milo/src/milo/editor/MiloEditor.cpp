@@ -13,14 +13,7 @@ namespace milo {
 		s_Renderer->begin();
 
 		bool open = true;
-
-		ImGui::SetNextWindowSize({300, 300});
-
-		ImGui::Begin("Hola", &open);
-
-		ImGui::Text("Hello World!!");
-
-		ImGui::End();
+		ImGui::ShowDemoWindow(&open);
 
 		s_Renderer->end();
 	}

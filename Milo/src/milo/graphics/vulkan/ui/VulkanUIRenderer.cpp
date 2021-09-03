@@ -59,7 +59,7 @@ namespace milo {
 		VkCommandBuffer secondaryCommandBuffer = m_SecondaryCommandBuffers[imageIndex];
 
 		VkClearValue clearValues[2];
-		clearValues[0].color = { {0.1f, 0.1f, 0.1f, 1.0f} };
+		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		uint32_t width = swapchain->extent().width;
@@ -80,7 +80,7 @@ namespace milo {
 		renderPassBeginInfo.renderArea.offset.y = 0;
 		renderPassBeginInfo.renderArea.extent.width = width;
 		renderPassBeginInfo.renderArea.extent.height = height;
-		renderPassBeginInfo.clearValueCount = 2; // Color + depth
+		renderPassBeginInfo.clearValueCount = 1; // Color + depth
 		renderPassBeginInfo.pClearValues = clearValues;
 		renderPassBeginInfo.framebuffer = m_Framebuffers[imageIndex];
 
@@ -100,18 +100,18 @@ namespace milo {
 
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
-		viewport.y = (float)height;
-		viewport.height = -(float)height;
+		viewport.y = 0;//(float)height;
+		viewport.height = height;//-(float)height;
 		viewport.width = (float)width;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(secondaryCommandBuffer, 0, 1, &viewport);
 
 		VkRect2D scissor = {};
-		scissor.extent.width = width;
-		scissor.extent.height = height;
 		scissor.offset.x = 0;
 		scissor.offset.y = 0;
+		scissor.extent.width = width;
+		scissor.extent.height = height;
 		vkCmdSetScissor(secondaryCommandBuffer, 0, 1, &scissor);
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), secondaryCommandBuffer);
@@ -231,7 +231,7 @@ namespace milo {
 		imguiInitInfo.PipelineCache = nullptr;
 		imguiInitInfo.DescriptorPool = descriptorPool;
 		imguiInitInfo.Allocator = nullptr;
-		imguiInitInfo.MinImageCount = 2;
+		imguiInitInfo.MinImageCount = 3;
 		imguiInitInfo.ImageCount = swapchain->imageCount();
 		imguiInitInfo.CheckVkResultFn = mvk::checkVkResult;
 		ImGui_ImplVulkan_Init(&imguiInitInfo, m_RenderPass);
@@ -254,54 +254,31 @@ namespace milo {
 		VulkanDevice* device = VulkanContext::get()->device();
 		VulkanSwapchain* swapchain = VulkanContext::get()->swapchain();
 
-		VkAttachmentDescription colorAttachment = {};
-		colorAttachment.format = swapchain->format();
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		VkAttachmentDescription colorAttachment = mvk::AttachmentDescription::createPresentSrcAttachment();
 
-		VkAttachmentDescription depthAttachment = {};
-		depthAttachment.format = device->depthFormat();
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference attachmentRef{};
+		attachmentRef.attachment = 0;
+		attachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference colorAttachmentRef = {};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthAttachmentRef = {};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDependency dependency = {};
+		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-		VkSubpassDescription subpass = {};
+		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.pColorAttachments = &attachmentRef;
 		subpass.colorAttachmentCount = 1;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
-		VkAttachmentDescription attachments[] = {colorAttachment, depthAttachment};
+		VkAttachmentDescription attachments[] = {colorAttachment};
 
-		VkRenderPassCreateInfo renderPassInfo = {};
+		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.pAttachments = attachments;
-		renderPassInfo.attachmentCount = 2;
+		renderPassInfo.attachmentCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
@@ -334,22 +311,22 @@ namespace milo {
 
 	void VulkanUIRenderer::createFramebuffers() {
 
-		VulkanSwapchain* swapchain = VulkanContext::get()->swapchain();
 		VulkanDevice* device = VulkanContext::get()->device();
+		VulkanSwapchain* swapchain = device->context()->swapchain();
 
-		VkFramebufferCreateInfo framebufferInfo = {};
+		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.attachmentCount = 2;
+		framebufferInfo.attachmentCount = 1;
 		framebufferInfo.renderPass = m_RenderPass;
 		framebufferInfo.layers = 1;
 		framebufferInfo.width = swapchain->extent().width;
 		framebufferInfo.height = swapchain->extent().height;
 
 		const VulkanSwapchainImage* swapchainImages = swapchain->images();
+
 		for(uint32_t i = 0;i < m_Framebuffers.size();++i) {
 			const VulkanSwapchainImage& colorTexture = swapchainImages[i];
-			auto depthTexture = m_DepthBuffers[i];
-			VkImageView attachments[] = {colorTexture.vkImageView, depthTexture->vkImageView()};
+			VkImageView attachments[] = {colorTexture.vkImageView};
 			framebufferInfo.pAttachments = attachments;
 			VK_CALL(vkCreateFramebuffer(device->logical(), &framebufferInfo, nullptr, &m_Framebuffers[i]));
 		}

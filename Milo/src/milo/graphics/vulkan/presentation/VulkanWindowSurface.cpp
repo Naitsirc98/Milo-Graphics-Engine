@@ -54,13 +54,18 @@ namespace milo {
 		return presentModes;
 	}
 
-	VkSurfaceFormatKHR VulkanWindowSurfaceDetails::getBestSurfaceFormat() const {
+	VkSurfaceFormatKHR VulkanWindowSurfaceDetails::getSurfaceFormatAndColorSpace() const {
+
 		ArrayList<VkSurfaceFormatKHR> formats = this->formats();
+
+		if(formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED) {
+			return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLORSPACE_SRGB_NONLINEAR_KHR};
+		}
 
 		uint32_t chosen = 0;
 		for(uint32_t i = 0;i < formats.size();++i) {
 			const VkSurfaceFormatKHR& format = formats[i];
-			if(format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			if(format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 				chosen = i;
 				break;
 			}

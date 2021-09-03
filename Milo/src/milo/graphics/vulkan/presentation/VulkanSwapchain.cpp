@@ -67,7 +67,7 @@ namespace milo {
 		VulkanWindowSurfaceDetails surfaceDetails(m_Device->physical(), surface);
 
 		VkSurfaceCapabilitiesKHR capabilities = surfaceDetails.capabilities();
-		VkSurfaceFormatKHR format = surfaceDetails.getBestSurfaceFormat();
+		VkSurfaceFormatKHR format = surfaceDetails.getSurfaceFormatAndColorSpace();
 		if(m_PresentMode == VK_PRESENT_MODE_MAX_ENUM_KHR) m_PresentMode = surfaceDetails.getDefaultPresentMode();
 		VkExtent2D extent = surfaceDetails.extent();
 		uint32_t imageCount = surfaceDetails.getSwapchainImageCount();
@@ -75,6 +75,9 @@ namespace milo {
 		VkSwapchainCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		createInfo.surface = surface->vkSurface();
+
+		createInfo.imageFormat = format.format;
+		createInfo.imageColorSpace = format.colorSpace;
 
 		// Image settings
 		createInfo.minImageCount = imageCount;

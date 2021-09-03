@@ -29,7 +29,7 @@ namespace milo {
 		VkSurfaceCapabilitiesKHR capabilities() const;
 		ArrayList<VkSurfaceFormatKHR> formats() const;
 		ArrayList<VkPresentModeKHR> presentModes() const;
-		VkSurfaceFormatKHR getBestSurfaceFormat() const;
+		VkSurfaceFormatKHR getSurfaceFormatAndColorSpace() const;
 		VkPresentModeKHR getDefaultPresentMode() const;
 		uint32_t getSwapchainImageCount() const;
 		VkExtent2D extent() const;
