@@ -2,9 +2,9 @@
 #include "milo/graphics/vulkan/VulkanContext.h"
 
 #define IMGUI_IMPLEMENTATION
-#include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_vulkan.h>
 
 namespace milo {
 
@@ -15,6 +15,8 @@ namespace milo {
 		createFramebuffers();
 
 		initUIBackend();
+
+		Log::debug("Vulkan UI Renderer initialized");
 	}
 
 	VulkanUIRenderer::~VulkanUIRenderer() {
@@ -100,8 +102,8 @@ namespace milo {
 
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
-		viewport.y = 0;//(float)height;
-		viewport.height = height;//-(float)height;
+		viewport.y = (float)height;
+		viewport.height = -(float)height;
 		viewport.width = (float)width;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
@@ -196,25 +198,27 @@ namespace milo {
 
 		VkDescriptorPool descriptorPool;
 
+		uint32_t numDescriptors = 1024;
+
 		// Create Descriptor Pool
 		ArrayList<VkDescriptorPoolSize> poolSizes = {
-				{ VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
-				{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
-				{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
-				{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
-				{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
-				{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
-				{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
-				{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100 },
-				{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
-				{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
-				{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100 }
+				{ VK_DESCRIPTOR_TYPE_SAMPLER, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, numDescriptors },
+				{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, numDescriptors }
 		};
 
 		VkDescriptorPoolCreateInfo poolCreateInfo = {};
 		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		poolCreateInfo.maxSets = 100 * poolSizes.size();
+		poolCreateInfo.maxSets = numDescriptors * poolSizes.size();
 		poolCreateInfo.poolSizeCount = poolSizes.size();
 		poolCreateInfo.pPoolSizes = poolSizes.data();
 		VK_CALL(vkCreateDescriptorPool(device->logical(), &poolCreateInfo, nullptr, &descriptorPool));
@@ -231,7 +235,7 @@ namespace milo {
 		imguiInitInfo.PipelineCache = nullptr;
 		imguiInitInfo.DescriptorPool = descriptorPool;
 		imguiInitInfo.Allocator = nullptr;
-		imguiInitInfo.MinImageCount = 3;
+		imguiInitInfo.MinImageCount = 2;
 		imguiInitInfo.ImageCount = swapchain->imageCount();
 		imguiInitInfo.CheckVkResultFn = mvk::checkVkResult;
 		ImGui_ImplVulkan_Init(&imguiInitInfo, m_RenderPass);
@@ -243,6 +247,7 @@ namespace milo {
 			ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 		};
 		device->graphicsCommandPool()->execute(task);
+		device->awaitTermination();
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 
 		device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_PrimaryCommandBuffers.size(), m_PrimaryCommandBuffers.data());
@@ -252,7 +257,6 @@ namespace milo {
 	void VulkanUIRenderer::createRenderPass() {
 
 		VulkanDevice* device = VulkanContext::get()->device();
-		VulkanSwapchain* swapchain = VulkanContext::get()->swapchain();
 
 		VkAttachmentDescription colorAttachment = mvk::AttachmentDescription::createPresentSrcAttachment();
 
@@ -330,5 +334,15 @@ namespace milo {
 			framebufferInfo.pAttachments = attachments;
 			VK_CALL(vkCreateFramebuffer(device->logical(), &framebufferInfo, nullptr, &m_Framebuffers[i]));
 		}
+	}
+
+	VulkanDescriptorPool* VulkanUIRenderer::s_DescriptorPool = nullptr;
+
+	VkDescriptorSet VulkanUIRenderer::allocateDescriptorSet(VkDescriptorSetAllocateInfo& allocInfo) {
+		allocInfo.descriptorPool = s_DescriptorPool->vkDescriptorPool();
+		VkDevice device = VulkanContext::get()->device()->logical();
+		VkDescriptorSet descriptorSet;
+		VK_CALL(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet));
+		return descriptorSet;
 	}
 }

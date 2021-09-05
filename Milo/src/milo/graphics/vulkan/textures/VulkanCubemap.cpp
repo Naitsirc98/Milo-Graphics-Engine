@@ -3,7 +3,7 @@
 
 namespace milo {
 
-	VulkanCubemap::VulkanCubemap(const VulkanTexture::CreateInfo& createInfo) : VulkanTexture(createInfo) {
+	VulkanCubemap::VulkanCubemap(const VulkanTexture::CreateInfo& createInfo) : VulkanTexture(createInfo), Cubemap(createInfo.usage) {
 
 		if(createInfo.arrayLayers != 6) throw MILO_RUNTIME_EXCEPTION("Cubemaps must have 6 array layers");
 

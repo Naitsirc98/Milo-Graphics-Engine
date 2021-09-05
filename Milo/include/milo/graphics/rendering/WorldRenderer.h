@@ -17,8 +17,12 @@ namespace milo {
 		WorldRenderer();
 		~WorldRenderer();
 		void render(Scene* scene);
+	public:
+		const RenderTarget& getRenderTarget() const;
 	private:
 		static WorldRenderer* s_Instance;
+	public:
+		static WorldRenderer& get();
 	private:
 		static void render();
 		static void init();

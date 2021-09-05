@@ -3,6 +3,7 @@
 #include "milo/editor/UIRenderer.h"
 #include "milo/graphics/vulkan/VulkanAPI.h"
 #include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
+#include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 
 namespace milo {
 
@@ -28,5 +29,10 @@ namespace milo {
 		void createFramebuffers();
 
 		void shutdownUIBackend() const;
+
+	private:
+		static VulkanDescriptorPool* s_DescriptorPool;
+	public:
+		static VkDescriptorSet allocateDescriptorSet(VkDescriptorSetAllocateInfo& allocInfo);
 	};
 }

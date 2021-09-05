@@ -1,15 +1,22 @@
 #include "milo/assets/textures/TextureManager.h"
+#include "milo/graphics/Graphics.h"
+#include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_vulkan.h>
 
 namespace milo {
 
 	TextureManager::TextureManager() {
+	}
+
+	TextureManager::~TextureManager() {
+	}
+
+	void TextureManager::init() {
 		m_WhiteTexture = Ref<Texture2D>(createWhiteTexture());
 		m_BlackTexture = Ref<Texture2D>(createBlackTexture());
 		m_WhiteCubemap = Ref<Cubemap>(createWhiteCubemap());
 		m_BlackCubemap = Ref<Cubemap>(createBlackCubemap());
-	}
-
-	TextureManager::~TextureManager() {
 	}
 
 	Ref<Texture2D> TextureManager::whiteTexture() const {
@@ -34,6 +41,60 @@ namespace milo {
 
 	Ref<Cubemap> TextureManager::createCubemap() {
 		return Ref<Cubemap>(Cubemap::create());
+	}
+
+	Ref<Texture2D> TextureManager::load(const String& filename, PixelFormat format) {
+
+		Image* image = Image::loadImage(filename, format);
+
+		Texture2D* texture = Texture2D::create();
+
+		Texture2D::AllocInfo allocInfo{};
+		allocInfo.width = image->width();
+		allocInfo.height = image->height();
+		allocInfo.format = image->format();
+		allocInfo.pixels = image->pixels();
+
+		texture->allocate(allocInfo);
+
+		DELETE_PTR(image);
+
+		return Ref<Texture2D>(texture);
+	}
+
+	uint32_t TextureManager::nextTextureId() {
+		return m_TextureIdProvider++;
+	}
+
+	void TextureManager::registerTexture(const Texture2D& texture) {
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+			if(texture.usage() & TEXTURE_USAGE_UI_BIT) {
+				const auto& vkTex = dynamic_cast<const VulkanTexture2D&>(texture);
+				ImGui_ImplVulkan_AddTexture(vkTex.id(), vkTex.vkSampler(), vkTex.vkImageView(), vkTex.layout());
+			}
+		} // TODO
+	}
+
+	void TextureManager::unregisterTexture(const Texture2D& texture) {
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+			if(texture.usage() & TEXTURE_USAGE_UI_BIT)
+				ImGui_ImplVulkan_DeleteTexture(texture.id());
+		} // TODO
+	}
+
+	void TextureManager::registerTexture(const Cubemap& texture) {
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+			if(texture.usage() & TEXTURE_USAGE_UI_BIT) {
+				const auto& vkTex = dynamic_cast<const VulkanTexture2D&>(texture);
+				ImGui_ImplVulkan_AddTexture(vkTex.id(), vkTex.vkSampler(), vkTex.vkImageView(), vkTex.layout());
+			}
+		} // TODO
+	}
+
+	void TextureManager::unregisterTexture(const Cubemap& texture) {
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+			if(texture.usage() & TEXTURE_USAGE_UI_BIT) ImGui_ImplVulkan_DeleteTexture(texture.id());
+		} // TODO
 	}
 
 	Texture2D* TextureManager::createWhiteTexture() {

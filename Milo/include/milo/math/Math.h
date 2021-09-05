@@ -38,12 +38,13 @@ namespace milo {
 	}
 
 	struct Size {
+
 		int32_t width;
 		int32_t height;
 		Size() : Size(0, 0) {}
 		Size(int32_t width, int32_t height) : width(width), height(height) {}
 
-		 inline float aspect() const noexcept {return height == 0 ? 0.0f : (float)width / (float)height;}
+		inline float aspect() const noexcept {return height == 0 ? 0.0f : (float)width / (float)height;}
 
 		inline bool isZero() const noexcept {return width == 0 || height == 0;}
 
@@ -52,7 +53,7 @@ namespace milo {
 		}
 
 		inline bool operator!=(const Size& rhs) const noexcept {
-			return ! (rhs == *this);
+			return !(rhs == *this);
 		}
 	};
 

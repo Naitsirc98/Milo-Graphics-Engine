@@ -7,8 +7,9 @@
 #include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
 #include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
+#include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 
-#define MAX_DESCRIPTOR_SETS 1024 * 1024
+#define MAX_DESCRIPTOR_SETS (1024 * 1024)
 
 namespace milo {
 
@@ -45,9 +46,7 @@ namespace milo {
 		VulkanSwapchain* m_Swapchain;
 		VulkanDevice* m_Device;
 		VkRenderPass m_VkRenderPass = VK_NULL_HANDLE;
-		VkPipelineLayout m_VkPipelineLayout = VK_NULL_HANDLE;
-		VkPipeline m_VkGraphicsPipeline = VK_NULL_HANDLE;
-		VkPipelineCache m_VkPipelineCache = VK_NULL_HANDLE;
+		VulkanGraphicsPipeline* m_VkGraphicsPipeline = nullptr;
 		VkCommandBuffer m_VkCommandBuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
 		VkFramebuffer m_VkFramebuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
 		VulkanTexture2D* m_DepthTextures[MAX_SWAPCHAIN_IMAGE_COUNT];
@@ -80,9 +79,7 @@ namespace milo {
 		void createDescriptorPool();
 		void allocateDescriptorSets();
 		void setupDescriptorSet(size_t index, VkDescriptorSet vkDescriptorSet);
-		void createPipelineLayout();
 		void createGraphicsPipeline();
 		void allocateCommandBuffers();
-		void loadMeshes();
 	};
 }

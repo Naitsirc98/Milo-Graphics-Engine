@@ -1,13 +1,18 @@
 #include "milo/scenes/Scene.h"
 #include "milo/scenes/SceneManager.h"
 #include "milo/scenes/Entity.h"
+#include "milo/graphics/Window.h"
 
 namespace milo {
 
 	Scene::Scene(const String& name) : m_Name(name) {
+		Size size = Window::get()->size();
+		m_Viewport = {0, 0, (float)size.width, (float)size.height};
 	}
 
 	Scene::Scene(String&& name) : m_Name(std::move(name)) {
+		Size size = Window::get()->size();
+		m_Viewport = {0, 0, (float)size.width, (float)size.height};
 	}
 
 	Scene::~Scene() = default;
@@ -71,6 +76,14 @@ namespace milo {
 
 	LightEnvironment& Scene::lightEnvironment() noexcept {
 		return m_LightEnvironment;
+	}
+
+	const Viewport& Scene::viewport() const noexcept {
+		return m_Viewport;
+	}
+
+	Size Scene::viewportSize() const noexcept {
+		return {(int32_t)fabs(m_Viewport.width), (int32_t)fabs(m_Viewport.height)};
 	}
 
 	void Scene::update() {

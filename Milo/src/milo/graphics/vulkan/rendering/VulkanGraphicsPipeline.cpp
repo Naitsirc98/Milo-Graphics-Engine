@@ -4,15 +4,25 @@
 
 namespace milo {
 
-	VkPipeline VulkanGraphicsPipeline::create(const String& name, VkDevice device, const VulkanGraphicsPipelineInfo& info) {
+	VulkanGraphicsPipeline::VulkanGraphicsPipeline(const String& name, VulkanDevice* device, const VulkanGraphicsPipeline::CreateInfo& info) {
+
+		m_Device = device;
 
 #ifdef _DEBUG
-		if(info.vkPipelineLayout == VK_NULL_HANDLE) throw MILO_RUNTIME_EXCEPTION("Pipeline Layout has not been set");
 		if(info.vkRenderPass == VK_NULL_HANDLE) throw MILO_RUNTIME_EXCEPTION("Render Pass has not been set");
 		if(info.shaderInfos.empty()) throw MILO_RUNTIME_EXCEPTION("Graphics Pipeline has no shaders");
 #endif
 
-		ArrayList<VkShaderModule> shaderModules = toShaderModules(device, info.shaderInfos);
+		VkPipelineLayoutCreateInfo layoutCreateInfo{};
+		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		layoutCreateInfo.pSetLayouts = info.setLayouts.data();
+		layoutCreateInfo.setLayoutCount = info.setLayouts.size();
+		layoutCreateInfo.pPushConstantRanges = info.pushConstantRanges.data();
+		layoutCreateInfo.pushConstantRangeCount = info.pushConstantRanges.size();
+
+		VK_CALL(vkCreatePipelineLayout(device->logical(), &layoutCreateInfo, nullptr, &m_PipelineLayout));
+
+		ArrayList<VkShaderModule> shaderModules = toShaderModules(device->logical(), info.shaderInfos);
 		ArrayList<VkPipelineShaderStageCreateInfo> shaderStages = createShaderPipelineStages(info.shaderInfos, shaderModules);
 
 		VkPipelineVertexInputStateCreateInfo vertexInputState = createVertexInputState(info.vertexInputInfo);
@@ -45,7 +55,7 @@ namespace milo {
 		pipelineInfo.pRasterizationState = &rasterizationStateInfo;
 		pipelineInfo.pMultisampleState = &multisampleStateInfo;
 		pipelineInfo.pColorBlendState = &colorBlendStateInfo;
-		pipelineInfo.layout = info.vkPipelineLayout;
+		pipelineInfo.layout = m_PipelineLayout;
 		pipelineInfo.renderPass = info.vkRenderPass;
 		pipelineInfo.subpass = info.renderSubPass;
 		pipelineInfo.pDynamicState = &dynamicStateInfo;
@@ -53,16 +63,38 @@ namespace milo {
 
 		float start = Time::millis();
 
-		VkPipeline vkPipeline;
-		VK_CALL(vkCreateGraphicsPipelines(device, info.vkPipelineCache, 1, &pipelineInfo, nullptr, &vkPipeline));
+		VK_CALL(vkCreateGraphicsPipelines(device->logical(), info.vkPipelineCache, 1, &pipelineInfo, nullptr, &m_Pipeline));
 
 		Log::debug("{} pipeline created after {} ms", name, Time::millis() - start);
 
 		for(VkShaderModule shaderModule : shaderModules) {
-			VK_CALLV(vkDestroyShaderModule(device, shaderModule, nullptr));
+			VK_CALLV(vkDestroyShaderModule(device->logical(), shaderModule, nullptr));
 		}
 
-		return vkPipeline;
+		m_PipelineCache = info.vkPipelineCache;
+	}
+
+	VulkanGraphicsPipeline::~VulkanGraphicsPipeline() {
+
+		VK_CALLV(vkDestroyPipeline(m_Device->logical(), m_Pipeline, nullptr));
+
+		VK_CALLV(vkDestroyPipelineLayout(m_Device->logical(), m_PipelineLayout, nullptr));
+	}
+
+	VulkanDevice* VulkanGraphicsPipeline::device() const {
+		return m_Device;
+	}
+
+	VkPipelineLayout VulkanGraphicsPipeline::pipelineLayout() const {
+		return m_PipelineLayout;
+	}
+
+	VkPipeline VulkanGraphicsPipeline::vkPipeline() const {
+		return m_Pipeline;
+	}
+
+	VkPipelineCache VulkanGraphicsPipeline::pipelineCache() const {
+		return m_PipelineCache;
 	}
 
 	ArrayList<VkPipelineShaderStageCreateInfo> VulkanGraphicsPipeline::createShaderPipelineStages(
@@ -117,8 +149,7 @@ namespace milo {
 
 	// ======
 
-	VulkanGraphicsPipelineInfo::VulkanGraphicsPipelineInfo(VkPipelineLayout pipelineLayout, VkRenderPass renderPass, uint32_t subPass)
-		: vkPipelineLayout(pipelineLayout), vkRenderPass(renderPass), renderSubPass(subPass) {
+	VulkanGraphicsPipeline::CreateInfo::CreateInfo() {
 
 		initVulkanVertexInputInfo();
 		initInputAssembly();
@@ -130,7 +161,7 @@ namespace milo {
 		initColorBlendState();
 	}
 
-	void VulkanGraphicsPipelineInfo::initVulkanVertexInputInfo() {
+	void VulkanGraphicsPipeline::CreateInfo::initVulkanVertexInputInfo() {
 
 		VkVertexInputBindingDescription binding = {};
 		binding.binding = 0;
@@ -164,13 +195,13 @@ namespace milo {
 		vertexInputInfo.attributes.push_back(texCoordsAttribute);
 	}
 
-	void VulkanGraphicsPipelineInfo::initInputAssembly() {
+	void VulkanGraphicsPipeline::CreateInfo::initInputAssembly() {
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 	}
 
-	void VulkanGraphicsPipelineInfo::initDepthStencil() {
+	void VulkanGraphicsPipeline::CreateInfo::initDepthStencil() {
 		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 		depthStencil.depthTestEnable = VK_TRUE;
 		depthStencil.depthWriteEnable = VK_TRUE;
@@ -179,7 +210,7 @@ namespace milo {
 		depthStencil.stencilTestEnable = VK_FALSE;
 	}
 
-	void VulkanGraphicsPipelineInfo::initViewportState() {
+	void VulkanGraphicsPipeline::CreateInfo::initViewportState() {
 
 		const Size windowSize = Window::get()->size();
 
@@ -200,7 +231,7 @@ namespace milo {
 		viewportState.viewportCount = 1;
 	}
 
-	void VulkanGraphicsPipelineInfo::initRasterizationState() {
+	void VulkanGraphicsPipeline::CreateInfo::initRasterizationState() {
 		rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rasterizationState.depthClampEnable = VK_FALSE;
 		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
@@ -211,13 +242,13 @@ namespace milo {
 		rasterizationState.depthBiasEnable = VK_FALSE;
 	}
 
-	void VulkanGraphicsPipelineInfo::initMultisampleState() {
+	void VulkanGraphicsPipeline::CreateInfo::initMultisampleState() {
 		multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		multisampleState.sampleShadingEnable = VK_FALSE;
 		multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 	}
 
-	void VulkanGraphicsPipelineInfo::initColorBlendAttachmentState() {
+	void VulkanGraphicsPipeline::CreateInfo::initColorBlendAttachmentState() {
 		VkPipelineColorBlendAttachmentState attachmentState = {};
 		attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		attachmentState.blendEnable = VK_FALSE;
@@ -225,7 +256,7 @@ namespace milo {
 		colorBlendAttachments.push_back(attachmentState);
 	}
 
-	void VulkanGraphicsPipelineInfo::initColorBlendState() {
+	void VulkanGraphicsPipeline::CreateInfo::initColorBlendState() {
 		colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlendState.logicOpEnable = VK_FALSE;
 		colorBlendState.logicOp = VK_LOGIC_OP_COPY;

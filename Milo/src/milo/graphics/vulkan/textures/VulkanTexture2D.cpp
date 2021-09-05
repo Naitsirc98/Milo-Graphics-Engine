@@ -4,7 +4,7 @@
 
 namespace milo {
 
-	VulkanTexture2D::VulkanTexture2D(const VulkanTexture::CreateInfo& createInfo) : VulkanTexture(createInfo) {
+	VulkanTexture2D::VulkanTexture2D(const VulkanTexture::CreateInfo& createInfo) : VulkanTexture(createInfo), Texture2D(createInfo.usage) {
 
 		m_ViewInfo.format = m_ImageInfo.format;
 

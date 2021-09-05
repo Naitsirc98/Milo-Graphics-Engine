@@ -18,8 +18,6 @@ namespace milo {
 		createUniformBuffer();
 		createDescriptorSets();
 
-		createPipelineLayout();
-
 		createSemaphores();
 
 		m_Framebuffers.fill(VK_NULL_HANDLE);
@@ -38,8 +36,7 @@ namespace milo {
 		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, nullptr));
 		DELETE_PTR(m_DescriptorPool);
 
-		VK_CALLV(vkDestroyPipeline(device, m_GraphicsPipeline, nullptr));
-		VK_CALLV(vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr));
+		DELETE_PTR(m_GraphicsPipeline);
 
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 			VK_CALLV(vkDestroySemaphore(device, m_SignalSemaphores[i], nullptr));
@@ -158,20 +155,19 @@ namespace milo {
 
 		Size size = Window::get()->size();
 
-		VkFramebufferCreateInfo createInfo = mvk::FramebufferCreateInfo::create(m_RenderPass, size.width, size.height);
 
 		VulkanFrameGraphResourcePool* pool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
 
-		auto& colorTextures = pool->getTextures2D(m_Input.textures[0].handle);
-		auto& depthTextures = pool->getTextures2D(m_Input.textures[1].handle);
-
 		for(uint32_t i = 0;i < m_Framebuffers.size();++i) {
 
-			const VulkanTexture2D* colorTexture = dynamic_cast<const VulkanTexture2D*>(colorTextures[i].texture);
-			const VulkanTexture2D* depthTexture = dynamic_cast<const VulkanTexture2D*>(depthTextures[i].texture);
+
+			const VulkanTexture2D* colorTexture = dynamic_cast<const VulkanTexture2D*>(pool->getRenderTarget(i).colorAttachment);
+			const VulkanTexture2D* depthTexture = dynamic_cast<const VulkanTexture2D*>(pool->getRenderTarget(i).depthAttachment);
 
 			VkImageView attachments[2] = { colorTexture->vkImageView(), depthTexture->vkImageView() };
 
+			VkFramebufferCreateInfo createInfo = mvk::FramebufferCreateInfo::create(m_RenderPass,
+																					colorTexture->width(), colorTexture->height());
 			createInfo.pAttachments = attachments;
 			createInfo.attachmentCount = 2;
 
@@ -240,22 +236,12 @@ namespace milo {
 		});
 	}
 
-	void VulkanSkyboxRenderPass::createPipelineLayout() {
-
-		VkPipelineLayoutCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		createInfo.pSetLayouts = &m_DescriptorSetLayout;
-		createInfo.setLayoutCount = 1;
-
-		VK_CALL(vkCreatePipelineLayout(m_Device->logical(), &createInfo, nullptr, &m_PipelineLayout));
-	}
-
 	void VulkanSkyboxRenderPass::createGraphicsPipeline() {
 
-		VulkanGraphicsPipelineInfo pipelineInfo{};
-		pipelineInfo.vkPipelineLayout = m_PipelineLayout;
+		VulkanGraphicsPipeline::CreateInfo pipelineInfo{};
 		pipelineInfo.vkRenderPass = m_RenderPass;
-		pipelineInfo.vkPipelineCache = VK_NULL_HANDLE;
+
+		pipelineInfo.setLayouts.push_back(m_DescriptorSetLayout);
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 		pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
@@ -266,8 +252,7 @@ namespace milo {
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
 
-		m_GraphicsPipeline = VulkanGraphicsPipeline::create("VulkanSkyboxRenderPass",
-															m_Device->logical(), pipelineInfo);
+		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanSkyboxRenderPass", m_Device, pipelineInfo);
 	}
 
 	void VulkanSkyboxRenderPass::createCommandBuffers() {
@@ -307,6 +292,8 @@ namespace milo {
 			VkCommandBufferBeginInfo beginInfo{};
 			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
+			const Viewport& sceneViewport = scene->viewport();
+
 			VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 			{
 				VkRenderPassBeginInfo renderPassInfo = {};
@@ -314,25 +301,24 @@ namespace milo {
 				renderPassInfo.renderPass = m_RenderPass;
 				renderPassInfo.framebuffer = m_Framebuffers[imageIndex];
 				renderPassInfo.renderArea.offset = {0, 0};
-				renderPassInfo.renderArea.extent = m_Device->context()->swapchain()->extent();
+				renderPassInfo.renderArea.extent.width = fabs(sceneViewport.width);
+				renderPassInfo.renderArea.extent.height = fabs(sceneViewport.height);
 
 				VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 				{
-					VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline));
-
-					Size size = Window::get()->size();
+					VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
 
 					VkViewport viewport{};
-					viewport.x = 0;
-					viewport.y = 0;
-					viewport.width = (float)size.width;
-					viewport.height = (float)size.height;
+					viewport.x = (float)sceneViewport.x;
+					viewport.y = (float)sceneViewport.y;
+					viewport.width = (float)sceneViewport.width;
+					viewport.height = (float)sceneViewport.height;
 					viewport.minDepth = 0;
 					viewport.maxDepth = 1;
 
 					VkRect2D scissor{};
 					scissor.offset = {0, 0};
-					scissor.extent = {(uint32_t)size.width, (uint32_t)size.height};
+					scissor.extent = {(uint32_t)sceneViewport.width, (uint32_t)sceneViewport.height};
 
 					VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
 					VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
@@ -344,7 +330,7 @@ namespace milo {
 					updateDescriptorSets(skybox, imageIndex, descriptorSet);
 
 					VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-													 m_PipelineLayout,
+													 m_GraphicsPipeline->pipelineLayout(),
 													 0, 1, &descriptorSet, 0, nullptr));
 
 					VkBuffer vertexBuffers[] = {meshBuffers->vertexBuffer()->vkBuffer()};

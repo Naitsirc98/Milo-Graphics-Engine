@@ -3,6 +3,7 @@
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 #include "milo/assets/AssetManager.h"
 #include "milo/graphics/vulkan/buffers/VulkanMeshBuffers.h"
+#include "milo/scenes/SceneManager.h"
 
 namespace milo {
 
@@ -38,7 +39,6 @@ namespace milo {
 		createTextureDescriptorPool();
 		createTextureDescriptorSets(resourcePool);
 
-		createPipelineLayout();
 		createGraphicsPipeline();
 
 		createCommandPool();
@@ -125,7 +125,7 @@ namespace milo {
 		framebufferInfo.height = swapchain->extent().height;
 
 		const VulkanSwapchainImage* swapchainImages = swapchain->images();
-		
+
 		for(uint32_t i = 0;i < m_Framebuffers.size();++i) {
 			const VulkanSwapchainImage& colorTexture = swapchainImages[i];
 			VkImageView attachments[] = {colorTexture.vkImageView};
@@ -169,54 +169,48 @@ namespace milo {
 
 		auto resPool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
 
-		auto& textures = resPool->getTextures2D(m_Input.textures[0].handle);
+		//auto& textures = resPool->getTextures2D(m_Input.textures[0].handle);
 
 		VkSampler sampler = VulkanContext::get()->samplerMap()->getDefaultSampler();
 
 		m_TextureDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
 
-			VulkanTexture2D* texture = dynamic_cast<VulkanTexture2D*>(textures[index].texture);
+			VulkanTexture2D* texture = dynamic_cast<VulkanTexture2D*>(resPool->getRenderTarget(index).colorAttachment);
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			imageInfo.imageView = texture->vkImageView();
 			imageInfo.sampler = sampler;
 
-			VkWriteDescriptorSet writeDescriptorSet = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0,
-																											  descriptorSet,
-																											  1,
-																											  &imageInfo);
+			VkWriteDescriptorSet writeDescriptorSet = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(
+					0,
+					descriptorSet,
+					1,
+					&imageInfo);
 
-			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptorSet, 0, nullptr));
+			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1,
+											&writeDescriptorSet, 0, nullptr));
 		});
-	}
-
-	void VulkanFinalRenderPass::createPipelineLayout() {
-
-		VkPipelineLayoutCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		createInfo.pSetLayouts = &m_TextureDescriptorSetLayout;
-		createInfo.setLayoutCount = 1;
-
-		VK_CALL(vkCreatePipelineLayout(m_Device->logical(), &createInfo, nullptr, &m_PipelineLayout));
 	}
 
 	void VulkanFinalRenderPass::createGraphicsPipeline() {
 
-		VulkanGraphicsPipelineInfo pipelineInfo{};
+		const Viewport& viewport = SceneManager::activeScene()->viewport();
+
+		VulkanGraphicsPipeline::CreateInfo pipelineInfo{};
 		pipelineInfo.vkRenderPass = m_RenderPass;
-		pipelineInfo.vkPipelineLayout = m_PipelineLayout;
-		pipelineInfo.vkPipelineCache = VK_NULL_HANDLE;
+
+		pipelineInfo.setLayouts.push_back(m_TextureDescriptorSetLayout);
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_FALSE;
 
-		pipelineInfo.viewport = {300, 300, 500, 500};
-		pipelineInfo.scissor = {{300, 300}, {500, 500}};
+		pipelineInfo.viewport = {viewport.x, viewport.y, viewport.width, viewport.height};
+		pipelineInfo.scissor = {{(int32_t)viewport.x, (int32_t)viewport.y}, {(uint32_t)viewport.width, (uint32_t)viewport.height}};
 
 		pipelineInfo.shaderInfos.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.vert"), VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaderInfos.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.frag"), VK_SHADER_STAGE_FRAGMENT_BIT});
 
-		m_GraphicsPipeline = VulkanGraphicsPipeline::create("VulkanFinalRenderPass", m_Device->logical(), pipelineInfo);
+		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanFinalRenderPass", m_Device, pipelineInfo);
 	}
 
 	void VulkanFinalRenderPass::createCommandPool() {
@@ -233,8 +227,6 @@ namespace milo {
 		VkBuffer indexBuffer = mesh->indices().empty() ? VK_NULL_HANDLE : buffers->indexBuffer()->vkBuffer();
 
 		VulkanFrameGraphResourcePool* pool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
-
-		auto& textures = pool->getTextures2D(m_Input.textures[0].handle);
 
 		m_CommandPool->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, MAX_SWAPCHAIN_IMAGE_COUNT, m_CommandBuffers);
 
@@ -259,24 +251,16 @@ namespace milo {
 				renderPassInfo.pClearValues = &clearValues;
 				renderPassInfo.clearValueCount = 1;
 
-				VulkanTexture2D* texture = dynamic_cast<VulkanTexture2D*>(textures[i].texture);
+				VulkanTexture2D* texture = dynamic_cast<VulkanTexture2D*>(pool->getRenderTarget(i).colorAttachment);
 
-				VkImageMemoryBarrier imageMemoryBarrier = mvk::ImageMemoryBarrier::create(texture->vkImageViewInfo(),
-																						  texture->layout(),
-																						  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-				imageMemoryBarrier.srcAccessMask = 0;
-				imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-				texture->transitionLayout(commandBuffer, imageMemoryBarrier,
-										  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+				texture->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 				VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 				{
-					VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline));
+					VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
 
 					VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-													 m_PipelineLayout, 0, 1, descriptorSets, 0, nullptr));
+													 m_GraphicsPipeline->pipelineLayout(), 0, 1, descriptorSets, 0, nullptr));
 
 					VkDeviceSize offsets = 0;
 					VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, &offsets));
@@ -320,8 +304,7 @@ namespace milo {
 		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_TextureDescriptorSetLayout, nullptr));
 		DELETE_PTR(m_TextureDescriptorPool);
 
-		VK_CALLV(vkDestroyPipeline(device, m_GraphicsPipeline, nullptr));
-		VK_CALLV(vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr));
+		DELETE_PTR(m_GraphicsPipeline);
 
 		DELETE_PTR(m_CommandPool);
 	}

@@ -9,7 +9,11 @@ namespace milo {
 	}
 
 	VulkanTexture::VulkanTexture(const VulkanTexture::CreateInfo& createInfo) : m_Device(createInfo.device) {
+		m_CreateInfo = createInfo;
+		create(createInfo);
+	}
 
+	void VulkanTexture::create(const VulkanTexture::CreateInfo& createInfo) {
 		m_ImageInfo = mvk::ImageCreateInfo::create(createInfo.usage);
 		m_ImageInfo.arrayLayers = createInfo.arrayLayers;
 		m_ImageInfo.tiling = createInfo.tiling;
@@ -24,10 +28,16 @@ namespace milo {
 			m_ViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		}
 
-		m_VkSampler = VulkanContext::get()->samplerMap()->getDefaultSampler();
+		m_VkSampler = m_VkSampler == VK_NULL_HANDLE ? VulkanContext::get()->samplerMap()->getDefaultSampler() : m_VkSampler;
 	}
 
 	VulkanTexture::~VulkanTexture() {
+		destroy();
+	}
+
+	void VulkanTexture::destroy() {
+
+		m_Device->awaitTermination();
 
 		VulkanAllocator::get()->freeImage(m_VkImage, m_Allocation);
 
@@ -75,8 +85,17 @@ namespace milo {
 		return m_ImageLayout;
 	}
 
-	VmaMemoryUsage VulkanTexture::usage() const {
+	VmaMemoryUsage VulkanTexture::memoryUsage() const {
 		return m_Usage;
+	}
+
+	void VulkanTexture::resize(const Size& size) {
+
+		if(m_VkImage == VK_NULL_HANDLE) return;
+
+		destroy();
+		create(m_CreateInfo);
+		allocate(size.width, size.height, mvk::toPixelFormat(m_ImageInfo.format), m_ImageInfo.mipLevels);
 	}
 
 	void VulkanTexture::transitionLayout(VkCommandBuffer commandBuffer, const VkImageMemoryBarrier& barrier,

@@ -30,8 +30,7 @@ namespace milo {
 		VulkanDescriptorPool* m_DescriptorPool{nullptr};
 		VulkanUniformBuffer<UniformBuffer>* m_UniformBuffer{nullptr};
 
-		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
-		VkPipeline m_GraphicsPipeline{VK_NULL_HANDLE};
+		VulkanGraphicsPipeline* m_GraphicsPipeline = nullptr;
 
 		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_CommandBuffers{};
 
@@ -51,7 +50,6 @@ namespace milo {
 		void createDescriptorPool();
 		void createUniformBuffer();
 		void createDescriptorSets();
-		void createPipelineLayout();
 		void createGraphicsPipeline();
 		void createCommandBuffers();
 		void createSemaphores();

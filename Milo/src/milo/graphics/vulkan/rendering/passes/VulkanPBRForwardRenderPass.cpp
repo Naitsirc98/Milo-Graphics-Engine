@@ -5,7 +5,6 @@
 #include "milo/assets/AssetManager.h"
 #include "milo/graphics/vulkan/materials/VulkanMaterialResourcePool.h"
 #include "milo/scenes/Entity.h"
-#include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 #include "milo/graphics/vulkan/textures/VulkanCubemap.h"
 
 namespace milo {
@@ -23,7 +22,6 @@ namespace milo {
 		createSceneDescriptorPool();
 		createSceneDescriptorSets();
 
-		createPipelineLayout();
 		createGraphicsPipeline();
 
 		createCommandBuffers();
@@ -44,8 +42,7 @@ namespace milo {
 		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_SceneDescriptorSetLayout, nullptr));
 		DELETE_PTR(m_SceneDescriptorPool);
 
-		VK_CALLV(vkDestroyPipeline(device, m_GraphicsPipeline, nullptr));
-		VK_CALLV(vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr));
+		DELETE_PTR(m_GraphicsPipeline);
 
 		DELETE_PTR(m_CommandPool);
 
@@ -142,7 +139,7 @@ namespace milo {
 				VkDescriptorSet descriptorSets[] = {materialDescriptorSet, sceneDescriptorSet};
 
 				VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-												 m_PipelineLayout,
+												 m_GraphicsPipeline->pipelineLayout(),
 												 0, 2, descriptorSets, 1, &dynamicOffset));
 
 				lastMaterial = meshView.material;
@@ -164,7 +161,7 @@ namespace milo {
 			}
 
 			PushConstants pushConstants = {transform.modelMatrix()};
-			VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
+			VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT,
 										0, sizeof(PushConstants), &pushConstants));
 
 			if(meshView.mesh->indices().empty()) {
@@ -242,13 +239,13 @@ namespace milo {
 
 	void VulkanPBRForwardRenderPass::bindSceneDescriptorSet(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		VkDescriptorSet descriptorSet = m_SceneDescriptorPool->get(imageIndex);
-		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout,
+		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout(),
 										 0, 1, &descriptorSet, 0, nullptr));
 	}
 
 	inline void VulkanPBRForwardRenderPass::bindGraphicsPipeline(VkCommandBuffer commandBuffer) const {
 
-		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline));
+		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
 
 		Size size = Window::get()->size();
 
@@ -480,34 +477,21 @@ namespace milo {
 		});
 	}
 
-	void VulkanPBRForwardRenderPass::createPipelineLayout() {
+	void VulkanPBRForwardRenderPass::createGraphicsPipeline() {
 
-		auto& materialResourcePool = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
-		VkDescriptorSetLayout materialDescriptorSetLayout = materialResourcePool.materialDescriptorSetLayout();
-
-		VkDescriptorSetLayout descriptorLayouts[] = {m_SceneDescriptorSetLayout, materialDescriptorSetLayout};
+		VulkanGraphicsPipeline::CreateInfo pipelineInfo{};
+		pipelineInfo.vkRenderPass = m_RenderPass;
 
 		VkPushConstantRange pushConstants{};
 		pushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushConstants.offset = 0;
 		pushConstants.size = sizeof(PushConstants);
-		
-		VkPipelineLayoutCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		createInfo.pSetLayouts = descriptorLayouts;
-		createInfo.setLayoutCount = 2;
-		createInfo.pPushConstantRanges = &pushConstants;
-		createInfo.pushConstantRangeCount = 1;
 
-		VK_CALL(vkCreatePipelineLayout(m_Device->logical(), &createInfo, nullptr, &m_PipelineLayout));
-	}
+		auto& materialResourcePool = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
 
-	void VulkanPBRForwardRenderPass::createGraphicsPipeline() {
-
-		VulkanGraphicsPipelineInfo pipelineInfo{};
-		pipelineInfo.vkPipelineLayout = m_PipelineLayout;
-		pipelineInfo.vkRenderPass = m_RenderPass;
-		pipelineInfo.vkPipelineCache = VK_NULL_HANDLE;
+		pipelineInfo.pushConstantRanges.push_back(pushConstants);
+		pipelineInfo.setLayouts.push_back(m_SceneDescriptorSetLayout);
+		pipelineInfo.setLayouts.push_back(materialResourcePool.materialDescriptorSetLayout());
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 
@@ -517,8 +501,7 @@ namespace milo {
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
 
-		m_GraphicsPipeline = VulkanGraphicsPipeline::create("VulkanPBRForwardRenderPass",
-															m_Device->logical(), pipelineInfo);
+		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanPBRForwardRenderPass", m_Device, pipelineInfo);
 	}
 
 	void VulkanPBRForwardRenderPass::createCommandBuffers() {

@@ -16,6 +16,9 @@ namespace milo {
 		// Queues
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VkQueue m_PresentationQueue = VK_NULL_HANDLE;
+		// Final Render Pass
+		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
+		Array<VkFramebuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_Framebuffers{};
 		// Synchronization objects
 		Array<VkFence, MAX_SWAPCHAIN_IMAGE_COUNT> m_ImageAvailableFences{};
 		Array<VkFence, MAX_FRAMES_IN_FLIGHT> m_FramesInFlightFences{};

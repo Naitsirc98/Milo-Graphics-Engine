@@ -2,12 +2,13 @@
 #include "milo/graphics/vulkan/presentation/VulkanPresenter.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
+#include "milo/scenes/SceneManager.h"
 
 namespace milo {
 
 	VulkanFrameGraphResourcePool::VulkanFrameGraphResourcePool() {
-		m_Buffers.reserve(64);
-		m_Textures.reserve(64);
+		m_Buffers.reserve(8);
+		m_Textures.reserve(8);
 	}
 
 	VulkanFrameGraphResourcePool::~VulkanFrameGraphResourcePool() {
@@ -23,6 +24,67 @@ namespace milo {
 		for(auto& textures : m_Textures) {
 			for(auto& texture : textures) {
 				DELETE_PTR(texture.texture)
+			}
+		}
+
+		for(RenderTarget& renderTarget : m_RenderTargets) {
+			DELETE_PTR(renderTarget.colorAttachment);
+			DELETE_PTR(renderTarget.depthAttachment);
+		}
+	}
+
+	void VulkanFrameGraphResourcePool::update() {
+
+		Scene* scene = SceneManager::activeScene();
+
+		const Size& sceneSize = scene->viewportSize();
+
+		if(sceneSize != m_RenderTargets[0].size) {
+
+			for(RenderTarget& renderTarget : m_RenderTargets) {
+
+				renderTarget.size = sceneSize;
+
+				VulkanTexture2D* colorAttachment = dynamic_cast<VulkanTexture2D*>(renderTarget.colorAttachment);
+				VulkanTexture2D* depthAttachment = dynamic_cast<VulkanTexture2D*>(renderTarget.depthAttachment);
+
+				if(colorAttachment == nullptr) {
+					colorAttachment = VulkanTexture2D::create(TEXTURE_USAGE_COLOR_ATTACHMENT_BIT | TEXTURE_USAGE_SAMPLED_BIT);
+
+					Texture2D::AllocInfo allocInfo{};
+					allocInfo.width = sceneSize.width;
+					allocInfo.height = sceneSize.height;
+					allocInfo.format = PixelFormat::RGBA32F;
+					allocInfo.mipLevels = 1;
+
+					colorAttachment->allocate(allocInfo);
+
+					colorAttachment->setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+					renderTarget.colorAttachment = colorAttachment;
+
+				} else {
+					colorAttachment->resize(sceneSize);
+				}
+
+				if(depthAttachment == nullptr) {
+					depthAttachment = VulkanTexture2D::create(TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | TEXTURE_USAGE_SAMPLED_BIT);
+
+					Texture2D::AllocInfo allocInfo{};
+					allocInfo.width = sceneSize.width;
+					allocInfo.height = sceneSize.height;
+					allocInfo.format = PixelFormat::DEPTH;
+					allocInfo.mipLevels = 1;
+
+					depthAttachment->allocate(allocInfo);
+
+					depthAttachment->setLayout(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+					renderTarget.depthAttachment = depthAttachment;
+
+				} else {
+					depthAttachment->resize(sceneSize);
+				}
 			}
 		}
 	}
@@ -190,6 +252,13 @@ namespace milo {
 			DELETE_PTR(r.texture);
 		}
 		m_Textures.erase(it);
+	}
+
+	const RenderTarget& VulkanFrameGraphResourcePool::getRenderTarget(uint32_t index) const {
+		if(index == UINT32_MAX) {
+			index = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
+		}
+		return m_RenderTargets[index];
 	}
 
 	void VulkanFrameGraphResourcePool::freeUnreferencedResources() {

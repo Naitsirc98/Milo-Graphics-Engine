@@ -27,7 +27,15 @@ namespace milo {
 		s_Instance->render(SceneManager::activeScene());
 	}
 
+	const RenderTarget& WorldRenderer::getRenderTarget() const {
+		return m_ResourcePool->getRenderTarget();
+	}
+
 	WorldRenderer* WorldRenderer::s_Instance = nullptr;
+
+	WorldRenderer& WorldRenderer::get() {
+		return *s_Instance;
+	}
 
 	void WorldRenderer::init() {
 		s_Instance = new WorldRenderer();

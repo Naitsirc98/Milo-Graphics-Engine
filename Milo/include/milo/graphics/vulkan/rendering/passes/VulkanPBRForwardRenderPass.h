@@ -4,6 +4,7 @@
 #include "milo/graphics/rendering/passes/PBRForwardRenderPass.h"
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
+#include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 
 namespace milo {
 
@@ -47,8 +48,7 @@ namespace milo {
 		VkDescriptorSetLayout m_SceneDescriptorSetLayout = VK_NULL_HANDLE;
 		VulkanDescriptorPool* m_SceneDescriptorPool = nullptr;
 
-		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
-		VkPipeline m_GraphicsPipeline = VK_NULL_HANDLE;
+		VulkanGraphicsPipeline* m_GraphicsPipeline = nullptr;
 
 		VulkanCommandPool* m_CommandPool = nullptr;
 		VkCommandBuffer m_CommandBuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};

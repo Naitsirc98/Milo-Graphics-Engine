@@ -5,6 +5,7 @@
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
 #include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
+#include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 
 namespace milo {
 
@@ -32,8 +33,7 @@ namespace milo {
 		VkDescriptorSetLayout m_CameraDescriptorSetLayout = VK_NULL_HANDLE;
 		VulkanDescriptorPool* m_CameraDescriptorPool = nullptr;
 
-		VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
-		VkPipeline m_GraphicsPipeline = VK_NULL_HANDLE;
+		VulkanGraphicsPipeline* m_GraphicsPipeline = nullptr;
 
 		VulkanCommandPool* m_CommandPool = nullptr;
 		VkCommandBuffer m_CommandBuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
@@ -54,7 +54,6 @@ namespace milo {
 		void createCameraDescriptorPool();
 		void createCameraDescriptorSets();
 
-		void createPipelineLayout();
 		void createGraphicsPipeline();
 
 		void createCommandPool();

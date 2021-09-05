@@ -1,8 +1,9 @@
 #include "milo/editor/MiloEditor.h"
 #include "milo/graphics/Graphics.h"
 #include "milo/graphics/vulkan/ui/VulkanUIRenderer.h"
-
-#include <imgui.h>
+#include "milo/graphics/rendering/WorldRenderer.h"
+#include "milo/assets/AssetManager.h"
+#include <imgui/imgui.h>
 
 namespace milo {
 
@@ -14,6 +15,14 @@ namespace milo {
 
 		bool open = true;
 		ImGui::ShowDemoWindow(&open);
+
+		const Texture2D* texture = WorldRenderer::get().getRenderTarget().colorAttachment;
+
+		ImVec2 size;
+		size.x = (float)texture->width();
+		size.y = (float)texture->height();
+
+		UI::image(*texture, size);
 
 		s_Renderer->end();
 	}

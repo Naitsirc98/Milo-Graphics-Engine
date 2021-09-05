@@ -162,12 +162,20 @@ namespace milo {
 		mutable uint16_t useCount = 0;
 	};
 
+	struct RenderTarget {
+		Size size{0, 0};
+		Texture2D* colorAttachment{nullptr};
+		Texture2D* depthAttachment{nullptr};
+	};
+
 	class FrameGraphResourcePool {
 		friend class WorldRenderer;
 	protected:
 		FrameGraphResourcePool() = default;
 		virtual ~FrameGraphResourcePool() = default;
 	public:
+		virtual void update() = 0;
+
 		virtual void clearReferences() = 0;
 
 		virtual FrameGraphBuffer getBuffer(ResourceHandle handle) = 0;
@@ -177,6 +185,8 @@ namespace milo {
 		virtual FrameGraphTexture2D getTexture2D(ResourceHandle handle) = 0;
 		virtual FrameGraphTexture2D getTexture2D(const Texture2DDescription& description) = 0;
 		virtual void destroyTexture(ResourceHandle handle) = 0;
+
+		virtual const RenderTarget& getRenderTarget(uint32_t index = UINT32_MAX) const = 0;
 
 		virtual void freeUnreferencedResources() = 0;
 	public:

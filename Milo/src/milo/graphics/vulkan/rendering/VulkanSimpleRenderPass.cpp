@@ -54,7 +54,7 @@ namespace milo {
 
 			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 			{
-				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline));
+				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline->vkPipeline()));
 
 				Size size = Window::get()->size();
 				VkViewport viewport = {};
@@ -99,7 +99,7 @@ namespace milo {
 
 					VK_CALLV(vkCmdBindDescriptorSets(commandBuffer,
 													 VK_PIPELINE_BIND_POINT_GRAPHICS,
-													 m_VkPipelineLayout,
+													 m_VkGraphicsPipeline->pipelineLayout(),
 													 0,
 													 1,
 													 &descriptorSet,
@@ -132,7 +132,7 @@ namespace milo {
 
 	void VulkanSimpleRenderPass::updatePushConstants(VkCommandBuffer commandBuffer, const PushConstants& pushConstants) {
 		VK_CALLV(vkCmdPushConstants(commandBuffer,
-									m_VkPipelineLayout,
+									m_VkGraphicsPipeline->pipelineLayout(),
 									VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 									0,
 									sizeof(pushConstants),
@@ -151,7 +151,6 @@ namespace milo {
 		createDescriptorSetLayout();
 		createDescriptorPool();
 		allocateDescriptorSets();
-		createPipelineLayout();
 		createGraphicsPipeline();
 		allocateCommandBuffers();
 	}
@@ -175,8 +174,7 @@ namespace milo {
 
 		m_Device->graphicsCommandPool()->free(MAX_SWAPCHAIN_IMAGE_COUNT, m_VkCommandBuffers);
 
-		VK_CALLV(vkDestroyPipeline(device, m_VkGraphicsPipeline, nullptr));
-		VK_CALLV(vkDestroyPipelineLayout(device, m_VkPipelineLayout, nullptr));
+		DELETE_PTR(m_VkGraphicsPipeline);
 
 		VK_CALLV(vkDestroyRenderPass(device, m_VkRenderPass, nullptr));
 	}
@@ -410,29 +408,18 @@ namespace milo {
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr));
 	}
 
-	void VulkanSimpleRenderPass::createPipelineLayout() {
+	void VulkanSimpleRenderPass::createGraphicsPipeline() {
+
+		VulkanGraphicsPipeline::CreateInfo pipelineInfo{};
+		pipelineInfo.vkRenderPass = m_VkRenderPass;
+
 		VkPushConstantRange pushConstants = {};
 		pushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		pushConstants.offset = 0;
 		pushConstants.size = sizeof(PushConstants);
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.pSetLayouts = &m_VkDescriptorSetLayout;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &pushConstants;
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-
-		VK_CALL(vkCreatePipelineLayout(m_Device->logical(), &pipelineLayoutInfo, nullptr,
-									   &m_VkPipelineLayout));
-	}
-
-	void VulkanSimpleRenderPass::createGraphicsPipeline() {
-
-		VulkanGraphicsPipelineInfo pipelineInfo;
-		pipelineInfo.vkPipelineLayout = m_VkPipelineLayout;
-		pipelineInfo.vkRenderPass = m_VkRenderPass;
-		pipelineInfo.vkPipelineCache = m_VkPipelineCache;
+		pipelineInfo.setLayouts.push_back(m_VkDescriptorSetLayout);
+		pipelineInfo.pushConstantRanges.push_back(pushConstants);
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 
@@ -441,8 +428,7 @@ namespace milo {
 
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 
-		m_VkGraphicsPipeline = VulkanGraphicsPipeline::create("VulkanSimpleGraphicsPipeline",
-															  m_Device->logical(), pipelineInfo);
+		m_VkGraphicsPipeline = new VulkanGraphicsPipeline("VulkanSimpleGraphicsPipeline", m_Device, pipelineInfo);
 	}
 
 	void VulkanSimpleRenderPass::allocateCommandBuffers() {

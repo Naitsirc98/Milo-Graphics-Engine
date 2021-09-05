@@ -20,7 +20,6 @@ namespace milo {
 		createCameraDescriptorPool();
 		createCameraDescriptorSets();
 
-		createPipelineLayout();
 		createGraphicsPipeline();
 
 		createCommandPool();
@@ -40,8 +39,7 @@ namespace milo {
 		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_CameraDescriptorSetLayout, nullptr));
 		DELETE_PTR(m_CameraDescriptorPool);
 
-		VK_CALLV(vkDestroyPipeline(device, m_GraphicsPipeline, nullptr));
-		VK_CALLV(vkDestroyPipelineLayout(device, m_PipelineLayout, nullptr));
+		DELETE_PTR(m_GraphicsPipeline);
 
 		DELETE_PTR(m_CommandPool);
 
@@ -93,6 +91,8 @@ namespace milo {
 
 	void VulkanGeometryRenderPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
 
+		const Viewport& sceneViewport = scene->viewport();
+
 		Entity cameraEntity = scene->cameraEntity();
 
 		if(!cameraEntity.valid()) {
@@ -110,7 +110,8 @@ namespace milo {
 			renderPassInfo.renderPass = m_RenderPass;
 			renderPassInfo.framebuffer = m_Framebuffers[imageIndex];
 			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent = m_Device->context()->swapchain()->extent();
+			renderPassInfo.renderArea.extent.width = sceneViewport.width;
+			renderPassInfo.renderArea.extent.height = sceneViewport.height;
 
 			VkClearValue clearValues[2];
 			clearValues[0].color = {0.01f, 0.01f, 0.01f, 1};
@@ -121,21 +122,21 @@ namespace milo {
 
 			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 			{
-				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline));
+				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
 
-				Size size = Window::get()->size();
+				const Viewport& sceneViewport = scene->viewport();
 
 				VkViewport viewport{};
-				viewport.x = 0;
-				viewport.y = 0;
-				viewport.width = (float)size.width;
-				viewport.height = (float)size.height;
+				viewport.x = (float)sceneViewport.x;
+				viewport.y = (float)sceneViewport.y;
+				viewport.width = (float)sceneViewport.width;
+				viewport.height = (float)sceneViewport.height;
 				viewport.minDepth = 0;
 				viewport.maxDepth = 1;
 
 				VkRect2D scissor{};
 				scissor.offset = {0, 0};
-				scissor.extent = {(uint32_t)size.width, (uint32_t)size.height};
+				scissor.extent = {(uint32_t)viewport.width, (uint32_t)viewport.height};
 
 				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
 				VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
@@ -170,7 +171,7 @@ namespace milo {
 						VkDescriptorSet descriptorSets[] = {cameraDescriptorSet, materialDescriptorSet};
 
 						VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-														 m_PipelineLayout,
+														 m_GraphicsPipeline->pipelineLayout(),
 														 0, 2, descriptorSets, 2, dynamicOffsets));
 
 						lastMaterial = meshView.material;
@@ -192,7 +193,7 @@ namespace milo {
 					}
 
 					PushConstants pushConstants = {transform.modelMatrix()};
-					VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
+					VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT,
 												0, sizeof(PushConstants), &pushConstants));
 
 					if(meshView.mesh->indices().empty()) {
@@ -251,22 +252,19 @@ namespace milo {
 
 	void VulkanGeometryRenderPass::createFramebuffers(FrameGraphResourcePool* resourcePool) {
 
-		Size size = Window::get()->size();
-
-		VkFramebufferCreateInfo createInfo = mvk::FramebufferCreateInfo::create(m_RenderPass, size.width, size.height);
-
 		VulkanFrameGraphResourcePool* pool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
 
-		auto& colorTextures = pool->getTextures2D(m_Output.textures[0].handle);
-		auto& depthTextures = pool->getTextures2D(m_Output.textures[1].handle);
+		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 
-		for(uint32_t i = 0;i < colorTextures.size();++i) {
+			const RenderTarget& renderTarget = pool->getRenderTarget(i);
 
-			const VulkanTexture2D* colorTexture = dynamic_cast<const VulkanTexture2D*>(colorTextures[i].texture);
-			const VulkanTexture2D* depthTexture = dynamic_cast<const VulkanTexture2D*>(depthTextures[i].texture);
+			const VulkanTexture2D* colorTexture = dynamic_cast<const VulkanTexture2D*>(renderTarget.colorAttachment);
+			const VulkanTexture2D* depthTexture = dynamic_cast<const VulkanTexture2D*>(renderTarget.depthAttachment);
 
 			VkImageView attachments[2] = { colorTexture->vkImageView(), depthTexture->vkImageView() };
 
+			VkFramebufferCreateInfo createInfo = mvk::FramebufferCreateInfo::create(m_RenderPass,
+																					colorTexture->width(), colorTexture->height());
 			createInfo.pAttachments = attachments;
 			createInfo.attachmentCount = 2;
 
@@ -325,33 +323,21 @@ namespace milo {
 		});
 	}
 
-	void VulkanGeometryRenderPass::createPipelineLayout() {
+	void VulkanGeometryRenderPass::createGraphicsPipeline() {
 
-		auto& materials = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
-
-		Array<VkDescriptorSetLayout, 2> setLayouts = {m_CameraDescriptorSetLayout, materials.materialDescriptorSetLayout()};
+		VulkanGraphicsPipeline::CreateInfo pipelineInfo{};
+		pipelineInfo.vkRenderPass = m_RenderPass;
 
 		VkPushConstantRange pushConstants = {};
 		pushConstants.offset = 0;
 		pushConstants.size = sizeof(PushConstants);
 		pushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-		VkPipelineLayoutCreateInfo createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		createInfo.pSetLayouts = setLayouts.data();
-		createInfo.setLayoutCount = setLayouts.size();
-		createInfo.pPushConstantRanges = &pushConstants;
-		createInfo.pushConstantRangeCount = 1;
+		auto& materials = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
 
-		VK_CALL(vkCreatePipelineLayout(m_Device->logical(), &createInfo, nullptr, &m_PipelineLayout));
-	}
-
-	void VulkanGeometryRenderPass::createGraphicsPipeline() {
-
-		VulkanGraphicsPipelineInfo pipelineInfo{};
-		pipelineInfo.vkPipelineLayout = m_PipelineLayout;
-		pipelineInfo.vkRenderPass = m_RenderPass;
-		pipelineInfo.vkPipelineCache = VK_NULL_HANDLE;
+		pipelineInfo.pushConstantRanges.push_back(pushConstants);
+		pipelineInfo.setLayouts.push_back(m_CameraDescriptorSetLayout);
+		pipelineInfo.setLayouts.push_back(materials.materialDescriptorSetLayout());
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 
@@ -361,8 +347,7 @@ namespace milo {
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
 
-		m_GraphicsPipeline = VulkanGraphicsPipeline::create("VulkanGeometryRenderPass",
-															  m_Device->logical(), pipelineInfo);
+		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanGeometryRenderPass", m_Device, pipelineInfo);
 	}
 
 	void VulkanGeometryRenderPass::createCommandPool() {

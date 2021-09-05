@@ -39,6 +39,8 @@ namespace milo {
 		VkImageLayout m_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VmaMemoryUsage m_Usage = VMA_MEMORY_USAGE_UNKNOWN;
 
+		VulkanTexture::CreateInfo m_CreateInfo;
+
 	public:
 		explicit VulkanTexture(const CreateInfo& createInfo);
 		virtual ~VulkanTexture();
@@ -52,15 +54,21 @@ namespace milo {
 		void vkSampler(VkSampler sampler);
 		VmaAllocation allocation() const;
 		VkImageLayout layout() const;
-		VmaMemoryUsage usage() const;
+		VmaMemoryUsage memoryUsage() const;
+
+		void resize(const Size& size);
 
 		void transitionLayout(VkCommandBuffer commandBuffer, const VkImageMemoryBarrier& barrier, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage);
 
-		void setLayout(VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
-		void setLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
+		void setLayout(VkImageLayout newLayout, VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+		void setLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
 	protected:
 		void allocate(uint32_t width, uint32_t height, PixelFormat format, uint32_t mipLevels);
 		void copyFromBuffer(VkCommandBuffer commandBuffer, VulkanBuffer& buffer);
+
+		void destroy();
+
+		void create(const CreateInfo& createInfo);
 	};
 }

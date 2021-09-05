@@ -7,12 +7,15 @@
 
 namespace milo {
 
+	using TextureId = uint32_t;
+
 	enum TextureUsageFlagBits {
 		TEXTURE_USAGE_UNDEFINED_BIT = 0x0,
 		TEXTURE_USAGE_SAMPLED_BIT = 0x1,
 		TEXTURE_USAGE_COLOR_ATTACHMENT_BIT = 0x2,
 		TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x4,
-		TEXTURE_USAGE_STORAGE_BIT = 0x8
+		TEXTURE_USAGE_STORAGE_BIT = 0x8,
+		TEXTURE_USAGE_UI_BIT = 0x10
 	};
 	using TextureUsageFlags = uint32_t;
 
@@ -32,17 +35,22 @@ namespace milo {
 			const void* pixels = nullptr;
 			const void* apiInfo = nullptr;
 		};
+	private:
+		TextureId m_Id{NULL};
+		TextureUsageFlags m_Usage{TEXTURE_USAGE_UNDEFINED_BIT};
 	public:
-		virtual ~Texture2D() = default;
+		Texture2D(TextureUsageFlags usage);
+		virtual ~Texture2D();
+		inline TextureId id() const {return m_Id;}
+		inline TextureUsageFlags usage() const {return m_Usage;};
 		virtual uint32_t width() const = 0;
 		virtual uint32_t height() const = 0;
+		Size size() const {return {(int32_t)width(), (int32_t)height()};}
 		virtual void allocate(const AllocInfo& allocInfo) = 0;
 		virtual void update(const UpdateInfo& updateInfo) = 0;
 		virtual void generateMipmaps() = 0;
 	public:
-		static Texture2D* create();
-		static Texture2D* createColorAttachment();
-		static Texture2D* createDepthAttachment();
+		static Texture2D* create(TextureUsageFlags usage = TEXTURE_USAGE_SAMPLED_BIT);
 	};
 
 	class Cubemap {
@@ -61,14 +69,21 @@ namespace milo {
 			const void* pixels = nullptr;
 			const void* apiInfo = nullptr;
 		};
+	private:
+		TextureId m_Id{NULL};
+		TextureUsageFlags m_Usage{TEXTURE_USAGE_UNDEFINED_BIT};
 	public:
-		virtual ~Cubemap() = default;
+		Cubemap(TextureUsageFlags usage);
+		virtual ~Cubemap();
+		inline TextureId id() const {return m_Id;}
+		inline TextureUsageFlags usage() const {return m_Usage;};
 		virtual uint32_t width() const = 0;
 		virtual uint32_t height() const = 0;
+		Size size() const {return {(int32_t)width(), (int32_t)height()};}
 		virtual void allocate(const AllocInfo& allocInfo) = 0;
 		virtual void update(const UpdateInfo& updateInfo) = 0;
 		virtual void generateMipmaps() = 0;
 	public:
-		static Cubemap* create();
+		static Cubemap* create(TextureUsageFlags usage = TEXTURE_USAGE_SAMPLED_BIT);
 	};
 }

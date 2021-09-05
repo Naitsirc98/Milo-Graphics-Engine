@@ -41,6 +41,8 @@ namespace milo {
 		void setSkybox(Skybox* skybox);
 		const LightEnvironment& lightEnvironment() const noexcept;
 		LightEnvironment& lightEnvironment() noexcept;
+		const Viewport& viewport() const noexcept;
+		Size viewportSize() const noexcept;
 
 		template<typename Component>
 		ECSComponentView<Component> view() {

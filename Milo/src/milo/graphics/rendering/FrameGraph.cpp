@@ -23,6 +23,7 @@ namespace milo {
 
 	void FrameGraph::setup(Scene* scene) {
 
+		m_ResourcePool->update();
 		m_ResourcePool->clearReferences();
 
 		push<GeometryRenderPass>();
