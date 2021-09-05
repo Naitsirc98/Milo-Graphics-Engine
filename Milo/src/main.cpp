@@ -16,10 +16,13 @@ public:
 
 		scene->setSkybox(skybox);
 
-		createSphere(scene, {0, 0, -3}, Assets::materials().getDefault());
-		createSphere(scene, {3, 0, -3}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
+		Entity s1 = createSphere(scene, {0, 0, -3}, Assets::materials().getDefault());
+		Entity s2 = createSphere(scene, {3, 0, -3}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
+
+		s1.addChild(s2.id());
 
 		Entity camera = scene->createEntity();
+		camera.setName("Main Camera");
 		camera.createComponent<Camera>();
 		auto& camScript = camera.createComponent<NativeScriptView>();
 		camScript.bind<CameraController>();
@@ -27,11 +30,12 @@ public:
 		scene->setMainCamera(camera.id());
 	}
 
-	void createSphere(Scene* scene, const Vector3& position, Material* material) {
+	Entity createSphere(Scene* scene, const Vector3& position, Material* material) {
 
 		Mesh* mesh = Assets::meshes().getSphere();
 
 		Entity entity = scene->createEntity();
+		entity.setName("Sphere " + material->name());
 
 		MeshView& meshView = entity.createComponent<MeshView>();
 		meshView.mesh = mesh;
@@ -39,6 +43,8 @@ public:
 
 		Transform& transform = entity.getComponent<Transform>();
 		transform.translation = position;
+
+		return entity;
 	}
 
 };

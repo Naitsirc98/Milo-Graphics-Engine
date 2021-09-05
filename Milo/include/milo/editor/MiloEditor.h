@@ -2,6 +2,7 @@
 
 #include "milo/common/Common.h"
 #include "UIRenderer.h"
+#include "SceneHierarchyPanel.h"
 
 namespace milo {
 
@@ -13,9 +14,11 @@ namespace milo {
 		~MiloEditor() = default;
 	private:
 		static UIRenderer* s_Renderer;
+		static SceneHierarchyPanel s_SceneHierarchyPanel;
 	public:
 		static void render();
 	private:
+		static void setupDockSpace();
 		static void init();
 		static void shutdown();
 	};

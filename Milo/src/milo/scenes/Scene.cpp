@@ -27,7 +27,7 @@ namespace milo {
 
 	Entity Scene::createEntity() {
 		const EntityId newId = m_Registry.create();
-		return {newId, *this};
+		return {newId, this};
 	}
 
 	bool Scene::exists(EntityId entityId) const {
@@ -36,7 +36,7 @@ namespace milo {
 
 	Entity Scene::find(EntityId id) const {
 		if(!exists(id)) throw MILO_RUNTIME_EXCEPTION(str("Entity ") + str((uint64_t)id) + " does not exists");
-		return Entity(id, const_cast<Scene&>(*this));
+		return Entity(id, const_cast<Scene*>(this));
 	}
 
 	void Scene::destroyEntity(EntityId entityId) noexcept {
@@ -45,7 +45,7 @@ namespace milo {
 	}
 
 	Entity Scene::cameraEntity() noexcept {
-		return Entity(m_MainCameraEntity, *this);
+		return Entity(m_MainCameraEntity, this);
 	}
 
 	Camera* Scene::camera() noexcept {

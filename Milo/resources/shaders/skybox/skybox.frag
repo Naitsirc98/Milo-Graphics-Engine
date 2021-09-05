@@ -17,7 +17,7 @@ void main() {
     out_FragColor = textureLod(u_Texture, in_Position, 0);
 
     // HDR tonemapping
-    out_FragColor /= (out_FragColor + vec4(1.0));
+    //out_FragColor /= (out_FragColor + vec4(1.0));
     // Gamma correct
     out_FragColor = pow(out_FragColor, vec4(1.0 / 2.2));
 }

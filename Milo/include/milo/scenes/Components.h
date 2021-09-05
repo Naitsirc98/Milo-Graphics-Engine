@@ -6,3 +6,4 @@
 #include "milo/scenes/components/MeshView.h"
 #include "milo/scenes/components/NativeScript.h"
 #include "milo/scenes/components/CameraController.h"
+#include "milo/scenes/components/EntityBasicInfo.h"

@@ -22,7 +22,7 @@ void main() {
     out_FragColor = u_Material.color * texture(u_MaterialTextures[0], fragment.uv);
 
     // HDR tonemapping
-    out_FragColor /= (out_FragColor + vec4(1.0));
+    //out_FragColor /= (out_FragColor + vec4(1.0));
     // Gamma correct
     out_FragColor = pow(out_FragColor, vec4(1.0 / 2.2));
 }
