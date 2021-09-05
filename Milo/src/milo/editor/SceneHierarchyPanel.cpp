@@ -35,6 +35,8 @@ namespace milo {
 
 	void SceneHierarchyPanel::drawEntityNode(const Entity& entity, const EntityBasicInfo& info) {
 
+		if(!entity.valid()) return;
+
 		const char* name = info.name().c_str();
 
 		if(entity.hasComponent<Tag>()) {
@@ -82,13 +84,13 @@ namespace milo {
 		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 		{
 			ImGui::Text(name);
-			ImGui::SetDragDropPayload("scene_entity_hierarchy", &entity, sizeof(Entity));
+			ImGui::SetDragDropPayload("SceneHierarchyPanel", &entity, sizeof(Entity));
 			ImGui::EndDragDropSource();
 		}
 
 		if (ImGui::BeginDragDropTarget())
 		{
-			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("scene_entity_hierarchy", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SceneHierarchyPanel", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
 
 			if (payload)
 			{
@@ -110,10 +112,12 @@ namespace milo {
 
 		// Defer deletion until end of node UI
 		if (entityDeleted) {
-			//m_Context->DestroyEntity(entity);
-			//if (entity == m_SelectionContext)
-			//	m_SelectionContext = {};
-//
+			Log::warn("Deleting {}", name);
+			Scene* scene = entity.scene();
+			scene->destroyEntity(entity.id());
+			if(entity.id() == m_SelectionContext.id()) {
+				m_SelectionContext = {};
+			}
 			//m_EntityDeletedCallback(entity);
 		}
 	}

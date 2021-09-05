@@ -64,6 +64,9 @@ namespace milo {
 		void buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
 
 		void destroyTransientResources();
+
+		void
+		renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene, const Entity& cameraEntity);
 	};
 
 }

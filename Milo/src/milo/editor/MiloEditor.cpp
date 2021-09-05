@@ -11,6 +11,10 @@ namespace milo {
 	UIRenderer* MiloEditor::s_Renderer = nullptr;
 	SceneHierarchyPanel MiloEditor::s_SceneHierarchyPanel{};
 
+	void MiloEditor::update() {
+		// TODO
+	}
+
 	void MiloEditor::render() {
 
 		s_Renderer->begin();

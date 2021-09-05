@@ -15,6 +15,7 @@ namespace milo {
 	public:
 		Entity() = default;
 		Entity(EntityId id, Scene* scene);
+		~Entity();
 	public:
 		EntityId id() const noexcept;
 		Scene* scene() const noexcept;

@@ -7,9 +7,14 @@ namespace milo {
 		if(valid() && !hasComponent<Transform>()) {
 			createComponent<Transform>();
 		}
-		if(valid() && ! hasComponent<EntityBasicInfo>()) {
+		if(valid() && !hasComponent<EntityBasicInfo>()) {
 			createComponent<EntityBasicInfo>();
 		}
+	}
+
+	Entity::~Entity() {
+		m_Id = NULL_ENTITY;
+		m_Scene = nullptr;
 	}
 
 	EntityId Entity::id() const noexcept {
@@ -21,7 +26,7 @@ namespace milo {
 	}
 
 	bool Entity::valid() const noexcept {
-		return m_Scene != nullptr && m_Scene->registry().valid(m_Id);
+		return m_Id != NULL_ENTITY && m_Scene != nullptr && m_Scene->registry().valid(m_Id);
 	}
 
 	void Entity::destroy() noexcept {

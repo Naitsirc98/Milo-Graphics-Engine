@@ -41,4 +41,13 @@ namespace milo {
 		const Color GREEN{0, 1, 0, 1};
 		const Color BLUE{0, 0, 1, 1};
 	}
+
+	enum class SimulationState {
+		Editor,
+		EditorPlay,
+		Play
+	};
+
+	SimulationState getSimulationState();
+	void setSimulationState(SimulationState state);
 }

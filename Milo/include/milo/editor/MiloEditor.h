@@ -16,6 +16,7 @@ namespace milo {
 		static UIRenderer* s_Renderer;
 		static SceneHierarchyPanel s_SceneHierarchyPanel;
 	public:
+		static void update();
 		static void render();
 	private:
 		static void setupDockSpace();

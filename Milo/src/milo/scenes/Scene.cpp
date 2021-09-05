@@ -41,6 +41,9 @@ namespace milo {
 
 	void Scene::destroyEntity(EntityId entityId) noexcept {
 		if(!exists(entityId)) return;
+		Entity entity = {entityId, this};
+		if(entity.hasParent()) entity.parent().removeChild(entityId);
+		entity.removeAllChildren(); // TODO
 		m_Registry.destroy(entityId);
 	}
 

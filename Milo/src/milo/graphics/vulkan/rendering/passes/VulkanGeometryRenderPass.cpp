@@ -95,11 +95,6 @@ namespace milo {
 
 		Entity cameraEntity = scene->cameraEntity();
 
-		if(!cameraEntity.valid()) {
-			// TODO
-			throw MILO_RUNTIME_EXCEPTION("Main Camera Entity is not valid");
-		}
-
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -141,71 +136,78 @@ namespace milo {
 				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
 				VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
 
-				Camera& camera = cameraEntity.getComponent<Camera>();
-
-				CameraData cameraData{};
-				cameraData.proj = camera.projectionMatrix();
-				cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
-				cameraData.projView = cameraData.proj * cameraData.view;
-
-				m_CameraUniformBuffer->update(imageIndex, cameraData);
-
-				VkDescriptorSet cameraDescriptorSet = m_CameraDescriptorPool->get(imageIndex);
-
-				uint32_t dynamicOffsets[] = {imageIndex * m_CameraUniformBuffer->elementSize(), 0};
-
-				auto& materialResources = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
-
-				Mesh* lastMesh = nullptr;
-				Material* lastMaterial = nullptr;
-
-				auto components = scene->group<Transform, MeshView>();
-				for(EntityId entityId : components) {
-
-					const Transform& transform = components.get<Transform>(entityId);
-					const MeshView& meshView = components.get<MeshView>(entityId);
-
-					if(lastMaterial != meshView.material) {
-
-						VkDescriptorSet materialDescriptorSet = materialResources.descriptorSetOf(meshView.material, dynamicOffsets[1]);
-						VkDescriptorSet descriptorSets[] = {cameraDescriptorSet, materialDescriptorSet};
-
-						VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-														 m_GraphicsPipeline->pipelineLayout(),
-														 0, 2, descriptorSets, 2, dynamicOffsets));
-
-						lastMaterial = meshView.material;
-					}
-
-					if(lastMesh != meshView.mesh) {
-
-						VulkanMeshBuffers* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(meshView.mesh->buffers());
-
-						VkBuffer vertexBuffers[] = {meshBuffers->vertexBuffer()->vkBuffer()};
-						VkDeviceSize offsets[] = {0};
-						VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
-
-						if(!meshView.mesh->indices().empty()) {
-							VK_CALLV(vkCmdBindIndexBuffer(commandBuffer, meshBuffers->indexBuffer()->vkBuffer(), 0, VK_INDEX_TYPE_UINT32));
-						}
-
-						lastMesh = meshView.mesh;
-					}
-
-					PushConstants pushConstants = {transform.modelMatrix()};
-					VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT,
-												0, sizeof(PushConstants), &pushConstants));
-
-					if(meshView.mesh->indices().empty()) {
-						VK_CALLV(vkCmdDraw(commandBuffer, meshView.mesh->vertices().size(), 1, 0, 0));
-					} else {
-						VK_CALLV(vkCmdDrawIndexed(commandBuffer, meshView.mesh->indices().size(), 1, 0, 0, 0));
-					}
+				if(cameraEntity.valid()) {
+					renderMeshViews(imageIndex, commandBuffer, scene, cameraEntity);
 				}
 			}
 			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
 		}
 		VK_CALLV(vkEndCommandBuffer(commandBuffer));
+	}
+
+	void VulkanGeometryRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene,
+												   const Entity& cameraEntity) {
+		Camera& camera = cameraEntity.getComponent<Camera>();
+
+		CameraData cameraData{};
+		cameraData.proj = camera.projectionMatrix();
+		cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+		cameraData.projView = cameraData.proj * cameraData.view;
+
+		m_CameraUniformBuffer->update(imageIndex, cameraData);
+
+		VkDescriptorSet cameraDescriptorSet = m_CameraDescriptorPool->get(imageIndex);
+
+		uint32_t dynamicOffsets[] = {imageIndex * m_CameraUniformBuffer->elementSize(), 0};
+
+		auto& materialResources = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
+
+		Mesh* lastMesh = nullptr;
+		Material* lastMaterial = nullptr;
+
+		auto components = scene->group<Transform, MeshView>();
+		for(EntityId entityId : components) {
+
+			const Transform& transform = components.get<Transform>(entityId);
+			const MeshView& meshView = components.get<MeshView>(entityId);
+
+			if(lastMaterial != meshView.material) {
+
+				VkDescriptorSet materialDescriptorSet = materialResources.descriptorSetOf(meshView.material, dynamicOffsets[1]);
+				VkDescriptorSet descriptorSets[] = {cameraDescriptorSet, materialDescriptorSet};
+
+				VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+												 m_GraphicsPipeline->pipelineLayout(),
+												 0, 2, descriptorSets, 2, dynamicOffsets));
+
+				lastMaterial = meshView.material;
+			}
+
+			if(lastMesh != meshView.mesh) {
+
+				VulkanMeshBuffers* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(meshView.mesh->buffers());
+
+				VkBuffer vertexBuffers[] = {meshBuffers->vertexBuffer()->vkBuffer()};
+				VkDeviceSize offsets[] = {0};
+				VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
+
+				if(!meshView.mesh->indices().empty()) {
+					VK_CALLV(vkCmdBindIndexBuffer(commandBuffer, meshBuffers->indexBuffer()->vkBuffer(), 0, VK_INDEX_TYPE_UINT32));
+				}
+
+				lastMesh = meshView.mesh;
+			}
+
+			PushConstants pushConstants = {transform.modelMatrix()};
+			VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT,
+										0, sizeof(PushConstants), &pushConstants));
+
+			if(meshView.mesh->indices().empty()) {
+				VK_CALLV(vkCmdDraw(commandBuffer, meshView.mesh->vertices().size(), 1, 0, 0));
+			} else {
+				VK_CALLV(vkCmdDrawIndexed(commandBuffer, meshView.mesh->indices().size(), 1, 0, 0, 0));
+			}
+		}
 	}
 
 	void VulkanGeometryRenderPass::createRenderPass() {
