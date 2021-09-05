@@ -16,6 +16,7 @@ namespace milo {
 
 	class VulkanSwapchain {
 		friend class VulkanContext;
+		friend class VulkanPresenter;
 	private:
 		VulkanDevice* m_Device;
 		VkSwapchainKHR m_VkSwapchain = nullptr;
@@ -37,6 +38,7 @@ namespace milo {
 		uint32_t imageCount() const;
 		void addSwapchainRecreateCallback(SwapchainResetCallback callback);
 		void recreate();
+		inline Size size() const {return {(int32_t)extent().width, (int32_t)extent().height};}
 	private:
 		void create();
 		void createSwapchain();

@@ -20,8 +20,8 @@ namespace milo {
 		Fullscreen
 	};
 
-	static const int32_t WINDOW_DEFAULT_WIDTH = 1280;
-	static const int32_t WINDOW_DEFAULT_HEIGHT = 720;
+	static const int32_t WINDOW_DEFAULT_WIDTH = 1920;
+	static const int32_t WINDOW_DEFAULT_HEIGHT = 1080;
 	static const Size WINDOW_DEFAULT_SIZE = {WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT};
 
 	struct WindowInfo {

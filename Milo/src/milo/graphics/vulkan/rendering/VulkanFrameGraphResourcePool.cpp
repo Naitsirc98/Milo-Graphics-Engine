@@ -1,7 +1,6 @@
 #include "milo/graphics/vulkan/rendering/VulkanFrameGraphResourcePool.h"
 #include "milo/graphics/vulkan/presentation/VulkanPresenter.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
-#include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
 #include "milo/scenes/SceneManager.h"
 
 namespace milo {

@@ -13,6 +13,7 @@ namespace milo {
 		VkRenderPass m_RenderPass{VK_NULL_HANDLE};
 		Array<VulkanTexture2D*, MAX_SWAPCHAIN_IMAGE_COUNT> m_DepthBuffers{};
 		Array<VkFramebuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_Framebuffers{};
+		Size m_FramebufferSize{};
 
 		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_PrimaryCommandBuffers{};
 		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_SecondaryCommandBuffers{};
@@ -34,5 +35,11 @@ namespace milo {
 		static VulkanDescriptorPool* s_DescriptorPool;
 	public:
 		static VkDescriptorSet allocateDescriptorSet(VkDescriptorSetAllocateInfo& allocInfo);
+
+		void destroy();
+
+		VulkanDevice* destroyRenderAreaDependentResources();
+
+		void createRenderAreaDependentResources();
 	};
 }

@@ -253,7 +253,7 @@ namespace milo {
 
 				VulkanTexture2D* texture = dynamic_cast<VulkanTexture2D*>(pool->getRenderTarget(i).colorAttachment);
 
-				texture->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				texture->setLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 				VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 				{

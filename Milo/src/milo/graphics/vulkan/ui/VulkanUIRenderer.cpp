@@ -11,15 +11,33 @@ namespace milo {
 	VulkanUIRenderer::VulkanUIRenderer() {
 
 		createRenderPass();
-		createDepthBuffers();
-		createFramebuffers();
+		createRenderAreaDependentResources();
 
 		initUIBackend();
 
 		Log::debug("Vulkan UI Renderer initialized");
 	}
 
+	void VulkanUIRenderer::createRenderAreaDependentResources() {
+		createDepthBuffers();
+		createFramebuffers();
+	}
+
 	VulkanUIRenderer::~VulkanUIRenderer() {
+
+		destroy();
+	}
+
+	void VulkanUIRenderer::destroy() {
+
+		destroyRenderAreaDependentResources();
+
+		VK_CALLV(vkDestroyRenderPass(VulkanContext::get()->device()->logical(), m_RenderPass, nullptr));
+
+		shutdownUIBackend();
+	}
+
+	VulkanDevice* VulkanUIRenderer::destroyRenderAreaDependentResources() {
 
 		VulkanDevice* device = VulkanContext::get()->device();
 		device->awaitTermination();
@@ -31,10 +49,7 @@ namespace milo {
 		for(VulkanTexture2D* depthBuffer : m_DepthBuffers) {
 			DELETE_PTR(depthBuffer);
 		}
-
-		VK_CALLV(vkDestroyRenderPass(device->logical(), m_RenderPass, nullptr));
-
-		shutdownUIBackend();
+		return device;
 	}
 
 	void VulkanUIRenderer::shutdownUIBackend() const {
@@ -44,6 +59,15 @@ namespace milo {
 	}
 
 	void VulkanUIRenderer::begin() {
+
+		VulkanSwapchain* swapchain = VulkanContext::get()->swapchain();
+		Size size = swapchain->size();
+
+		if(m_FramebufferSize != size) {
+			destroyRenderAreaDependentResources();
+			createRenderAreaDependentResources();
+		}
+
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -102,9 +126,9 @@ namespace milo {
 
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
-		viewport.y = (float)height;
-		viewport.height = -(float)height;
+		viewport.y = 0.0f;
 		viewport.width = (float)width;
+		viewport.height = (float)height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(secondaryCommandBuffer, 0, 1, &viewport);
@@ -325,6 +349,8 @@ namespace milo {
 		framebufferInfo.layers = 1;
 		framebufferInfo.width = swapchain->extent().width;
 		framebufferInfo.height = swapchain->extent().height;
+
+		m_FramebufferSize = {(int32_t)swapchain->extent().width, (int32_t)swapchain->extent().height};
 
 		const VulkanSwapchainImage* swapchainImages = swapchain->images();
 
