@@ -76,5 +76,7 @@ namespace milo {
 
 		bool operator==(const Entity& rhs) const;
 		bool operator!=(const Entity& rhs) const;
+
+		operator bool() const;
 	};
 }

@@ -15,11 +15,29 @@ namespace milo {
 
 	}
 
+	Entity SceneHierarchyPanel::selectedEntity() {
+		return m_SelectedEntity;
+	}
+
+	void SceneHierarchyPanel::setSelectedEntity(Entity entity) {
+		m_SelectedEntity = entity;
+	}
+
+	void SceneHierarchyPanel::addSelectedCallback(EntitySelectedCallback callback) {
+		if(callback) m_SelectedCallbacks.push_back(callback);
+	}
+
+	void SceneHierarchyPanel::addDeletedCallback(EntityDeletedCallback callback) {
+		if(callback) m_DeletedCallbacks.push_back(callback);
+	}
+
 	void SceneHierarchyPanel::render() {
 
 		ImGui::Begin("SceneHierarchyPanel");
 
 		Scene* scene = SceneManager::activeScene();
+
+		ImRect windowRect = { ImGui::GetWindowContentRegionMin(), ImGui::GetWindowContentRegionMax() };
 
 		auto entities = scene->view<EntityBasicInfo>();
 		for(EntityId entityId : entities) {
@@ -27,13 +45,27 @@ namespace milo {
 			const EntityBasicInfo& info = entities.get<EntityBasicInfo>(entityId);
 			if(info.parentId() == NULL_ENTITY) {
 				drawEntityNode(entity, info);
+			} else {
+				Log::info("");
 			}
+		}
+
+		if (ImGui::BeginDragDropTargetCustom(windowRect, ImGui::GetCurrentWindow()->ID))
+		{
+			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SceneHierarchyPanel", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+
+			if (payload) {
+				Entity& entity = *(Entity*)payload->Data;
+				if(entity.hasParent()) entity.parent().removeChild(entity.id());
+			}
+
+			ImGui::EndDragDropTarget();
 		}
 
 		ImGui::End();
 	}
 
-	void SceneHierarchyPanel::drawEntityNode(const Entity& entity, const EntityBasicInfo& info) {
+	void SceneHierarchyPanel::drawEntityNode(Entity& entity, const EntityBasicInfo& info) {
 
 		if(!entity.valid()) return;
 
@@ -43,34 +75,21 @@ namespace milo {
 			name = entity.getComponent<Tag>().value();
 		}
 
-		ImGuiTreeNodeFlags flags = (entity == m_SelectionContext ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+		ImGuiTreeNodeFlags flags = (entity == m_SelectedEntity ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
 
 		if (entity.children().empty())
 			flags |= ImGuiTreeNodeFlags_Leaf;
 
-		// TODO(Peter): This should probably be a function that checks that the entities components are valid
-		//const bool missingMesh = entity.hasComponent<MeshView>()
-		//        && (entity.getComponent<MeshView>().mesh
-		//		&& entity.getComponent<MeshView>().mesh->IsFlagSet(AssetFlag::Missing));
-		//if (missingMesh)
-		//	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.4f, 0.3f, 1.0f));
-
-		//bool isPrefab = entity.hasComponent<PrefabComponent>();
-		//if (isPrefab)
-		//	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.32f, 0.7f, 0.87f, 1.0f));
 		const bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity.id(), flags, name);
-		//if (isPrefab)
-		//	ImGui::PopStyleColor();
+
 		if (ImGui::IsItemClicked())
 		{
-			m_SelectionContext = entity;
-			//if (m_SelectionChangedCallback)
-				//m_SelectionChangedCallback(m_SelectionContext);
+			m_SelectedEntity = entity;
+			for(auto& callback : m_SelectedCallbacks) {
+				callback(entity);
+			}
 		}
-
-		//if (missingMesh)
-		//	ImGui::PopStyleColor();
 
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
@@ -92,10 +111,9 @@ namespace milo {
 		{
 			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SceneHierarchyPanel", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
 
-			if (payload)
-			{
-				//Entity& droppedEntity = *(Entity*)payload->Data;
-				//m_Context->ParentEntity(droppedEntity, entity);
+			if (payload) {
+				Entity& droppedEntity = *(Entity*)payload->Data;
+				entity.addChild(droppedEntity.id());
 			}
 
 			ImGui::EndDragDropTarget();
@@ -115,10 +133,12 @@ namespace milo {
 			Log::warn("Deleting {}", name);
 			Scene* scene = entity.scene();
 			scene->destroyEntity(entity.id());
-			if(entity.id() == m_SelectionContext.id()) {
-				m_SelectionContext = {};
+			if(entity.id() == m_SelectedEntity.id()) {
+				m_SelectedEntity = {};
 			}
-			//m_EntityDeletedCallback(entity);
+			for(auto& callback : m_DeletedCallbacks) {
+				callback(entity);
+			}
 		}
 	}
 }

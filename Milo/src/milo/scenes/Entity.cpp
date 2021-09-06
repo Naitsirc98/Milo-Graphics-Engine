@@ -42,6 +42,10 @@ namespace milo {
 		return !(rhs == *this);
 	}
 
+	Entity::operator bool() const {
+		return id() != NULL_ENTITY;
+	}
+
 	const String& Entity::name() const {
 		return getComponent<EntityBasicInfo>().name();
 	}
@@ -77,7 +81,6 @@ namespace milo {
 	}
 
 	void Entity::addChild(EntityId childId) {
-		if(isAncestorOf(childId) || isDescendantOf(childId)) return;
 		EntityBasicInfo& relationships = getComponent<EntityBasicInfo>();
 		relationships.m_Children.push_back(childId);
 		Entity childEntity = {childId, m_Scene};
@@ -93,10 +96,16 @@ namespace milo {
 		if(!isChild(childId)) return;
 		EntityBasicInfo& relationships = getComponent<EntityBasicInfo>();
 		relationships.m_Children.erase(std::find(relationships.m_Children.begin(), relationships.m_Children.end(), childId));
+		Entity child = {childId, m_Scene};
+		child.getComponent<EntityBasicInfo>().m_ParentId = NULL_ENTITY;
 	}
 
 	void Entity::removeAllChildren() {
 		EntityBasicInfo& relationships = getComponent<EntityBasicInfo>();
+		for(auto childId : relationships.m_Children) {
+			Entity child = {childId, m_Scene};
+			child.getComponent<EntityBasicInfo>().m_ParentId = NULL_ENTITY;
+		}
 		relationships.m_Children.clear();
 	}
 
