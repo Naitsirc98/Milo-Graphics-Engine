@@ -13,9 +13,6 @@
 [submodule "Milo/dependencies/stb"]
 	path = Milo/dependencies/stb
 	url = https://github.com/nothings/stb.git
-[submodule "Milo/dependencies/json"]
-	path = Milo/dependencies/json
-	url = https://github.com/nlohmann/json.git
 [submodule "Milo/dependencies/shaderc"]
 	path = Milo/dependencies/shaderc
 	url = https://github.com/google/shaderc.git
