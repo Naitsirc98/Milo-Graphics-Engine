@@ -102,6 +102,14 @@ static VkImageView              g_FontView = VK_NULL_HANDLE;
 static VkDeviceMemory           g_UploadBufferMemory = VK_NULL_HANDLE;
 static VkBuffer                 g_UploadBuffer = VK_NULL_HANDLE;
 
+struct ImageDescriptor {
+	VkDescriptorImageInfo image;
+	VkDescriptorSet set;
+};
+
+static std::unordered_map<uint32_t, ImageDescriptor> s_ImageDescriptors;
+static std::queue<VkDescriptorSet> freeDescriptorSets;
+
 // Forward Declarations
 bool ImGui_ImplVulkan_CreateDeviceObjects();
 void ImGui_ImplVulkan_DestroyDeviceObjects();
@@ -437,14 +445,17 @@ void ImGui_ImplVulkan_RenderDrawData(ImDrawData* draw_data, VkCommandBuffer comm
 					VkRect2D scissor;
 					scissor.offset.x = (int32_t)(clip_rect.x);
 					scissor.offset.y = (int32_t)(clip_rect.y);
-					// NOTE(Yan): sometimes x > z which is invalid, hence the abs
 					scissor.extent.width = (uint32_t)(fabs(clip_rect.z - clip_rect.x));
 					scissor.extent.height = (uint32_t)(fabs(clip_rect.w - clip_rect.y));
 					vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
+					auto& descriptors = s_ImageDescriptors;
+
+					VkDescriptorSet desc_set = (VkDescriptorSet)pcmd->TextureId;
+
 					// Bind descriptorset with font or user texture
-					VkDescriptorSet desc_set[1] = { (VkDescriptorSet)pcmd->TextureId };
-					vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_PipelineLayout, 0, 1, desc_set, 0, NULL);
+					vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_PipelineLayout,
+											0, 1, &desc_set, 0, NULL);
 
 					// Draw
 					vkCmdDrawIndexed(command_buffer, pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset, 0);
@@ -512,7 +523,8 @@ bool ImGui_ImplVulkan_CreateFontsTexture(VkCommandBuffer command_buffer)
 		check_vk_result(err);
 	}
 
-	VkDescriptorSet font_descriptor_set = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture_Internal(g_FontSampler, g_FontView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	VkDescriptorSet font_descriptor_set = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture_Internal(g_FontSampler, g_FontView,
+																								VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Create the Upload Buffer:
 	{
@@ -737,6 +749,7 @@ bool ImGui_ImplVulkan_CreateDeviceObjects()
 	color_attachment[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
 	VkPipelineDepthStencilStateCreateInfo depth_info = {};
+	depth_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depth_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 
 	VkPipelineColorBlendStateCreateInfo blend_info = {};
@@ -1244,14 +1257,6 @@ void ImGui_ImplVulkanH_DestroyWindowRenderBuffers(VkDevice device, ImGui_ImplVul
 	buffers->Count = 0;
 }
 
-struct ImageDescriptor {
-	VkDescriptorImageInfo image;
-	VkDescriptorSet set;
-};
-
-static std::unordered_map<uint32_t, ImageDescriptor> s_ImageDescriptors;
-static std::queue<VkDescriptorSet> freeDescriptorSets;
-
 inline void ImGui_ImplVulkan_UpdateTexture(const ImageDescriptor& desc)
 {
 	VkWriteDescriptorSet writeDescriptorSet{};
@@ -1267,6 +1272,8 @@ inline void ImGui_ImplVulkan_UpdateTexture(const ImageDescriptor& desc)
 
 ImTextureID ImGui_ImplVulkan_AddTexture(uint32_t textureId, VkSampler sampler, VkImageView image_view, VkImageLayout image_layout)
 {
+	if(textureId == NULL || sampler == VK_NULL_HANDLE || image_view == VK_NULL_HANDLE) return (ImTextureID)NULL;
+
 	ImGui_ImplVulkan_InitInfo* v = &g_VulkanInitInfo;
 
 	if(s_ImageDescriptors.find(textureId) != s_ImageDescriptors.end()) {
@@ -1283,7 +1290,7 @@ ImTextureID ImGui_ImplVulkan_AddTexture(uint32_t textureId, VkSampler sampler, V
 
 		ImGui_ImplVulkan_UpdateTexture(desc);
 
-		return (ImTextureID) desc.set;
+		return (ImTextureID)desc.set;
 	}
 
 	VkDescriptorSetAllocateInfo alloc_info = {};
@@ -1292,7 +1299,7 @@ ImTextureID ImGui_ImplVulkan_AddTexture(uint32_t textureId, VkSampler sampler, V
 	alloc_info.pSetLayouts = &g_DescriptorSetLayout;
 	alloc_info.descriptorPool = v->DescriptorPool;
 
-	VkDescriptorSet descriptor_set;
+	VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
 
 	if(!freeDescriptorSets.empty()) {
 		descriptor_set = freeDescriptorSets.front();
@@ -1315,21 +1322,19 @@ ImTextureID ImGui_ImplVulkan_AddTexture(uint32_t textureId, VkSampler sampler, V
 	return (ImTextureID)descriptor_set;
 }
 
+#if _WIN32 || _WIN64
+#if _WIN64
+#define ENVIRONMENT64
+#else
+#define ENVIRONMENT32
+#endif
+#endif
+
+static uint32_t g_InternalTextureId = 777000000;
+
 ImTextureID ImGui_ImplVulkan_AddTexture_Internal(VkSampler sampler, VkImageView image_view, VkImageLayout image_layout)
 {
-	ImGui_ImplVulkan_InitInfo* v = &g_VulkanInitInfo;
-
-	VkDescriptorSetAllocateInfo alloc_info = {};
-	alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	alloc_info.descriptorPool = v->DescriptorPool;
-	alloc_info.descriptorSetCount = 1;
-	alloc_info.pSetLayouts = &g_DescriptorSetLayout;
-	VkDescriptorSet descriptor_set;
-	VkResult err = vkAllocateDescriptorSets(v->Device, &alloc_info, &descriptor_set);
-	check_vk_result(err);
-
-	ImGui_ImplVulkan_UpdateTextureInfo(descriptor_set, sampler, image_view, image_layout);
-	return (ImTextureID)descriptor_set;
+	return ImGui_ImplVulkan_AddTexture(g_InternalTextureId++, sampler, image_view, image_layout);
 }
 
 ImTextureID ImGui_ImplVulkan_UpdateTextureInfo(VkDescriptorSet descriptorSet, VkSampler sampler, VkImageView image_view, VkImageLayout image_layout)

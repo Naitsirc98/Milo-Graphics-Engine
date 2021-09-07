@@ -45,8 +45,6 @@ namespace milo {
 			const EntityBasicInfo& info = entities.get<EntityBasicInfo>(entityId);
 			if(info.parentId() == NULL_ENTITY) {
 				drawEntityNode(entity, info);
-			} else {
-				Log::info("");
 			}
 		}
 

@@ -38,12 +38,12 @@ namespace milo {
 		m_Size = size;
 
 		for(auto& colorAttachment : m_ColorAttachments) {
-			auto texture = dynamic_cast<VulkanTexture*>(colorAttachment.get());
+			auto texture = dynamic_cast<VulkanTexture*>(colorAttachment);
 			texture->resize(size);
 		}
 
 		for(auto& depthAttachment : m_DepthAttachments) {
-			auto texture = dynamic_cast<VulkanTexture*>(depthAttachment.get());
+			auto texture = dynamic_cast<VulkanTexture*>(depthAttachment);
 			texture->resize(size);
 		}
 
@@ -61,12 +61,12 @@ namespace milo {
 		attachments.reserve(colorAttachments().size() + depthAttachments().size());
 
 		for(const auto& colorAttachment : colorAttachments()) {
-			const auto texture = dynamic_cast<const VulkanTexture2D*>(colorAttachment.get());
+			const auto texture = dynamic_cast<const VulkanTexture2D*>(colorAttachment);
 			attachments.push_back(texture->vkImageView());
 		}
 
 		for(const auto& depthAttachment : depthAttachments()) {
-			const auto texture = dynamic_cast<const VulkanTexture2D*>(depthAttachment.get());
+			const auto texture = dynamic_cast<const VulkanTexture2D*>(depthAttachment);
 			attachments.push_back(texture->vkImageView());
 		}
 

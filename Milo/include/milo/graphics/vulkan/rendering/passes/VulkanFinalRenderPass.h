@@ -17,8 +17,6 @@ namespace milo {
 
 		VkRenderPass m_RenderPass{VK_NULL_HANDLE};
 
-		Array<VkFramebuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_Framebuffers{};
-
 		VkDescriptorSetLayout m_TextureDescriptorSetLayout{VK_NULL_HANDLE};
 		VulkanDescriptorPool* m_TextureDescriptorPool{nullptr};
 
@@ -32,12 +30,10 @@ namespace milo {
 	public:
 		VulkanFinalRenderPass();
 		~VulkanFinalRenderPass();
-		void compile(FrameGraphResourcePool* resourcePool) override;
+		void compile(Scene* scene, FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:
 		void createRenderPass();
-
-		void createFramebuffers();
 
 		void createTextureDescriptorLayout();
 		void createTextureDescriptorPool();

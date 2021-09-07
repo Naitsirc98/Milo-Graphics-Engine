@@ -8,7 +8,7 @@ namespace milo {
 
 		for(PixelFormat format : createInfo.colorAttachments) {
 
-			Ref<Texture2D> colorAttachment = Ref<Texture2D>(Texture2D::create(TEXTURE_USAGE_COLOR_ATTACHMENT_BIT));
+			auto* colorAttachment = Texture2D::create(TEXTURE_USAGE_COLOR_ATTACHMENT_BIT);
 
 			Texture2D::AllocInfo allocInfo{};
 			allocInfo.format = format;
@@ -20,7 +20,7 @@ namespace milo {
 
 		for(PixelFormat format : createInfo.depthAttachments) {
 
-			Ref<Texture2D> depthAttachment = Ref<Texture2D>(Texture2D::create(TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT));
+			auto* depthAttachment = Texture2D::create(TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 			Texture2D::AllocInfo allocInfo{};
 			allocInfo.format = format;
@@ -31,11 +31,11 @@ namespace milo {
 		}
 	}
 
-	const ArrayList<Ref<Texture2D>>& Framebuffer::colorAttachments() const {
+	const ArrayList<Texture2D*>& Framebuffer::colorAttachments() const {
 		return m_ColorAttachments;
 	}
 
-	const ArrayList<Ref<Texture2D>>& Framebuffer::depthAttachments() const {
+	const ArrayList<Texture2D*>& Framebuffer::depthAttachments() const {
 		return m_DepthAttachments;
 	}
 

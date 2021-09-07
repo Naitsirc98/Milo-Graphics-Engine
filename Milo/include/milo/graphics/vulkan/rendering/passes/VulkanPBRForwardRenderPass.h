@@ -40,7 +40,6 @@ namespace milo {
 		VulkanDevice* m_Device = nullptr;
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
-		Array<VkFramebuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_Framebuffers{};
 
 		VulkanUniformBuffer<CameraUniformBuffer>* m_CameraUniformBuffer = nullptr;
 		VulkanUniformBuffer<LightsUniformBuffer>* m_LightsUniformBuffer = nullptr;
@@ -59,7 +58,7 @@ namespace milo {
 		VulkanPBRForwardRenderPass();
 		~VulkanPBRForwardRenderPass() override;
 	public:
-		void compile(FrameGraphResourcePool* resourcePool) override;
+		void compile(Scene* scene, FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:
 		void createRenderPass();
@@ -80,8 +79,6 @@ namespace milo {
 		void createSemaphores();
 
 		void buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
-
-		void destroyTransientResources();
 
 		void beginCommandBuffer(VkCommandBuffer commandBuffer) const;
 		void beginRenderPass(uint32_t imageIndex, VkCommandBuffer commandBuffer);

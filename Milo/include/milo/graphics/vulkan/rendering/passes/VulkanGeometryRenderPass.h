@@ -22,12 +22,9 @@ namespace milo {
 			Matrix4 modelMatrix;
 		};
 	private:
-		inline static const uint32_t MAX_MATERIAL_TEXTURE_COUNT = 1;
-	private:
 		VulkanDevice* m_Device = nullptr;
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
-		Array<VkFramebuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_Framebuffers{};
 
 		VulkanUniformBuffer<CameraData>* m_CameraUniformBuffer = nullptr;
 		VkDescriptorSetLayout m_CameraDescriptorSetLayout = VK_NULL_HANDLE;
@@ -43,11 +40,10 @@ namespace milo {
 	public:
 		VulkanGeometryRenderPass();
 		~VulkanGeometryRenderPass();
-		void compile(FrameGraphResourcePool* resourcePool) override;
+		void compile(Scene* scene, FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:
 		void createRenderPass();
-		void createFramebuffers(FrameGraphResourcePool* resourcePool);
 
 		void createCameraUniformBuffer();
 		void createCameraDescriptorLayout();
@@ -63,10 +59,7 @@ namespace milo {
 
 		void buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
 
-		void destroyTransientResources();
-
-		void
-		renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene, const Entity& cameraEntity);
+		void renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene, const Entity& cameraEntity);
 	};
 
 }

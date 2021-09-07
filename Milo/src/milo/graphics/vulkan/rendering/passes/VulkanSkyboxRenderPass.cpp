@@ -4,6 +4,7 @@
 #include "milo/scenes/SceneManager.h"
 #include "milo/scenes/Entity.h"
 #include "milo/graphics/vulkan/buffers/VulkanMeshBuffers.h"
+#include "milo/graphics/rendering/WorldRenderer.h"
 
 namespace milo {
 
@@ -20,7 +21,6 @@ namespace milo {
 
 		createSemaphores();
 
-		m_Framebuffers.fill(VK_NULL_HANDLE);
 		m_CommandBuffers.fill(VK_NULL_HANDLE);
 	}
 
@@ -43,11 +43,9 @@ namespace milo {
 		}
 	}
 
-	void VulkanSkyboxRenderPass::compile(FrameGraphResourcePool* resourcePool) {
+	void VulkanSkyboxRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
 
 		destroyTransientResources();
-
-		createFramebuffers(resourcePool);
 
 		createGraphicsPipeline();
 
@@ -149,30 +147,6 @@ namespace milo {
 		renderPassInfo.subpassCount = 1;
 
 		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassInfo, nullptr, &m_RenderPass));
-	}
-
-	void VulkanSkyboxRenderPass::createFramebuffers(FrameGraphResourcePool* resourcePool) {
-
-		Size size = Window::get()->size();
-
-
-		VulkanFrameGraphResourcePool* pool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
-
-		for(uint32_t i = 0;i < m_Framebuffers.size();++i) {
-
-
-			const VulkanTexture2D* colorTexture = dynamic_cast<const VulkanTexture2D*>(pool->getRenderTarget(i).colorAttachment);
-			const VulkanTexture2D* depthTexture = dynamic_cast<const VulkanTexture2D*>(pool->getRenderTarget(i).depthAttachment);
-
-			VkImageView attachments[2] = { colorTexture->vkImageView(), depthTexture->vkImageView() };
-
-			VkFramebufferCreateInfo createInfo = mvk::FramebufferCreateInfo::create(m_RenderPass,
-																					colorTexture->width(), colorTexture->height());
-			createInfo.pAttachments = attachments;
-			createInfo.attachmentCount = 2;
-
-			VK_CALL(vkCreateFramebuffer(m_Device->logical(), &createInfo, nullptr, &m_Framebuffers[i]));
-		}
 	}
 
 	void VulkanSkyboxRenderPass::createDescriptorSetLayout() {
@@ -299,7 +273,7 @@ namespace milo {
 				VkRenderPassBeginInfo renderPassInfo = {};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 				renderPassInfo.renderPass = m_RenderPass;
-				renderPassInfo.framebuffer = m_Framebuffers[imageIndex];
+				renderPassInfo.framebuffer = dynamic_cast<const VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer()).vkFramebuffer();
 				renderPassInfo.renderArea.offset = {0, 0};
 				renderPassInfo.renderArea.extent.width = fabs(sceneViewport.width);
 				renderPassInfo.renderArea.extent.height = fabs(sceneViewport.height);
@@ -366,13 +340,6 @@ namespace milo {
 	void VulkanSkyboxRenderPass::destroyTransientResources() {
 
 		m_Device->awaitTermination();
-
-		if(m_Framebuffers[0] != VK_NULL_HANDLE) {
-			for(uint32_t i = 0; i < m_Framebuffers.size(); ++i) {
-				VK_CALLV(vkDestroyFramebuffer(m_Device->logical(), m_Framebuffers[i], nullptr));
-				m_Framebuffers[i] = VK_NULL_HANDLE;
-			}
-		}
 
 		if(m_CommandBuffers[0] != VK_NULL_HANDLE) {
 			m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());

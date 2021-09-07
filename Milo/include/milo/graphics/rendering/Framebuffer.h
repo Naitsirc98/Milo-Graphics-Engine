@@ -13,15 +13,15 @@ namespace milo {
 			const void* apiInfo{nullptr};
 		};
 	protected:
-		ArrayList<Ref<Texture2D>> m_ColorAttachments;
-		ArrayList<Ref<Texture2D>> m_DepthAttachments;
+		ArrayList<Texture2D*> m_ColorAttachments;
+		ArrayList<Texture2D*> m_DepthAttachments;
 		Size m_Size{};
-	protected:
+	public:
 		Framebuffer(const CreateInfo& createInfo);
 		virtual ~Framebuffer() = default;
 	public:
-		const ArrayList<Ref<Texture2D>>& colorAttachments() const;
-		const ArrayList<Ref<Texture2D>>& depthAttachments() const;
+		const ArrayList<Texture2D*>& colorAttachments() const;
+		const ArrayList<Texture2D*>& depthAttachments() const;
 		const Size& size() const;
 		virtual void resize(const Size& size) = 0;
 	};

@@ -54,9 +54,7 @@ namespace milo {
 			}
 		}
 
-		void assignResources();
 		void deleteUnusedRenderPasses();
-		void freeUnusedResources();
 	};
 
 }

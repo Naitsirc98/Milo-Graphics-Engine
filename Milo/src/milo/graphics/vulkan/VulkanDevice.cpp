@@ -39,13 +39,15 @@ namespace milo {
 	}
 
 	VulkanDevice::~VulkanDevice() {
+
 		awaitTermination();
 
 		DELETE_PTR(m_GraphicsCommandPool);
 		DELETE_PTR(m_ComputeCommandPool);
 		DELETE_PTR(m_TransferCommandPool);
 
-		vkDestroyDevice(m_Logical, nullptr);
+		awaitTermination();
+		//VK_CALLV(vkDestroyDevice(m_Logical, nullptr));
 		m_Logical = VK_NULL_HANDLE;
 		m_Physical = VK_NULL_HANDLE;
 	}

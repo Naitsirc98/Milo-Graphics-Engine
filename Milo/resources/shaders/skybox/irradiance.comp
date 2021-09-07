@@ -78,7 +78,7 @@ void main(void) {
     computeBasisVectors(N, S, T);
 
     uint samples = 64 * u_PushConstants.samples;
-    samples = 64 * 1024;
+    //samples = 64 * 1024;
 
     // Monte Carlo integration of hemispherical irradiance.
     // As a small optimization this also includes Lambertian BRDF assuming perfectly white surface (albedo of 1.0)

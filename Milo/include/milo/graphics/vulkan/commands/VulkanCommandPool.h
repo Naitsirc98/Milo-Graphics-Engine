@@ -29,6 +29,7 @@ namespace milo {
 		VulkanQueue* queue() const;
 		void allocate(VkCommandBufferLevel level, uint32_t count, VkCommandBuffer* commandBuffers);
 		void free(uint32_t count, VkCommandBuffer* commandBuffers);
+		void execute(Function<void, VkCommandBuffer> command);
 		void execute(const VulkanTask& task);
 	};
 }

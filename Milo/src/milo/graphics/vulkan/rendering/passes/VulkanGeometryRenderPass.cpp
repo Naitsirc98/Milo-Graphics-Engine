@@ -6,6 +6,7 @@
 #include "milo/graphics/vulkan/materials/VulkanMaterialResourcePool.h"
 #include "milo/scenes/Entity.h"
 #include "milo/assets/AssetManager.h"
+#include "milo/graphics/rendering/WorldRenderer.h"
 
 namespace milo {
 
@@ -29,8 +30,6 @@ namespace milo {
 
 	VulkanGeometryRenderPass::~VulkanGeometryRenderPass() {
 
-		destroyTransientResources();
-
 		VkDevice device = m_Device->logical();
 
 		VK_CALLV(vkDestroyRenderPass(device, m_RenderPass, nullptr));
@@ -48,20 +47,7 @@ namespace milo {
 		}
 	}
 
-	void VulkanGeometryRenderPass::destroyTransientResources() {
-
-		m_Device->awaitTermination();
-
-		for(uint32_t i = 0; i < m_Framebuffers.size(); ++i) {
-			VK_CALLV(vkDestroyFramebuffer(m_Device->logical(), m_Framebuffers[i], nullptr));
-		}
-	}
-
-	void VulkanGeometryRenderPass::compile(FrameGraphResourcePool* resourcePool) {
-
-		destroyTransientResources();
-
-		createFramebuffers(resourcePool);
+	void VulkanGeometryRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
 	}
 
 	void VulkanGeometryRenderPass::execute(Scene* scene) {
@@ -103,7 +89,7 @@ namespace milo {
 			VkRenderPassBeginInfo renderPassInfo = {};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			renderPassInfo.renderPass = m_RenderPass;
-			renderPassInfo.framebuffer = m_Framebuffers[imageIndex];
+			renderPassInfo.framebuffer = dynamic_cast<const VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer()).vkFramebuffer();
 			renderPassInfo.renderArea.offset = {0, 0};
 			renderPassInfo.renderArea.extent.width = sceneViewport.width;
 			renderPassInfo.renderArea.extent.height = sceneViewport.height;
@@ -147,6 +133,7 @@ namespace milo {
 
 	void VulkanGeometryRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene,
 												   const Entity& cameraEntity) {
+
 		Camera& camera = cameraEntity.getComponent<Camera>();
 
 		CameraData cameraData{};
@@ -185,7 +172,7 @@ namespace milo {
 
 			if(lastMesh != meshView.mesh) {
 
-				VulkanMeshBuffers* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(meshView.mesh->buffers());
+				auto* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(meshView.mesh->buffers());
 
 				VkBuffer vertexBuffers[] = {meshBuffers->vertexBuffer()->vkBuffer()};
 				VkDeviceSize offsets[] = {0};
@@ -250,28 +237,6 @@ namespace milo {
 		renderPassInfo.subpassCount = 1;
 
 		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassInfo, nullptr, &m_RenderPass));
-	}
-
-	void VulkanGeometryRenderPass::createFramebuffers(FrameGraphResourcePool* resourcePool) {
-
-		VulkanFrameGraphResourcePool* pool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
-
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-
-			const RenderTarget& renderTarget = pool->getRenderTarget(i);
-
-			const VulkanTexture2D* colorTexture = dynamic_cast<const VulkanTexture2D*>(renderTarget.colorAttachment);
-			const VulkanTexture2D* depthTexture = dynamic_cast<const VulkanTexture2D*>(renderTarget.depthAttachment);
-
-			VkImageView attachments[2] = { colorTexture->vkImageView(), depthTexture->vkImageView() };
-
-			VkFramebufferCreateInfo createInfo = mvk::FramebufferCreateInfo::create(m_RenderPass,
-																					colorTexture->width(), colorTexture->height());
-			createInfo.pAttachments = attachments;
-			createInfo.attachmentCount = 2;
-
-			VK_CALL(vkCreateFramebuffer(m_Device->logical(), &createInfo, nullptr, &m_Framebuffers[i]));
-		}
 	}
 
 	void VulkanGeometryRenderPass::createCameraUniformBuffer() {

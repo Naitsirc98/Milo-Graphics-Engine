@@ -27,26 +27,20 @@ namespace milo {
 		VulkanCubemap* prefilterMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 		//VulkanTexture2D* brdfMap = VulkanTexture2D::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 
-		VulkanTask task{};
-		task.asynchronous = false;
-		task.run = [&](VkCommandBuffer commandBuffer) {
+		VulkanSkyboxPassExecuteInfo execInfo{};
+		execInfo.equirectangularTexture = equirectangularTexture;
+		execInfo.environmentMap = environmentMap;
+		execInfo.irradianceMap = irradianceMap;
+		execInfo.prefilterMap = prefilterMap;
+		//execInfo.brdfMap = brdfMap;
+		execInfo.loadInfo = &loadInfo;
 
-			VulkanSkyboxPassExecuteInfo execInfo{};
-			execInfo.equirectangularTexture = equirectangularTexture;
-			execInfo.environmentMap = environmentMap;
-			execInfo.irradianceMap = irradianceMap;
-			execInfo.prefilterMap = prefilterMap;
-			//execInfo.brdfMap = brdfMap;
-			execInfo.loadInfo = &loadInfo;
+		m_Device->computeCommandPool()->execute([&](VkCommandBuffer commandBuffer) {
 			execInfo.commandBuffer = commandBuffer;
-
 			m_EnvironmentPass->execute(execInfo);
 			m_IrradiancePass->execute(execInfo);
 			m_PrefilterPass->execute(execInfo);
-			//m_BRDFPass->execute(execInfo);
-		};
-
-		m_Device->computeCommandPool()->execute(task);
+		});
 
 		Skybox* skybox = new Skybox(name, imageFile);
 		skybox->m_EnvironmentMap = environmentMap;

@@ -3,24 +3,6 @@
 
 namespace milo {
 
-	RenderPass::InputDescription FinalRenderPass::inputDescription() const {
-
-		Size size = Window::get()->size();
-
-		InputDescription input{};
-		input.textures[0].width = size.width;
-		input.textures[0].height = size.height;
-		input.textures[0].format = PixelFormat::RGBA32F;
-		input.textures[0].usageFlags = VK_IMAGE_USAGE_SAMPLED_BIT;
-		input.textureCount = 1;
-
-		return input;
-	}
-
-	RenderPass::OutputDescription FinalRenderPass::outputDescription() const {
-		return OutputDescription();
-	}
-
 	RenderPassId FinalRenderPass::getId() const {
 		return id();
 	}
@@ -40,5 +22,9 @@ namespace milo {
 	size_t FinalRenderPass::id() {
 		DEFINE_RENDER_PASS_ID(FinalRenderPass);
 		return id;
+	}
+
+	bool FinalRenderPass::shouldCompile(Scene* scene) const {
+		return false;
 	}
 }

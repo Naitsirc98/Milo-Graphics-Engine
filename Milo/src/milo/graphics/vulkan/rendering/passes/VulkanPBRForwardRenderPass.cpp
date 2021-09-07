@@ -6,6 +6,7 @@
 #include "milo/graphics/vulkan/materials/VulkanMaterialResourcePool.h"
 #include "milo/scenes/Entity.h"
 #include "milo/graphics/vulkan/textures/VulkanCubemap.h"
+#include "milo/graphics/rendering/WorldRenderer.h"
 
 namespace milo {
 
@@ -30,7 +31,6 @@ namespace milo {
 
 	VulkanPBRForwardRenderPass::~VulkanPBRForwardRenderPass() {
 
-		destroyTransientResources();
 
 		VkDevice device = m_Device->logical();
 
@@ -51,20 +51,7 @@ namespace milo {
 		}
 	}
 
-	void VulkanPBRForwardRenderPass::destroyTransientResources() {
-
-		m_Device->awaitTermination();
-
-		for(uint32_t i = 0; i < m_Framebuffers.size(); ++i) {
-			VK_CALLV(vkDestroyFramebuffer(m_Device->logical(), m_Framebuffers[i], nullptr));
-		}
-	}
-
-	void VulkanPBRForwardRenderPass::compile(FrameGraphResourcePool* resourcePool) {
-
-		destroyTransientResources();
-
-		createFramebuffers(resourcePool);
+	void VulkanPBRForwardRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
 	}
 
 	void VulkanPBRForwardRenderPass::execute(Scene* scene) {
@@ -270,7 +257,7 @@ namespace milo {
 		VkRenderPassBeginInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = m_RenderPass;
-		renderPassInfo.framebuffer = m_Framebuffers[imageIndex];
+		renderPassInfo.framebuffer = dynamic_cast<const VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer()).vkFramebuffer();
 		renderPassInfo.renderArea.offset = {0, 0};
 		renderPassInfo.renderArea.extent = m_Device->context()->swapchain()->extent();
 
@@ -331,31 +318,6 @@ namespace milo {
 		renderPassInfo.subpassCount = 1;
 
 		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassInfo, nullptr, &m_RenderPass));
-	}
-
-	void VulkanPBRForwardRenderPass::createFramebuffers(FrameGraphResourcePool* resourcePool) {
-
-		Size size = Window::get()->size();
-
-		VkFramebufferCreateInfo createInfo = mvk::FramebufferCreateInfo::create(m_RenderPass, size.width, size.height);
-
-		VulkanFrameGraphResourcePool* pool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
-
-		auto& colorTextures = pool->getTextures2D(m_Output.textures[0].handle);
-		auto& depthTextures = pool->getTextures2D(m_Output.textures[1].handle);
-
-		for(uint32_t i = 0;i < colorTextures.size();++i) {
-
-			const VulkanTexture2D* colorTexture = dynamic_cast<const VulkanTexture2D*>(colorTextures[i].texture);
-			const VulkanTexture2D* depthTexture = dynamic_cast<const VulkanTexture2D*>(depthTextures[i].texture);
-
-			VkImageView attachments[2] = { colorTexture->vkImageView(), depthTexture->vkImageView() };
-
-			createInfo.pAttachments = attachments;
-			createInfo.attachmentCount = 2;
-
-			VK_CALL(vkCreateFramebuffer(m_Device->logical(), &createInfo, nullptr, &m_Framebuffers[i]));
-		}
 	}
 
 	void VulkanPBRForwardRenderPass::createCameraUniformBuffer() {

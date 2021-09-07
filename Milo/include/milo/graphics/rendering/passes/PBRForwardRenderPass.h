@@ -11,10 +11,11 @@ namespace milo {
 	public:
 		PBRForwardRenderPass() = default;
 		virtual ~PBRForwardRenderPass() override = default;
-		InputDescription inputDescription() const override;
-		OutputDescription outputDescription() const override;
 		RenderPassId getId() const override;
 		const String& name() const override;
+
+		bool shouldCompile(Scene *scene) const override;
+
 	public:
 		static PBRForwardRenderPass* create();
 		static size_t id();

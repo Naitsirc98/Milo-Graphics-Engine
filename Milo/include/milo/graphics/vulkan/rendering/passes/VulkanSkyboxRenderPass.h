@@ -24,8 +24,6 @@ namespace milo {
 
 		VkRenderPass m_RenderPass{VK_NULL_HANDLE};
 
-		Array<VkFramebuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_Framebuffers{};
-
 		VkDescriptorSetLayout m_DescriptorSetLayout{VK_NULL_HANDLE};
 		VulkanDescriptorPool* m_DescriptorPool{nullptr};
 		VulkanUniformBuffer<UniformBuffer>* m_UniformBuffer{nullptr};
@@ -40,12 +38,11 @@ namespace milo {
 		VulkanSkyboxRenderPass();
 		~VulkanSkyboxRenderPass() override;
 	public:
-		void compile(FrameGraphResourcePool* resourcePool) override;
+		void compile(Scene* scene, FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:
 		void updateDescriptorSets(Skybox* skybox, uint32_t imageIndex, VkDescriptorSet descriptorSet);
 		void createRenderPass();
-		void createFramebuffers(FrameGraphResourcePool* resourcePool);
 		void createDescriptorSetLayout();
 		void createDescriptorPool();
 		void createUniformBuffer();

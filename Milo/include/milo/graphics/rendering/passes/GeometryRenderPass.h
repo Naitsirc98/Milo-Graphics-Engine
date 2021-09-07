@@ -9,10 +9,9 @@ namespace milo {
 	public:
 		GeometryRenderPass() = default;
 		virtual ~GeometryRenderPass() override = default;
-		InputDescription inputDescription() const override;
-		OutputDescription outputDescription() const override;
 		RenderPassId getId() const override;
 		const String& name() const override;
+		virtual bool shouldCompile(Scene* scene) const override;
 	public:
 		static GeometryRenderPass* create();
 		static size_t id();

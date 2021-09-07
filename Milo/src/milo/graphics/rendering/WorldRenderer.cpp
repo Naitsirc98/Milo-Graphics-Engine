@@ -27,8 +27,8 @@ namespace milo {
 		s_Instance->render(SceneManager::activeScene());
 	}
 
-	const RenderTarget& WorldRenderer::getRenderTarget() const {
-		return m_ResourcePool->getRenderTarget();
+	const Framebuffer& WorldRenderer::getFramebuffer() const {
+		return *m_ResourcePool->getDefaultFramebuffer();
 	}
 
 	WorldRenderer* WorldRenderer::s_Instance = nullptr;

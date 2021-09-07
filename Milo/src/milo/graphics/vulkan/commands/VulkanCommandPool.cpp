@@ -43,6 +43,12 @@ namespace milo {
 		VK_CALLV(vkFreeCommandBuffers(m_Queue->device()->logical(), m_VkCommandPool, count, commandBuffers));
 	}
 
+	void VulkanCommandPool::execute(Function<void, VkCommandBuffer> command) {
+		VulkanTask task{};
+		task.run = std::move(command);
+		execute(task);
+	}
+
 	void VulkanCommandPool::execute(const VulkanTask& task) {
 
 		VkCommandBuffer commandBuffer;
@@ -94,8 +100,6 @@ namespace milo {
 			if(shouldDeleteFence) {
 				VK_CALLV(vkDestroyFence(m_Queue->device()->logical(), fence, nullptr));
 			}
-
-			//VK_CALL(vkQueueWaitIdle(m_Queue->vkQueue));
 		}
 
 		free(1, &commandBuffer);

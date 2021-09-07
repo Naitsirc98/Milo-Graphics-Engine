@@ -4,6 +4,7 @@
 #include "milo/assets/AssetManager.h"
 #include "milo/graphics/vulkan/buffers/VulkanMeshBuffers.h"
 #include "milo/scenes/SceneManager.h"
+#include "milo/graphics/rendering/WorldRenderer.h"
 
 namespace milo {
 
@@ -29,11 +30,9 @@ namespace milo {
 		VK_CALLV(vkDestroyRenderPass(m_Device->logical(), m_RenderPass, nullptr));
 	}
 
-	void VulkanFinalRenderPass::compile(FrameGraphResourcePool* resourcePool) {
+	void VulkanFinalRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
 
 		destroyTransientResources();
-
-		createFramebuffers();
 
 		createTextureDescriptorLayout();
 		createTextureDescriptorPool();
@@ -112,28 +111,6 @@ namespace milo {
 		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassInfo, nullptr, &m_RenderPass));
 	}
 
-	void VulkanFinalRenderPass::createFramebuffers() {
-
-		VulkanSwapchain* swapchain = m_Device->context()->swapchain();
-
-		VkFramebufferCreateInfo framebufferInfo{};
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.renderPass = m_RenderPass;
-		framebufferInfo.layers = 1;
-		framebufferInfo.width = swapchain->extent().width;
-		framebufferInfo.height = swapchain->extent().height;
-
-		const VulkanSwapchainImage* swapchainImages = swapchain->images();
-
-		for(uint32_t i = 0;i < m_Framebuffers.size();++i) {
-			const VulkanSwapchainImage& colorTexture = swapchainImages[i];
-			VkImageView attachments[] = {colorTexture.vkImageView};
-			framebufferInfo.pAttachments = attachments;
-			VK_CALL(vkCreateFramebuffer(m_Device->logical(), &framebufferInfo, nullptr, &m_Framebuffers[i]));
-		}
-	}
-
 	void VulkanFinalRenderPass::createTextureDescriptorLayout() {
 
 		VkDescriptorSetLayoutBinding binding{};
@@ -169,13 +146,11 @@ namespace milo {
 
 		auto resPool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
 
-		//auto& textures = resPool->getTextures2D(m_Input.textures[0].handle);
-
 		VkSampler sampler = VulkanContext::get()->samplerMap()->getDefaultSampler();
 
 		m_TextureDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
 
-			VulkanTexture2D* texture = dynamic_cast<VulkanTexture2D*>(resPool->getRenderTarget(index).colorAttachment);
+			auto texture = dynamic_cast<VulkanTexture2D*>(resourcePool->getDefaultFramebuffer(index)->colorAttachments()[0]);
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -245,13 +220,13 @@ namespace milo {
 				VkRenderPassBeginInfo renderPassInfo = {};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 				renderPassInfo.renderPass = m_RenderPass;
-				renderPassInfo.framebuffer = m_Framebuffers[i];
+				renderPassInfo.framebuffer = dynamic_cast<const VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer()).vkFramebuffer();
 				renderPassInfo.renderArea.offset = {0, 0};
 				renderPassInfo.renderArea.extent = swapchain->extent();
 				renderPassInfo.pClearValues = &clearValues;
 				renderPassInfo.clearValueCount = 1;
 
-				VulkanTexture2D* texture = dynamic_cast<VulkanTexture2D*>(pool->getRenderTarget(i).colorAttachment);
+				auto texture = dynamic_cast<VulkanTexture2D*>(pool->getDefaultFramebuffer(i)->colorAttachments()[0]);
 
 				texture->setLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -296,10 +271,6 @@ namespace milo {
 		m_Device->awaitTermination();
 
 		VkDevice device = m_Device->logical();
-
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALLV(vkDestroyFramebuffer(device, m_Framebuffers[i], nullptr));
-		}
 
 		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_TextureDescriptorSetLayout, nullptr));
 		DELETE_PTR(m_TextureDescriptorPool);

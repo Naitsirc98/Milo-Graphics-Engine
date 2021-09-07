@@ -24,7 +24,7 @@ namespace milo {
 		s_SceneHierarchyPanel.render();
 
 		ImGui::Begin("SceneViewportPanel", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-		auto texture = WorldRenderer::get().getRenderTarget().colorAttachment;
+		auto texture = WorldRenderer::get().getFramebuffer().colorAttachments()[0];
 		UI::image(*texture, texture->size());
 		ImGui::End();
 

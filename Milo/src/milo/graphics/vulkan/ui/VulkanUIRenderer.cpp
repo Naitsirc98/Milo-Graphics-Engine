@@ -222,7 +222,7 @@ namespace milo {
 
 		VkDescriptorPool descriptorPool;
 
-		uint32_t numDescriptors = 1024;
+		uint32_t numDescriptors = 256;
 
 		// Create Descriptor Pool
 		ArrayList<VkDescriptorPoolSize> poolSizes = {
@@ -265,12 +265,9 @@ namespace milo {
 		ImGui_ImplVulkan_Init(&imguiInitInfo, m_RenderPass);
 
 		// Upload Fonts
-		VulkanTask task;
-		task.asynchronous = false;
-		task.run = [&](VkCommandBuffer commandBuffer) {
+		device->graphicsCommandPool()->execute([&](VkCommandBuffer commandBuffer) {
 			ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-		};
-		device->graphicsCommandPool()->execute(task);
+		});
 		device->awaitTermination();
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 
