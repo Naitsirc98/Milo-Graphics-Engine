@@ -7,9 +7,6 @@
 [submodule "Milo/dependencies/VulkanMemoryAllocator"]
 	path = Milo/dependencies/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-[submodule "Milo/dependencies/spdlog"]
-	path = Milo/dependencies/spdlog
-	url = https://github.com/gabime/spdlog.git
 [submodule "Milo/dependencies/shaderc"]
 	path = Milo/dependencies/shaderc
 	url = https://github.com/google/shaderc.git
