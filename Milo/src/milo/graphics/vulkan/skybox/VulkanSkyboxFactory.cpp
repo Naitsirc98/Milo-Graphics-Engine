@@ -28,6 +28,7 @@ namespace milo {
 		//VulkanTexture2D* brdfMap = VulkanTexture2D::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 
 		VulkanTask task{};
+		task.asynchronous = false;
 		task.run = [&](VkCommandBuffer commandBuffer) {
 
 			VulkanSkyboxPassExecuteInfo execInfo{};
@@ -39,7 +40,7 @@ namespace milo {
 			execInfo.loadInfo = &loadInfo;
 			execInfo.commandBuffer = commandBuffer;
 
-			m_EnvironmentPass->execute(execInfo); // TODO
+			m_EnvironmentPass->execute(execInfo);
 			m_IrradiancePass->execute(execInfo);
 			m_PrefilterPass->execute(execInfo);
 			//m_BRDFPass->execute(execInfo);

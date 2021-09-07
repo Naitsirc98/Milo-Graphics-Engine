@@ -256,9 +256,9 @@ namespace milo {
 		imguiInitInfo.Device = device->logical();
 		imguiInitInfo.QueueFamily = device->graphicsQueue()->family();
 		imguiInitInfo.Queue = device->graphicsQueue()->vkQueue();
-		imguiInitInfo.PipelineCache = nullptr;
+		imguiInitInfo.PipelineCache = VK_NULL_HANDLE;
 		imguiInitInfo.DescriptorPool = descriptorPool;
-		imguiInitInfo.Allocator = nullptr;
+		imguiInitInfo.Allocator = VK_NULL_HANDLE;
 		imguiInitInfo.MinImageCount = 2;
 		imguiInitInfo.ImageCount = swapchain->imageCount();
 		imguiInitInfo.CheckVkResultFn = mvk::checkVkResult;

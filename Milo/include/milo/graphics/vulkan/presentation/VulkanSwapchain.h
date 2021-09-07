@@ -19,7 +19,7 @@ namespace milo {
 		friend class VulkanPresenter;
 	private:
 		VulkanDevice* m_Device;
-		VkSwapchainKHR m_VkSwapchain = nullptr;
+		VkSwapchainKHR m_VkSwapchain = VK_NULL_HANDLE;
 		VkPresentModeKHR m_PresentMode = VK_PRESENT_MODE_FIFO_KHR;
 		VkFormat m_Format = VK_FORMAT_MAX_ENUM;
 		VkExtent2D m_Extent = {0, 0};

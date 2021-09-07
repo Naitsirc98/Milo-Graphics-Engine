@@ -1274,7 +1274,7 @@ ImTextureID ImGui_ImplVulkan_AddTexture(uint32_t textureId, VkSampler sampler, V
 		auto& desc = s_ImageDescriptors[textureId];
 
 		if(desc.image.sampler == sampler && desc.image.imageView == image_view && desc.image.imageLayout == image_layout) {
-			return desc.set;
+			return (ImTextureID)desc.set;
 		}
 
 		desc.image.sampler = sampler;
