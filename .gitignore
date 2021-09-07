@@ -2,8 +2,4 @@ cmake-build*
 .idea
 Milo/dependencies/glfw
 Milo/dependencies/glm
-Milo/dependencies/imgui
-Milo/dependencies/spdlog
-Milo/dependencies/stb
 Milo/dependencies/VulkanMemoryAllocator
-Milo/dependencies/json
