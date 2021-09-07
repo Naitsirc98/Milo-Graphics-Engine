@@ -2,7 +2,7 @@
 #include "milo/io/Files.h"
 #define JSON_IMPLEMENTATION
 #define JSON_USE_IMPLICIT_CONVERSIONS 0
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 #include "milo/assets/AssetManager.h"
 
 #define DEFAULT_MATERIAL_NAME "M_DefaultMaterial"
