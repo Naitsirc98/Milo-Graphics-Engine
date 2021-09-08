@@ -25,9 +25,11 @@ namespace milo {
 		return SceneManager::activeScene() == this;
 	}
 
-	Entity Scene::createEntity() {
+	Entity Scene::createEntity(const String& name) {
 		const EntityId newId = m_Registry.create();
-		return {newId, this};
+		Entity entity = {newId, this};
+		entity.setName(name);
+		return entity;
 	}
 
 	bool Scene::exists(EntityId entityId) const {

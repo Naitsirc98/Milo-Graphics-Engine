@@ -1,5 +1,6 @@
 #pragma once
 
+#include <imgui/imgui_internal.h>
 #include "milo/scenes/Scene.h"
 #include "milo/scenes/Entity.h"
 
@@ -19,10 +20,14 @@ namespace milo {
 	public:
 		void render();
 		Entity selectedEntity();
-		void setSelectedEntity(Entity entity);
+		void selectEntity(const Entity& entity);
+		void unselect();
 		void addSelectedCallback(EntitySelectedCallback callback);
 		void addDeletedCallback(EntityDeletedCallback callback);
 	private:
 		void drawEntityNode(Entity& entity, const EntityBasicInfo& info);
+		void handleDragDrop(const ImRect& windowRect);
+		void handlePopupMenu(Scene* scene);
+		void createEntityWithMesh(Scene* scene, const String& name, Mesh* mesh);
 	};
 }

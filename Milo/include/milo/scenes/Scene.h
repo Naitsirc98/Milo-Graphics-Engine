@@ -30,7 +30,7 @@ namespace milo {
 	public:
 		const String& name() const noexcept;
 		bool isActiveScene() const;
-		Entity createEntity();
+		Entity createEntity(const String& name = "Unnamed");
 		bool exists(EntityId entityId) const;
 		Entity find(EntityId id) const;
 		void destroyEntity(EntityId entityId) noexcept;

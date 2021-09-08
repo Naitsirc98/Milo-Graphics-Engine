@@ -38,7 +38,7 @@ namespace milo {
 		}
 
 		template<typename T, typename ...Args>
-		T& createComponent(Args&& ...args) {
+		T& addComponent(Args&& ...args) {
 			if(hasComponent<T>()) return getComponent<T>();
 			return m_Scene->registry().emplace<T>(m_Id, std::forward<Args>(args)...);
 		}

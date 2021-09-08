@@ -2,6 +2,7 @@
 #include "milo/editor/UIRenderer.h"
 #include "milo/scenes/SceneManager.h"
 #include "milo/scenes/Entity.h"
+#include "milo/assets/AssetManager.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
@@ -19,8 +20,15 @@ namespace milo {
 		return m_SelectedEntity;
 	}
 
-	void SceneHierarchyPanel::setSelectedEntity(Entity entity) {
+	void SceneHierarchyPanel::selectEntity(const Entity& entity) {
 		m_SelectedEntity = entity;
+		for(auto& callback : m_SelectedCallbacks) {
+			callback(entity);
+		}
+	}
+
+	void SceneHierarchyPanel::unselect() {
+		m_SelectedEntity = {};
 	}
 
 	void SceneHierarchyPanel::addSelectedCallback(EntitySelectedCallback callback) {
@@ -48,6 +56,73 @@ namespace milo {
 			}
 		}
 
+		handleDragDrop(windowRect);
+
+		handlePopupMenu(scene);
+
+		ImGui::End();
+	}
+
+	void SceneHierarchyPanel::handlePopupMenu(Scene* scene) {
+
+		if (ImGui::BeginPopupContextWindow(nullptr, 1, false))
+		{
+			if (ImGui::BeginMenu("Create"))
+			{
+				if (ImGui::MenuItem("Empty"))
+				{
+					auto newEntity = scene->createEntity("Empty");
+					selectEntity(newEntity);
+				}
+				if (ImGui::MenuItem("Camera"))
+				{
+					auto newEntity = scene->createEntity("Camera");
+					newEntity.addComponent<Camera>();
+					selectEntity(newEntity);
+				}
+				if (ImGui::BeginMenu("3D"))
+				{
+					if (ImGui::MenuItem("Cube"))
+					{
+						createEntityWithMesh(scene, "Cube", Assets::meshes().getCube());
+					}
+					if (ImGui::MenuItem("Sphere"))
+					{
+						createEntityWithMesh(scene, "Sphere", Assets::meshes().getSphere());
+					}
+					if (ImGui::MenuItem("Cylinder"))
+					{
+						createEntityWithMesh(scene, "Cylinder", Assets::meshes().getCylinder());
+					}
+					if (ImGui::MenuItem("Plane"))
+					{
+						createEntityWithMesh(scene, "Plane", Assets::meshes().getPlane());
+					}
+					if (ImGui::MenuItem("Monkey"))
+					{
+						createEntityWithMesh(scene, "Monkey", Assets::meshes().getMonkey());
+					}
+					ImGui::EndMenu();
+				}
+
+				ImGui::Separator();
+
+				ImGui::EndMenu();
+			}
+			ImGui::EndPopup();
+		}
+	}
+
+	void SceneHierarchyPanel::createEntityWithMesh(Scene* scene, const String& name, Mesh* mesh) {
+		auto newEntity = scene->createEntity(name);
+		newEntity.setName(name);
+		MeshView& meshView = newEntity.addComponent<MeshView>();
+		meshView.mesh = mesh;
+		meshView.material = Assets::materials().getDefault();
+		selectEntity(newEntity);
+	}
+
+	void SceneHierarchyPanel::handleDragDrop(const ImRect& windowRect) {
 		if (ImGui::BeginDragDropTargetCustom(windowRect, ImGui::GetCurrentWindow()->ID))
 		{
 			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SceneHierarchyPanel", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
@@ -59,8 +134,6 @@ namespace milo {
 
 			ImGui::EndDragDropTarget();
 		}
-
-		ImGui::End();
 	}
 
 	void SceneHierarchyPanel::drawEntityNode(Entity& entity, const EntityBasicInfo& info) {
@@ -83,10 +156,7 @@ namespace milo {
 
 		if (ImGui::IsItemClicked())
 		{
-			m_SelectedEntity = entity;
-			for(auto& callback : m_SelectedCallbacks) {
-				callback(entity);
-			}
+			selectEntity(entity);
 		}
 
 		bool entityDeleted = false;
@@ -132,7 +202,7 @@ namespace milo {
 			Scene* scene = entity.scene();
 			scene->destroyEntity(entity.id());
 			if(entity.id() == m_SelectedEntity.id()) {
-				m_SelectedEntity = {};
+				unselect();
 			}
 			for(auto& callback : m_DeletedCallbacks) {
 				callback(entity);

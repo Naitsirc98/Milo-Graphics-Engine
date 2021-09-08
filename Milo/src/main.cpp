@@ -23,8 +23,8 @@ public:
 
 		Entity camera = scene->createEntity();
 		camera.setName("Main Camera");
-		camera.createComponent<Camera>();
-		auto& camScript = camera.createComponent<NativeScriptView>();
+		camera.addComponent<Camera>();
+		auto& camScript = camera.addComponent<NativeScriptView>();
 		camScript.bind<CameraController>();
 
 		scene->setMainCamera(camera.id());
@@ -37,7 +37,7 @@ public:
 		Entity entity = scene->createEntity();
 		entity.setName("Sphere " + material->name());
 
-		MeshView& meshView = entity.createComponent<MeshView>();
+		MeshView& meshView = entity.addComponent<MeshView>();
 		meshView.mesh = mesh;
 		meshView.material = material;
 
