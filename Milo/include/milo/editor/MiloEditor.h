@@ -3,6 +3,7 @@
 #include "milo/common/Common.h"
 #include "UIRenderer.h"
 #include "SceneHierarchyPanel.h"
+#include "PropertiesPanel.h"
 
 namespace milo {
 
@@ -15,6 +16,7 @@ namespace milo {
 	private:
 		static UIRenderer* s_Renderer;
 		static SceneHierarchyPanel s_SceneHierarchyPanel;
+		static PropertiesPanel s_PropertiesPanel;
 	public:
 		static void update();
 		static void render();
@@ -22,5 +24,7 @@ namespace milo {
 		static void setupDockSpace();
 		static void init();
 		static void shutdown();
+
+		static void setupMenuBar();
 	};
 }

@@ -140,11 +140,7 @@ namespace milo {
 
 		if(!entity.valid()) return;
 
-		const char* name = info.name().c_str();
-
-		if(entity.hasComponent<Tag>()) {
-			name = entity.getComponent<Tag>().value();
-		}
+		const String& name = info.name();
 
 		ImGuiTreeNodeFlags flags = (entity == m_SelectedEntity ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
@@ -152,31 +148,27 @@ namespace milo {
 		if (entity.children().empty())
 			flags |= ImGuiTreeNodeFlags_Leaf;
 
-		const bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity.id(), flags, name);
+		const bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity.id(), flags, name.c_str());
 
-		if (ImGui::IsItemClicked())
-		{
+		if (ImGui::IsItemClicked()) {
 			selectEntity(entity);
 		}
 
 		bool entityDeleted = false;
-		if (ImGui::BeginPopupContextItem())
-		{
+		if (ImGui::BeginPopupContextItem()) {
 			if (ImGui::MenuItem("Delete"))
 				entityDeleted = true;
 
 			ImGui::EndPopup();
 		}
 
-		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-		{
-			ImGui::Text(name);
+		if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+			ImGui::Text(name.c_str());
 			ImGui::SetDragDropPayload("SceneHierarchyPanel", &entity, sizeof(Entity));
 			ImGui::EndDragDropSource();
 		}
 
-		if (ImGui::BeginDragDropTarget())
-		{
+		if (ImGui::BeginDragDropTarget()) {
 			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SceneHierarchyPanel", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
 
 			if (payload) {

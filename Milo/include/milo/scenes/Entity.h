@@ -43,6 +43,11 @@ namespace milo {
 			return m_Scene->registry().emplace<T>(m_Id, std::forward<Args>(args)...);
 		}
 
+		template<typename T, typename ...Args>
+		T& resetComponent(Args&& ...args) {
+			return m_Scene->registry().replace<T>(m_Id, std::forward<Args>(args)...);
+		}
+
 		template<typename T>
 		void destroyComponent() {
 			m_Scene->m_Registry.erase<T>(m_Id);

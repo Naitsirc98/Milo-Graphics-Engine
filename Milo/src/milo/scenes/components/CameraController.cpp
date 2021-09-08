@@ -8,6 +8,13 @@ namespace milo {
 
 	void CameraController::onLateUpdate(EntityId entityId) {
 
+		if(Input::isMouseButtonPressed(MouseButton::Mouse_Button_2)) {
+			Window::get()->cursorMode(CursorMode::Captured);
+		} else {
+			Window::get()->cursorMode(CursorMode::Normal);
+			return;
+		}
+
 		Scene* scene = SceneManager::activeScene();
 		Entity cameraEntity = scene->cameraEntity();
 
@@ -60,14 +67,6 @@ namespace milo {
 	}
 
 	void CameraController::handleDirection(Transform& transform, Camera& camera) {
-
-		if(Input::isKeyActive(Key::Key_Escape)) {
-			if(Window::get()->cursorMode() == CursorMode::Normal) {
-				Window::get()->cursorMode(CursorMode::Captured);
-			} else {
-				Window::get()->cursorMode(CursorMode::Normal);
-			}
-		}
 
 		if(Window::get()->cursorMode() == CursorMode::Captured) {
 			camera.lookAt(Input::getMousePosition());
