@@ -92,11 +92,11 @@ namespace milo {
 	}
 
 	void VulkanDevice::awaitTermination() {
-		vkDeviceWaitIdle(m_Logical);
+		VK_CALL(vkDeviceWaitIdle(m_Logical));
 	}
 
 	void VulkanDevice::awaitTermination(VkQueue queue) {
-		vkQueueWaitIdle(queue);
+		VK_CALL(vkQueueWaitIdle(queue));
 	}
 
 	VulkanContext* VulkanDevice::context() const {

@@ -40,6 +40,7 @@ namespace milo {
 	public:
 		VulkanGeometryRenderPass();
 		~VulkanGeometryRenderPass();
+		bool shouldCompile(Scene* scene) const override;
 		void compile(Scene* scene, FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:

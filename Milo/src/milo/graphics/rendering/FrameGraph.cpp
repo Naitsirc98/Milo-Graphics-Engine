@@ -35,7 +35,9 @@ namespace milo {
 	void FrameGraph::compile(Scene* scene) {
 		m_ResourcePool->compile(scene);
 		for(RenderPass* pass : m_RenderPassExecutionList) {
-			pass->compile(scene, m_ResourcePool);
+			if(pass->shouldCompile(scene)) {
+				pass->compile(scene, m_ResourcePool);
+			}
 		}
 		deleteUnusedRenderPasses();
 	}

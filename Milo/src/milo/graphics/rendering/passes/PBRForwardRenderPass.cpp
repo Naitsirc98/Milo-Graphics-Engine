@@ -24,8 +24,4 @@ namespace milo {
 		DEFINE_RENDER_PASS_ID(PBR_FORWARD_RENDER_PASS_NAME);
 		return id;
 	}
-
-	bool PBRForwardRenderPass::shouldCompile(Scene *scene) const {
-		return false;
-	}
 }

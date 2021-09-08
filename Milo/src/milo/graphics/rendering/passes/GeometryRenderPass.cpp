@@ -25,8 +25,4 @@ namespace milo {
 		DEFINE_RENDER_PASS_ID(GeometryRenderPass);
 		return id;
 	}
-
-	bool GeometryRenderPass::shouldCompile(Scene* scene) const {
-		return false;
-	}
 }

@@ -25,8 +25,4 @@ namespace milo {
 		DEFINE_RENDER_PASS_ID(SKYBOX_RENDER_PASS_NAME);
 		return id;
 	}
-
-	bool SkyboxRenderPass::shouldCompile(Scene *scene) const {
-		return false;
-	}
 }

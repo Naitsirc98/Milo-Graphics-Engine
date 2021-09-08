@@ -11,6 +11,7 @@ namespace milo {
 	VulkanFinalRenderPass::VulkanFinalRenderPass() {
 
 		m_Device = VulkanContext::get()->device();
+		m_Swapchain = VulkanContext::get()->swapchain();
 
 		createRenderPass();
 
@@ -30,9 +31,19 @@ namespace milo {
 		VK_CALLV(vkDestroyRenderPass(m_Device->logical(), m_RenderPass, nullptr));
 	}
 
+	bool VulkanFinalRenderPass::shouldCompile(Scene* scene) const {
+		return m_Swapchain->size() != m_LastSwapchainSize
+			|| WorldRenderer::get().getFramebuffer().size() != m_LastFramebufferSize;
+	}
+
 	void VulkanFinalRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
 
+		m_LastSwapchainSize = m_Device->context()->swapchain()->size();
+		m_LastFramebufferSize = WorldRenderer::get().getFramebuffer().size();
+
 		destroyTransientResources();
+
+		createFramebuffers(resourcePool);
 
 		createTextureDescriptorLayout();
 		createTextureDescriptorPool();
@@ -111,6 +122,29 @@ namespace milo {
 		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassInfo, nullptr, &m_RenderPass));
 	}
 
+	void VulkanFinalRenderPass::createFramebuffers(FrameGraphResourcePool* pool) {
+
+		uint32_t imageCount = m_Swapchain->imageCount();
+		const VulkanSwapchainImage* swapchainImages = m_Swapchain->images();
+
+		VkFramebufferCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		createInfo.renderPass = m_RenderPass;
+		createInfo.layers = 1;
+		createInfo.width = m_Swapchain->extent().width;
+		createInfo.height = m_Swapchain->extent().height;
+		createInfo.attachmentCount = 1;
+
+		for(uint32_t i = 0;i < imageCount;++i) {
+
+			auto image = swapchainImages[i];
+
+			createInfo.pAttachments = &image.vkImageView;
+
+			VK_CALL(vkCreateFramebuffer(m_Device->logical(), &createInfo, nullptr, &m_Framebuffers[i]));
+		}
+	}
+
 	void VulkanFinalRenderPass::createTextureDescriptorLayout() {
 
 		VkDescriptorSetLayoutBinding binding{};
@@ -143,8 +177,6 @@ namespace milo {
 	}
 
 	void VulkanFinalRenderPass::createTextureDescriptorSets(FrameGraphResourcePool* resourcePool) {
-
-		auto resPool = dynamic_cast<VulkanFrameGraphResourcePool*>(resourcePool);
 
 		VkSampler sampler = VulkanContext::get()->samplerMap()->getDefaultSampler();
 
@@ -220,7 +252,7 @@ namespace milo {
 				VkRenderPassBeginInfo renderPassInfo = {};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 				renderPassInfo.renderPass = m_RenderPass;
-				renderPassInfo.framebuffer = dynamic_cast<const VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer()).vkFramebuffer();
+				renderPassInfo.framebuffer = m_Framebuffers[i];
 				renderPassInfo.renderArea.offset = {0, 0};
 				renderPassInfo.renderArea.extent = swapchain->extent();
 				renderPassInfo.pClearValues = &clearValues;
@@ -278,5 +310,11 @@ namespace milo {
 		DELETE_PTR(m_GraphicsPipeline);
 
 		DELETE_PTR(m_CommandPool);
+
+		for(VkFramebuffer& framebuffer : m_Framebuffers) {
+			if(framebuffer == VK_NULL_HANDLE) continue;
+			VK_CALLV(vkDestroyFramebuffer(m_Device->logical(), framebuffer, nullptr));
+			framebuffer = VK_NULL_HANDLE;
+		}
 	}
 }

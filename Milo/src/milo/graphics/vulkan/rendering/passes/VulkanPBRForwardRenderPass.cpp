@@ -31,7 +31,6 @@ namespace milo {
 
 	VulkanPBRForwardRenderPass::~VulkanPBRForwardRenderPass() {
 
-
 		VkDevice device = m_Device->logical();
 
 		VK_CALLV(vkDestroyRenderPass(device, m_RenderPass, nullptr));
@@ -49,6 +48,10 @@ namespace milo {
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 			VK_CALLV(vkDestroySemaphore(device, m_SignalSemaphores[i], nullptr));
 		}
+	}
+
+	bool VulkanPBRForwardRenderPass::shouldCompile(Scene* scene) const {
+		return false;
 	}
 
 	void VulkanPBRForwardRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
@@ -254,12 +257,15 @@ namespace milo {
 
 	inline void VulkanPBRForwardRenderPass::beginRenderPass(uint32_t imageIndex, VkCommandBuffer commandBuffer) {
 
-		VkRenderPassBeginInfo renderPassInfo = {};
+		auto& framebuffer = dynamic_cast<VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer());
+
+		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = m_RenderPass;
-		renderPassInfo.framebuffer = dynamic_cast<const VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer()).vkFramebuffer();
+		renderPassInfo.framebuffer = framebuffer.get(m_RenderPass);
 		renderPassInfo.renderArea.offset = {0, 0};
-		renderPassInfo.renderArea.extent = m_Device->context()->swapchain()->extent();
+		renderPassInfo.renderArea.extent.width = framebuffer.size().width;
+		renderPassInfo.renderArea.extent.height = framebuffer.size().height;
 
 		VkClearValue clearValues[2];
 		clearValues[0].color = {0.01f, 0.01f, 0.01f, 1};

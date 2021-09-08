@@ -20,9 +20,10 @@ namespace milo {
 	protected:
 		FrameGraphResourcePool();
 		virtual ~FrameGraphResourcePool();
+		virtual void init();
 	public:
 		virtual void compile(Scene* scene);
-		const Framebuffer* getDefaultFramebuffer(uint32_t index = UINT32_MAX) const;
+		Framebuffer* getDefaultFramebuffer(uint32_t index = UINT32_MAX) const;
 		Ref<Framebuffer> getFramebuffer(Handle handle) const;
 		void putFramebuffer(Handle handle, Ref<Framebuffer> framebuffer);
 		void removeFramebuffer(Handle handle);
@@ -38,6 +39,8 @@ namespace milo {
 	protected:
 		virtual uint32_t currentFramebufferIndex() const = 0;
 		virtual uint32_t maxDefaultFramebuffersCount() const = 0;
+	private:
+		void createDefaultFramebuffers(const Size& size);
 	public:
 		static FrameGraphResourcePool* create();
 	};

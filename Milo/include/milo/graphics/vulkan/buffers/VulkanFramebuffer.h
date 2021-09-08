@@ -9,21 +9,22 @@ namespace milo {
 	public:
 		struct ApiInfo {
 			VulkanDevice* device;
-			VkRenderPass renderPass;
 		};
 	private:
 		VulkanDevice* m_Device;
-		VkRenderPass m_RenderPass{VK_NULL_HANDLE};
-		VkFramebuffer m_Framebuffer = VK_NULL_HANDLE;
+		mutable HashMap<VkRenderPass, VkFramebuffer> m_VkFramebuffers;
 	public:
 		VulkanFramebuffer(const CreateInfo& createInfo);
+		VulkanFramebuffer(const VulkanFramebuffer& other) = delete;
 		~VulkanFramebuffer();
 		VulkanDevice* device() const;
-		VkRenderPass renderPass() const;
-		VkFramebuffer vkFramebuffer() const;
+		bool hasFramebuffer(VkRenderPass renderPass) const;
+		VkFramebuffer get(VkRenderPass renderPass);
 		void resize(const Size& size) override;
+		VulkanFramebuffer& operator=(const VulkanFramebuffer& other) = delete;
 	private:
-		void destroy();
-		void create();
+		void destroyAllFramebuffers();
+		void destroyFramebuffer(VkFramebuffer framebuffer);
+		VkFramebuffer createFramebuffer(VkRenderPass renderPass);
 	};
 }

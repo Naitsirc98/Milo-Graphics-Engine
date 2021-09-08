@@ -47,6 +47,10 @@ namespace milo {
 		}
 	}
 
+	bool VulkanGeometryRenderPass::shouldCompile(Scene* scene) const {
+		return false;
+	}
+
 	void VulkanGeometryRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
 	}
 
@@ -81,6 +85,9 @@ namespace milo {
 
 		Entity cameraEntity = scene->cameraEntity();
 
+		auto& framebuffer = dynamic_cast<VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer());
+		VkFramebuffer vkFramebuffer = framebuffer.get(m_RenderPass);
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -89,10 +96,12 @@ namespace milo {
 			VkRenderPassBeginInfo renderPassInfo = {};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			renderPassInfo.renderPass = m_RenderPass;
-			renderPassInfo.framebuffer = dynamic_cast<const VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer()).vkFramebuffer();
+			renderPassInfo.framebuffer = vkFramebuffer;
 			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent.width = sceneViewport.width;
-			renderPassInfo.renderArea.extent.height = sceneViewport.height;
+			renderPassInfo.renderArea.extent.width = framebuffer.size().width;
+			renderPassInfo.renderArea.extent.height = framebuffer.size().height;
+
+			uint64_t f = (uint64_t)renderPassInfo.framebuffer;
 
 			VkClearValue clearValues[2];
 			clearValues[0].color = {0.01f, 0.01f, 0.01f, 1};
@@ -104,8 +113,6 @@ namespace milo {
 			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 			{
 				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
-
-				const Viewport& sceneViewport = scene->viewport();
 
 				VkViewport viewport{};
 				viewport.x = (float)sceneViewport.x;

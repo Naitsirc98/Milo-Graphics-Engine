@@ -1,4 +1,7 @@
 #include "milo/graphics/rendering/Framebuffer.h"
+#include "milo/graphics/Graphics.h"
+#include "milo/graphics/vulkan/buffers/VulkanFramebuffer.h"
+#include "milo/graphics/vulkan/VulkanContext.h"
 
 namespace milo {
 
@@ -8,26 +11,43 @@ namespace milo {
 
 		for(PixelFormat format : createInfo.colorAttachments) {
 
-			auto* colorAttachment = Texture2D::create(TEXTURE_USAGE_COLOR_ATTACHMENT_BIT);
+			auto* colorAttachment = Texture2D::create(TEXTURE_USAGE_COLOR_ATTACHMENT_BIT | TEXTURE_USAGE_SAMPLED_BIT);
 
 			Texture2D::AllocInfo allocInfo{};
 			allocInfo.format = format;
 			allocInfo.width = m_Size.width;
 			allocInfo.height = m_Size.height;
+			allocInfo.mipLevels = 1;
 
 			colorAttachment->allocate(allocInfo);
+
+			m_ColorAttachments.push_back(colorAttachment);
 		}
 
 		for(PixelFormat format : createInfo.depthAttachments) {
 
-			auto* depthAttachment = Texture2D::create(TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+			auto* depthAttachment = Texture2D::create(TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | TEXTURE_USAGE_SAMPLED_BIT);
 
 			Texture2D::AllocInfo allocInfo{};
 			allocInfo.format = format;
 			allocInfo.width = m_Size.width;
 			allocInfo.height = m_Size.height;
+			allocInfo.mipLevels = 1;
 
 			depthAttachment->allocate(allocInfo);
+
+			m_DepthAttachments.push_back(depthAttachment);
+		}
+	}
+
+	Framebuffer::~Framebuffer() {
+
+		for(Texture2D* colorAttachment : m_ColorAttachments) {
+			DELETE_PTR(colorAttachment);
+		}
+
+		for(Texture2D* depthAttachment : m_DepthAttachments) {
+			DELETE_PTR(depthAttachment);
 		}
 	}
 
@@ -41,5 +61,16 @@ namespace milo {
 
 	const Size& Framebuffer::size() const {
 		return m_Size;
+	}
+
+	Framebuffer* Framebuffer::create(const Framebuffer::CreateInfo& createInfo) {
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+			CreateInfo vulkanCreateInfo = createInfo;
+			VulkanFramebuffer::ApiInfo apiInfo{};
+			apiInfo.device = VulkanContext::get()->device();
+			vulkanCreateInfo.apiInfo = &apiInfo;
+			return new VulkanFramebuffer(vulkanCreateInfo);
+		}
+		throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");
 	}
 }

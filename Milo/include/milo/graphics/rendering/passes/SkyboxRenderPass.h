@@ -12,9 +12,6 @@ namespace milo {
 		virtual ~SkyboxRenderPass() override = default;
 		RenderPassId getId() const override;
 		const String& name() const override;
-
-		bool shouldCompile(Scene *scene) const override;
-
 	public:
 		static SkyboxRenderPass* create();
 		static size_t id();

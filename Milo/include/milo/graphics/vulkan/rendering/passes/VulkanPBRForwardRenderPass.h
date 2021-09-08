@@ -58,6 +58,7 @@ namespace milo {
 		VulkanPBRForwardRenderPass();
 		~VulkanPBRForwardRenderPass() override;
 	public:
+		bool shouldCompile(Scene* scene) const override;
 		void compile(Scene* scene, FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:

@@ -23,8 +23,4 @@ namespace milo {
 		DEFINE_RENDER_PASS_ID(FinalRenderPass);
 		return id;
 	}
-
-	bool FinalRenderPass::shouldCompile(Scene* scene) const {
-		return false;
-	}
 }

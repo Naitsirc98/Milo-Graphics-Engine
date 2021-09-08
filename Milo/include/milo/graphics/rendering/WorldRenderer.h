@@ -18,7 +18,7 @@ namespace milo {
 		~WorldRenderer();
 		void render(Scene* scene);
 	public:
-		const Framebuffer& getFramebuffer() const;
+		Framebuffer& getFramebuffer() const;
 	private:
 		static WorldRenderer* s_Instance;
 	public:

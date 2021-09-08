@@ -43,13 +43,19 @@ namespace milo {
 		}
 	}
 
+	bool VulkanSkyboxRenderPass::shouldCompile(Scene* scene) const {
+		return WorldRenderer::get().getFramebuffer().size() != m_LastFramebufferSize;
+	}
+
 	void VulkanSkyboxRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
+
+		m_LastFramebufferSize = WorldRenderer::get().getFramebuffer().size();
 
 		destroyTransientResources();
 
 		createGraphicsPipeline();
 
-		createCommandBuffers();
+		createCommandBuffers(resourcePool);
 	}
 
 	void VulkanSkyboxRenderPass::execute(Scene* scene) {
@@ -229,7 +235,7 @@ namespace milo {
 		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanSkyboxRenderPass", m_Device, pipelineInfo);
 	}
 
-	void VulkanSkyboxRenderPass::createCommandBuffers() {
+	void VulkanSkyboxRenderPass::createCommandBuffers(FrameGraphResourcePool* resourcePool) {
 
 		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 												  m_CommandBuffers.size(), m_CommandBuffers.data());
@@ -270,13 +276,15 @@ namespace milo {
 
 			VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 			{
+				auto framebuffer = dynamic_cast<VulkanFramebuffer*>(resourcePool->getDefaultFramebuffer(imageIndex));
+
 				VkRenderPassBeginInfo renderPassInfo = {};
 				renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 				renderPassInfo.renderPass = m_RenderPass;
-				renderPassInfo.framebuffer = dynamic_cast<const VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer()).vkFramebuffer();
+				renderPassInfo.framebuffer = framebuffer->get(m_RenderPass);
 				renderPassInfo.renderArea.offset = {0, 0};
-				renderPassInfo.renderArea.extent.width = fabs(sceneViewport.width);
-				renderPassInfo.renderArea.extent.height = fabs(sceneViewport.height);
+				renderPassInfo.renderArea.extent.width = framebuffer->size().width;
+				renderPassInfo.renderArea.extent.height = framebuffer->size().height;
 
 				VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 				{

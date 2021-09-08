@@ -34,10 +34,13 @@ namespace milo {
 
 		Array<VkSemaphore, MAX_SWAPCHAIN_IMAGE_COUNT> m_SignalSemaphores{};
 
+		Size m_LastFramebufferSize{};
+
 	private:
 		VulkanSkyboxRenderPass();
 		~VulkanSkyboxRenderPass() override;
 	public:
+		bool shouldCompile(Scene* scene) const override;
 		void compile(Scene* scene, FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:
@@ -48,7 +51,7 @@ namespace milo {
 		void createUniformBuffer();
 		void createDescriptorSets();
 		void createGraphicsPipeline();
-		void createCommandBuffers();
+		void createCommandBuffers(FrameGraphResourcePool* resourcePool);
 		void createSemaphores();
 		void destroyTransientResources();
 	};

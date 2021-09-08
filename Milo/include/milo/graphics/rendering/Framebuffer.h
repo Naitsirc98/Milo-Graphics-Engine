@@ -18,12 +18,14 @@ namespace milo {
 		Size m_Size{};
 	public:
 		Framebuffer(const CreateInfo& createInfo);
-		virtual ~Framebuffer() = default;
+		virtual ~Framebuffer();
 	public:
 		const ArrayList<Texture2D*>& colorAttachments() const;
 		const ArrayList<Texture2D*>& depthAttachments() const;
 		const Size& size() const;
 		virtual void resize(const Size& size) = 0;
+	public:
+		static Framebuffer* create(const CreateInfo& createInfo);
 	};
 
 }

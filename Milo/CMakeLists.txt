@@ -84,7 +84,6 @@ message("Boost = $ENV{BOOST_HOME}")
 message("Linking libraries to Milo Engine...")
 target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} glm)
-#target_link_libraries(${PROJECT_NAME} spdlog::spdlog_header_only)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} shaderc)
 

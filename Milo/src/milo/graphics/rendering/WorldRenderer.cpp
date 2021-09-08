@@ -8,6 +8,7 @@ namespace milo {
 		m_GraphicsPresenter = GraphicsPresenter::get();
 
 		m_ResourcePool = FrameGraphResourcePool::create();
+		m_ResourcePool->init();
 
 		m_FrameGraph.init(m_ResourcePool);
 	}
@@ -27,7 +28,7 @@ namespace milo {
 		s_Instance->render(SceneManager::activeScene());
 	}
 
-	const Framebuffer& WorldRenderer::getFramebuffer() const {
+	Framebuffer& WorldRenderer::getFramebuffer() const {
 		return *m_ResourcePool->getDefaultFramebuffer();
 	}
 
