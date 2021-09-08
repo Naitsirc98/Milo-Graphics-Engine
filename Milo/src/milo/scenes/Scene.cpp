@@ -108,4 +108,12 @@ namespace milo {
 			nativeScriptView.script->onLateUpdate(entity);
 		}
 	}
+
+	bool Scene::focused() const {
+		return m_Focused;
+	}
+
+	void Scene::setFocused(bool focused) {
+		m_Focused = focused;
+	}
 }

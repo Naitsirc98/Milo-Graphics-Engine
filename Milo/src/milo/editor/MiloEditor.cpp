@@ -3,6 +3,7 @@
 #include "milo/graphics/vulkan/ui/VulkanUIRenderer.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/assets/AssetManager.h"
+#include "milo/scenes/SceneManager.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
@@ -31,6 +32,7 @@ namespace milo {
 		ImGui::Begin("SceneViewportPanel", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		auto texture = WorldRenderer::get().getFramebuffer().colorAttachments()[0];
 		UI::image(*texture, texture->size());
+		SceneManager::activeScene()->setFocused(ImGui::IsWindowFocused());
 		ImGui::End();
 
 		ImGui::Begin("PropertiesPanel");

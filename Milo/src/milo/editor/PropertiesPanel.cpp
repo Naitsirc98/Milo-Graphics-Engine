@@ -4,13 +4,9 @@
 
 namespace milo {
 
-	PropertiesPanel::PropertiesPanel() {
+	PropertiesPanel::PropertiesPanel() = default;
 
-	}
-
-	PropertiesPanel::~PropertiesPanel() {
-
-	}
+	PropertiesPanel::~PropertiesPanel() = default;
 
 	void PropertiesPanel::render(Entity entity) {
 

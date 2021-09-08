@@ -16,6 +16,7 @@ namespace milo {
 	class Scene {
 		friend class SceneManager;
 		friend class Entity;
+		friend class MiloEditor;
 	private:
 		const String m_Name;
 		ECSRegistry m_Registry;
@@ -23,6 +24,7 @@ namespace milo {
 		Skybox* m_Skybox{nullptr};
 		LightEnvironment m_LightEnvironment{};
 		Viewport m_Viewport{};
+		bool m_Focused = false;
 	private:
 		explicit Scene(const String& name);
 		explicit Scene(String&& name);
@@ -43,6 +45,7 @@ namespace milo {
 		LightEnvironment& lightEnvironment() noexcept;
 		const Viewport& viewport() const noexcept;
 		Size viewportSize() const noexcept;
+		bool focused() const;
 
 		template<typename Component>
 		ECSComponentView<Component> view() {
@@ -59,5 +62,6 @@ namespace milo {
 	private:
 		void update();
 		void lateUpdate();
+		void setFocused(bool focused);
 	};
 }

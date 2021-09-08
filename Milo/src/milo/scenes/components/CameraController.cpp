@@ -8,17 +8,18 @@ namespace milo {
 
 	void CameraController::onLateUpdate(EntityId entityId) {
 
+		Scene* scene = SceneManager::activeScene();
+		Entity cameraEntity = scene->cameraEntity();
+
+		if(!cameraEntity.valid()) return;
+		if(!scene->focused()) return;
+
 		if(Input::isMouseButtonPressed(MouseButton::Mouse_Button_2)) {
 			Window::get()->cursorMode(CursorMode::Captured);
 		} else {
 			Window::get()->cursorMode(CursorMode::Normal);
 			return;
 		}
-
-		Scene* scene = SceneManager::activeScene();
-		Entity cameraEntity = scene->cameraEntity();
-
-		if(!cameraEntity.valid()) return;
 
 		Transform& transform = cameraEntity.getComponent<Transform>();
 		Camera& camera = cameraEntity.getComponent<Camera>();
