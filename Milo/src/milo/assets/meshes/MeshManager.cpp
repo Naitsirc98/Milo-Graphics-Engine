@@ -2,6 +2,7 @@
 #include "milo/assets/meshes/MeshLoader.h"
 #include "milo/io/Files.h"
 #include "milo/assets/meshes/loaders/ObjMeshLoader.h"
+#include "milo/assets/meshes/loaders/AssimpLoader.h"
 #include "milo/assets/AssetManager.h"
 
 #define CUBE_MESH_NAME "SM_Cube"
@@ -99,12 +100,12 @@ namespace milo {
 	Ref<MeshLoader> MeshManager::getMeshLoaderOf(const String& filename) {
 
 		switch(MeshFormats::formatOf(filename)) {
-			case MeshFormat::Obj:
-				return std::make_shared<ObjMeshLoader>();
-			case MeshFormat::Unknown:
+			//case MeshFormat::Obj:
+			//	return std::make_shared<ObjMeshLoader>();
+			//case MeshFormat::Unknown:
 			default:
-				Log::error("Mesh format {} unsupported", Files::extension(filename));
-				return nullptr;
+				return std::make_shared<AssimpLoader>();
+				//return nullptr;
 		}
 	}
 

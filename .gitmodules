@@ -10,3 +10,6 @@
 [submodule "Milo/dependencies/shaderc"]
 	path = Milo/dependencies/shaderc
 	url = https://github.com/google/shaderc.git
+[submodule "Milo/dependencies/assimp"]
+	path = Milo/dependencies/assimp
+	url = https://github.com/assimp/assimp.git

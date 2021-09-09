@@ -14,6 +14,7 @@ namespace milo {
 	class Mesh : public Asset {
 		friend class MeshManager;
 		friend class ObjMeshLoader;
+		friend class AssimpLoader;
 	public:
 		class GraphicsBuffers { // Implemented by the APIs
 			friend class Mesh;

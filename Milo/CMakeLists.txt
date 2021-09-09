@@ -45,6 +45,7 @@ add_subdirectory("${PROJECT_DEPENDENCIES_DIR}/glfw")
 add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/glm)
 set(SHADERC_SKIP_TESTS ON)
 add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/shaderc)
+add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/assimp)
 
 #set(BOOST_ROOT $ENV{BOOST_HOME})
 #set(Boost_USE_STATIC_LIBS OFF)
@@ -74,6 +75,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/en
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/shaderc/libshaderc/include)
 target_include_directories(${PROJECT_NAME} PUBLIC $ENV{BOOST_HOME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/tiny_obj_loader)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/assimp/include)
 
 message("Boost = $ENV{BOOST_HOME}")
 
@@ -86,6 +88,7 @@ target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} glm)
 target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} shaderc)
+target_link_libraries(${PROJECT_NAME} assimp)
 
 
 message("Target directory is ${PROJECT_BINARY_DIR}")
