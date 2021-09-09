@@ -11,6 +11,7 @@ namespace milo {
 	}
 
 	TextureManager::~TextureManager() {
+		DELETE_PTR(m_IconFactory);
 	}
 
 	void TextureManager::init() {

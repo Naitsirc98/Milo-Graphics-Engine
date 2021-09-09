@@ -255,6 +255,10 @@ namespace milo {
 
 	void VulkanTexture::allocate(uint32_t width, uint32_t height, PixelFormat format, uint32_t mipLevels) {
 
+		if(m_VkImage != VK_NULL_HANDLE) {
+			destroy();
+		}
+
 		VmaAllocationCreateInfo vmaAllocInfo = {};
 		vmaAllocInfo.usage = m_Usage;
 		vmaAllocInfo.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;

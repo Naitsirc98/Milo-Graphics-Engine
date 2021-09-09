@@ -102,6 +102,11 @@ namespace milo {
 					{
 						createEntityWithMesh(scene, "Monkey", Assets::meshes().getMonkey());
 					}
+					//if (ImGui::MenuItem("Sponza"))
+					//{
+					//	createEntityWithMesh(scene, "Sponza", Assets::meshes().getSponza());
+					//	m_SelectedEntity.getComponent<Transform>().scale *= 0.1f;
+					//}
 					ImGui::EndMenu();
 				}
 

@@ -17,7 +17,7 @@ namespace milo {
 		VulkanGraphicsPipeline* m_GraphicsPipeline{nullptr};
 	private:
 		VulkanIconFactory();
-		~VulkanIconFactory();
+		~VulkanIconFactory() override;
 	public:
 		Texture2D* createIcon(Mesh* mesh, Material* material, const Size& size) override;
 	private:

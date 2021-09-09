@@ -11,6 +11,8 @@ namespace milo {
 
 	class IconFactory {
 		friend class TextureManager;
+	protected:
+		virtual ~IconFactory() = default;
 	public:
 		virtual Texture2D* createIcon(Mesh* mesh, Material* material, const Size& size = DEFAULT_ICON_SIZE) = 0;
 	};
