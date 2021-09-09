@@ -224,6 +224,11 @@ namespace milo {
 		return m_Position;
 	}
 
+	void EditorCamera::setPosition(const Vector3& position) {
+		m_Position = position;
+		m_PositionDelta = {0, 0, 0};
+	}
+
 	Quaternion EditorCamera::orientation() const {
 		return Quaternion(Vector3(-m_Pitch - m_PitchDelta, -m_Yaw - m_YawDelta, 0.0f));
 	}

@@ -32,7 +32,7 @@ namespace milo {
 		load(QUAD_MESH_NAME, "resources/meshes/Quad.obj");
 		load(CYLINDER_MESH_NAME, "resources/meshes/Cylinder.obj");
 		load(MONKEY_MESH_NAME, "resources/meshes/Monkey.obj");
-		//load(SPONZA_MESH_NAME, "resources/meshes/Sponza/Sponza.obj");
+		load(SPONZA_MESH_NAME, "resources/meshes/Sponza/Sponza.obj");
 	}
 
 	Mesh* MeshManager::getQuad() const {
@@ -106,8 +106,8 @@ namespace milo {
 	Ref<MeshLoader> MeshManager::getMeshLoaderOf(const String& filename) {
 
 		switch(MeshFormats::formatOf(filename)) {
-			//case MeshFormat::Obj:
-			//	return std::make_shared<ObjMeshLoader>();
+			case MeshFormat::Obj:
+				return std::make_shared<ObjMeshLoader>();
 			//case MeshFormat::Unknown:
 			default:
 				return std::make_shared<AssimpLoader>();

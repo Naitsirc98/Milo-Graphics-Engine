@@ -72,6 +72,7 @@ namespace milo {
 		Vector3 forward() const;
 
 		const Vector3& position() const;
+		void setPosition(const Vector3& position);
 
 		Quaternion orientation() const;
 

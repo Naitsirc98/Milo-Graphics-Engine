@@ -3,6 +3,7 @@
 #include "milo/scenes/SceneManager.h"
 #include "milo/scenes/Entity.h"
 #include "milo/assets/AssetManager.h"
+#include "milo/editor/MiloEditor.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
@@ -102,11 +103,11 @@ namespace milo {
 					{
 						createEntityWithMesh(scene, "Monkey", Assets::meshes().getMonkey());
 					}
-					//if (ImGui::MenuItem("Sponza"))
-					//{
-					//	createEntityWithMesh(scene, "Sponza", Assets::meshes().getSponza());
-					//	m_SelectedEntity.getComponent<Transform>().scale *= 0.1f;
-					//}
+					if (ImGui::MenuItem("Sponza"))
+					{
+						createEntityWithMesh(scene, "Sponza", Assets::meshes().getSponza());
+						m_SelectedEntity.getComponent<Transform>().scale *= 0.1f;
+					}
 					ImGui::EndMenu();
 				}
 
@@ -157,6 +158,10 @@ namespace milo {
 
 		if (ImGui::IsItemClicked()) {
 			selectEntity(entity);
+		}
+
+		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+			MiloEditor::camera().setPosition(entity.getComponent<Transform>().translation);
 		}
 
 		bool entityDeleted = false;
