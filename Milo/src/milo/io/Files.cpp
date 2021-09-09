@@ -83,6 +83,9 @@ namespace milo {
 	ArrayList<byte_t> Files::readAllBytes(const String& filename) {
 		InputStream inputStream(filename, InputStream::binary | InputStream::ate);
 		std::streamsize size = inputStream.tellg();
+		if(size == -1) {
+			throw MILO_RUNTIME_EXCEPTION(fmt::format("Failed to open file {}", filename));
+		}
 		ArrayList<byte_t> contents(size);
 		inputStream.seekg(0, InputStream::beg);
 		inputStream.read((char*)contents.data(), size);

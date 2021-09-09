@@ -123,10 +123,9 @@ namespace milo {
 
 	void TextureManager::createDefaultIcons() {
 
-		addIcon("DefaultMeshIcon", load("resources/icons/cube.png", PixelFormat::RGBA8, true));
-		addIcon("DefaultMaterialIcon", load("resources/icons/material_def.png", PixelFormat::RGBA8, true));
+		addIcon("DefaultMeshIcon", load("resources/icons/mesh_default.png", PixelFormat::RGBA8, true));
+		addIcon("DefaultMaterialIcon", load("resources/icons/material_default.png", PixelFormat::RGBA8, true));
 
-		addIcon("Cube", load("resources/icons/cube.png", PixelFormat::RGBA8, true));
 		// TODO
 	}
 

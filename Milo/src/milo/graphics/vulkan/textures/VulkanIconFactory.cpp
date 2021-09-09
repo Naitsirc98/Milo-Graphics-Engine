@@ -73,7 +73,7 @@ namespace milo {
 				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
 				VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
 
-				Matrix4 view = milo::lookAt(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, -5.0f), Vector3(0.0f, 1.0f, 0.0f));
+				Matrix4 view = milo::lookAt(Vector3(0.0f, 0.0f, 3.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
 				Matrix4 proj = milo::perspective(radians(45.0f), (float)size.width / (float)size.height, 0.1f, 100.0f);
 
 				Matrix4 projView = proj * view;
