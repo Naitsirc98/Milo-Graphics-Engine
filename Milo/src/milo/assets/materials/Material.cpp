@@ -2,18 +2,10 @@
 
 namespace milo {
 
-	Material::Material(String name, String filename) : m_Name(std::move(name)), m_Filename(std::move(filename)) {
+	Material::Material(String name, String filename) : Asset(name, filename) {
 	}
 
 	Material::~Material() = default;
-
-	const String& Material::name() const {
-		return m_Name;
-	}
-
-	const String& Material::filename() const {
-		return m_Filename;
-	}
 
 	const Color& Material::albedo() const {
 		return m_Data.albedo;

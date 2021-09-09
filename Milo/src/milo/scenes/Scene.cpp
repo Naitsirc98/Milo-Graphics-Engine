@@ -92,6 +92,9 @@ namespace milo {
 	}
 
 	void Scene::update() {
+
+		if(getSimulationState() == SimulationState::Editor) return;
+
 		auto nativeScripts = m_Registry.view<NativeScriptView>();
 		for(EntityId entity : nativeScripts) {
 			auto& nativeScriptView = m_Registry.get<NativeScriptView>(entity);
@@ -101,6 +104,9 @@ namespace milo {
 	}
 
 	void Scene::lateUpdate() {
+
+		if(getSimulationState() == SimulationState::Editor) return;
+
 		const ECSComponentView<NativeScriptView> nativeScripts = m_Registry.view<NativeScriptView>();
 		for(EntityId entity : nativeScripts) {
 			auto& nativeScriptView = m_Registry.get<NativeScriptView>(entity);

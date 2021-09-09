@@ -58,6 +58,8 @@ namespace milo {
 		Application& application = Application::get();
 		application.m_Running = true;
 
+		setSimulationState(SimulationState::Editor);
+
 		application.onInit();
 		init();
 		Log::info("Starting Milo Application...");
@@ -102,6 +104,8 @@ namespace milo {
 			EventSystem::update();
 
 			Input::update();
+
+			MiloEditor::update();
 
 			SceneManager::update();
 

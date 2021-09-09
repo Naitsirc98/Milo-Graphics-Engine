@@ -12,14 +12,21 @@ namespace milo::UI {
 
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 
-			const VulkanTexture2D& vkTexture = dynamic_cast<const VulkanTexture2D&>(texture);
+			const auto& vkTexture = dynamic_cast<const VulkanTexture2D&>(texture);
 
 			auto textureId = ImGui_ImplVulkan_AddTexture(vkTexture.id(), vkTexture.vkSampler(), vkTexture.vkImageView(), vkTexture.layout());
+
+			ImVec2 imageSize;
+			if(size.isZero()) {
+				imageSize = {(float)texture.size().width, (float)texture.size().height};
+			} else {
+				imageSize = {(float)size.width, (float)size.height};
+			}
 
 			ImVec2 uv1_ = uv1;
 			uv1_.y *= -1;
 
-			ImGui::Image(textureId, {(float)size.width, (float)size.height}, uv0, uv1_, tint_col, border_col);
+			ImGui::Image(textureId, imageSize, uv0, uv1_, tint_col, border_col);
 
 		} else {
 			throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");

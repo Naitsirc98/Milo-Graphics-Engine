@@ -29,12 +29,15 @@ namespace milo {
 	}
 
 	void AssetManager::init() {
-		s_MeshManager = new MeshManager();
 		s_TextureManager = new TextureManager();
-		s_TextureManager->init();
 		s_MaterialManager = new MaterialManager();
+		s_MeshManager = new MeshManager();
 		s_ShaderManager = new ShaderManager();
 		s_SkyboxManager = new SkyboxManager();
+
+		s_TextureManager->init();
+		s_MaterialManager->init();
+		s_MeshManager->init();
 	}
 
 	void AssetManager::shutdown() {

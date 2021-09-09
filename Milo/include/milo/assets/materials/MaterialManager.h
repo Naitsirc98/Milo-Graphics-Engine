@@ -14,6 +14,7 @@ namespace milo {
 	private:
 		MaterialManager();
 		~MaterialManager();
+		void init();
 	public:
 		Material* getDefault() const;
 		Material* load(const String& name, const String& filename);

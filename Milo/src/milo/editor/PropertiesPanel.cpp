@@ -1,4 +1,5 @@
 #include "milo/editor/PropertiesPanel.h"
+#include "milo/editor/UIRenderer.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
@@ -145,16 +146,35 @@ namespace milo {
 
 			drawVector3Control("Translation", transform.translation);
 			drawVector3Control("Scale", transform.scale, 1.0f);
-			Vector3 rotation = milo::eulerAngles(transform.rotation);
+			Vector3 rotation = milo::eulerAngles(transform.rotation) * 180.0f / MILO_PI; // To degrees
 			drawVector3Control("Rotation", rotation);
-			transform.rotation = Quaternion(rotation);
+			transform.rotation = Quaternion(rotation * MILO_PI / 180.0f); // To radians
 
 		}, false);
 
 		drawComponent<MeshView>("MeshView", entity, [](MeshView& meshView) {
 
-			ImGui::Text("Mesh: %s", meshView.mesh == nullptr ? "" : meshView.mesh->filename().c_str());
-			ImGui::Text("Material: %s", meshView.material == nullptr ? "" : meshView.material->filename().c_str());
+			Mesh* mesh = meshView.mesh;
+			ImGui::Text("Mesh");
+			if(mesh != nullptr) {
+				UI::image(*mesh->icon()); // TODO
+				ImGui::SameLine();
+				ImGui::Text(mesh->filename().c_str());
+				ImGui::SameLine();
+			}
+			ImGui::Button("..."); // TODO
+
+			ImGui::Separator();
+
+			Material* material = meshView.material;
+			ImGui::Text("Material");
+			if(material != nullptr) {
+				UI::image(*material->icon()); // TODO
+				ImGui::SameLine();
+				ImGui::Text(material->filename().c_str());
+				ImGui::SameLine();
+			}
+			ImGui::Button("..."); // TODO
 		});
 	}
 

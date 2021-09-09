@@ -463,8 +463,8 @@ namespace milo {
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 
-		pipelineInfo.shaderInfos.push_back({"resources/shaders/pbr/pbr.vert", VK_SHADER_STAGE_VERTEX_BIT});
-		pipelineInfo.shaderInfos.push_back({"resources/shaders/pbr/pbr.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/pbr/pbr.vert", VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/pbr/pbr.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);

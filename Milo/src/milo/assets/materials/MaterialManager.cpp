@@ -10,10 +10,6 @@
 namespace milo {
 
 	MaterialManager::MaterialManager() {
-
-		m_ResourcePool = MaterialResourcePool::create();
-
-		load(DEFAULT_MATERIAL_NAME, "resources/materials/M_DefaultMaterial.mat");
 	}
 
 	MaterialManager::~MaterialManager() {
@@ -24,6 +20,11 @@ namespace milo {
 		m_Materials.clear();
 
 		DELETE_PTR(m_ResourcePool);
+	}
+
+	void MaterialManager::init() {
+		m_ResourcePool = MaterialResourcePool::create();
+		load(DEFAULT_MATERIAL_NAME, "resources/materials/M_DefaultMaterial.mat");
 	}
 
 	Material* MaterialManager::getDefault() const {
@@ -40,6 +41,11 @@ namespace milo {
 				if(load(name, filename, material)) {
 					m_Materials[name] = material;
 					m_ResourcePool->allocateMaterialResources(material);
+					if(name == DEFAULT_MATERIAL_NAME) {
+						material->m_Icon = Assets::textures().getIcon("DefaultMaterialIcon");
+					} else {
+						material->m_Icon = Assets::textures().createIcon(name, Assets::meshes().getSphere(), material);
+					}
 				}
 			}
 		}

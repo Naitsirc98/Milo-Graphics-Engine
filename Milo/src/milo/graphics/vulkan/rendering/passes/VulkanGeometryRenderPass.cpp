@@ -7,6 +7,7 @@
 #include "milo/scenes/Entity.h"
 #include "milo/assets/AssetManager.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
+#include "milo/editor/MiloEditor.h"
 
 namespace milo {
 
@@ -101,8 +102,6 @@ namespace milo {
 			renderPassInfo.renderArea.extent.width = framebuffer.size().width;
 			renderPassInfo.renderArea.extent.height = framebuffer.size().height;
 
-			uint64_t f = (uint64_t)renderPassInfo.framebuffer;
-
 			VkClearValue clearValues[2];
 			clearValues[0].color = {0.01f, 0.01f, 0.01f, 1};
 			clearValues[1].depthStencil = {1.0f, 0};
@@ -141,12 +140,22 @@ namespace milo {
 	void VulkanGeometryRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene,
 												   const Entity& cameraEntity) {
 
-		Camera& camera = cameraEntity.getComponent<Camera>();
-
 		CameraData cameraData{};
-		cameraData.proj = camera.projectionMatrix();
-		cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
-		cameraData.projView = cameraData.proj * cameraData.view;
+
+		if(getSimulationState() == SimulationState::Editor) {
+
+			EditorCamera& camera = MiloEditor::camera();
+			cameraData.proj = camera.projMatrix();
+			cameraData.view = camera.viewMatrix();
+			cameraData.projView = cameraData.proj * cameraData.view;
+
+		} else {
+
+			Camera& camera = cameraEntity.getComponent<Camera>();
+			cameraData.proj = camera.projectionMatrix();
+			cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+			cameraData.projView = cameraData.proj * cameraData.view;
+		}
 
 		m_CameraUniformBuffer->update(imageIndex, cameraData);
 
@@ -315,8 +324,8 @@ namespace milo {
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 
-		pipelineInfo.shaderInfos.push_back({"resources/shaders/geometry/geometry.vert", VK_SHADER_STAGE_VERTEX_BIT});
-		pipelineInfo.shaderInfos.push_back({"resources/shaders/geometry/geometry.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/geometry/geometry.vert", VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/geometry/geometry.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);

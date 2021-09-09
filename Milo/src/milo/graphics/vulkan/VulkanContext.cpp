@@ -20,7 +20,7 @@ namespace milo {
 		DELETE_PTR(m_WindowSurface);
 		DELETE_PTR(m_DebugMessenger);
 
-		vkDestroyInstance(m_VkInstance, nullptr);
+		VK_CALLV(vkDestroyInstance(m_VkInstance, nullptr));
 		m_VkInstance = VK_NULL_HANDLE;
 
 		s_Instance = nullptr;

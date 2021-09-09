@@ -27,7 +27,7 @@ namespace milo {
 			ArrayList<VkPushConstantRange> pushConstantRanges;
 			ArrayList<VkDescriptorSetLayout> setLayouts;
 			VkPipelineCache vkPipelineCache = VK_NULL_HANDLE;
-			ArrayList<VulkanShaderInfo> shaderInfos;
+			ArrayList<VulkanShaderInfo> shaders;
 			VulkanVertexInputInfo vertexInputInfo = {};
 			VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 			VkPipelineDepthStencilStateCreateInfo depthStencil = {};

@@ -66,6 +66,14 @@ namespace milo {
 		return s_Instance->m_Mouse.scrollOffset;
 	}
 
+	CursorMode Input::cursorMode() {
+		return Window::get()->cursorMode();
+	}
+
+	void Input::setCursorMode(CursorMode mode) {
+		Window::get()->cursorMode(mode);
+	}
+
 
 	void Input::setEventCallbacks() {
 

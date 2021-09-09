@@ -1,6 +1,7 @@
 #include "milo/assets/textures/TextureManager.h"
 #include "milo/graphics/Graphics.h"
 #include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
+#include "milo/graphics/vulkan/textures/VulkanIconFactory.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
 
@@ -13,10 +14,19 @@ namespace milo {
 	}
 
 	void TextureManager::init() {
+
 		m_WhiteTexture = Ref<Texture2D>(createWhiteTexture());
 		m_BlackTexture = Ref<Texture2D>(createBlackTexture());
 		m_WhiteCubemap = Ref<Cubemap>(createWhiteCubemap());
 		m_BlackCubemap = Ref<Cubemap>(createBlackCubemap());
+
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+			m_IconFactory = new VulkanIconFactory();
+		} else {
+			throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");
+		}
+
+		createDefaultIcons();
 	}
 
 	Ref<Texture2D> TextureManager::whiteTexture() const {
@@ -43,9 +53,9 @@ namespace milo {
 		return Ref<Cubemap>(Cubemap::create());
 	}
 
-	Ref<Texture2D> TextureManager::load(const String& filename, PixelFormat format) {
+	Ref<Texture2D> TextureManager::load(const String& filename, PixelFormat format, bool flipY) {
 
-		Image* image = Image::loadImage(filename, format);
+		Image* image = Image::loadImage(filename, format, flipY);
 
 		Texture2D* texture = Texture2D::create();
 
@@ -60,6 +70,20 @@ namespace milo {
 		DELETE_PTR(image);
 
 		return Ref<Texture2D>(texture);
+	}
+
+	Ref<Texture2D> TextureManager::getIcon(const String &name) const {
+		return m_Icons.find(name) != m_Icons.end() ? m_Icons.at(name) : nullptr;
+	}
+
+	void TextureManager::addIcon(const String &name, Ref<Texture2D> texture) {
+		m_Icons[name] = texture;
+	}
+
+	Ref<Texture2D> TextureManager::createIcon(const String &name, Mesh *mesh, Material *material) {
+		Ref<Texture2D> icon = Ref<Texture2D>(m_IconFactory->createIcon(mesh, material));
+		addIcon(name, icon);
+		return icon;
 	}
 
 	uint32_t TextureManager::nextTextureId() {
@@ -95,6 +119,15 @@ namespace milo {
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 			if(texture.usage() & TEXTURE_USAGE_UI_BIT) ImGui_ImplVulkan_DeleteTexture(texture.id());
 		} // TODO
+	}
+
+	void TextureManager::createDefaultIcons() {
+
+		addIcon("DefaultMeshIcon", load("resources/icons/cube.png", PixelFormat::RGBA8, true));
+		addIcon("DefaultMaterialIcon", load("resources/icons/material_def.png", PixelFormat::RGBA8, true));
+
+		addIcon("Cube", load("resources/icons/cube.png", PixelFormat::RGBA8, true));
+		// TODO
 	}
 
 	Texture2D* TextureManager::createWhiteTexture() {

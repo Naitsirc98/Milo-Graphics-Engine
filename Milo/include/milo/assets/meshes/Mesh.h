@@ -1,5 +1,6 @@
 #pragma once
 
+#include "milo/assets/Asset.h"
 #include "milo/graphics/buffer/Buffer.h"
 
 namespace milo {
@@ -10,7 +11,7 @@ namespace milo {
 		Vector2 uv = {0, 0};
 	};
 
-	class Mesh {
+	class Mesh : public Asset {
 		friend class MeshManager;
 		friend class ObjMeshLoader;
 	public:
@@ -23,7 +24,6 @@ namespace milo {
 			static GraphicsBuffers* create(const ArrayList<Vertex>& vertices, const ArrayList<uint32_t>& indices);
 		};
 	private:
-		String m_Filename;
 		ArrayList<Vertex> m_Vertices;
 		ArrayList<uint32_t> m_Indices;
 		GraphicsBuffers* m_Buffers = nullptr;
@@ -32,7 +32,6 @@ namespace milo {
 		explicit Mesh(String filename);
 		~Mesh();
 	public:
-		const String& filename() const;
 		const ArrayList<Vertex>& vertices() const;
 		const ArrayList<uint32_t>& indices() const;
 		GraphicsBuffers* buffers() const;

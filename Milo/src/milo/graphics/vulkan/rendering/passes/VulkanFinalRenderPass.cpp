@@ -214,8 +214,8 @@ namespace milo {
 		pipelineInfo.viewport = {viewport.x, viewport.y, viewport.width, viewport.height};
 		pipelineInfo.scissor = {{(int32_t)viewport.x, (int32_t)viewport.y}, {(uint32_t)viewport.width, (uint32_t)viewport.height}};
 
-		pipelineInfo.shaderInfos.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.vert"), VK_SHADER_STAGE_VERTEX_BIT});
-		pipelineInfo.shaderInfos.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.frag"), VK_SHADER_STAGE_FRAGMENT_BIT});
+		pipelineInfo.shaders.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.vert"), VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaders.push_back({Files::resource("shaders/fullscreen_quad/fullscreen_quad.frag"), VK_SHADER_STAGE_FRAGMENT_BIT});
 
 		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanFinalRenderPass", m_Device, pipelineInfo);
 	}

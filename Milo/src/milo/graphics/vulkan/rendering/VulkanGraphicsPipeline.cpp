@@ -10,7 +10,7 @@ namespace milo {
 
 #ifdef _DEBUG
 		if(info.vkRenderPass == VK_NULL_HANDLE) throw MILO_RUNTIME_EXCEPTION("Render Pass has not been set");
-		if(info.shaderInfos.empty()) throw MILO_RUNTIME_EXCEPTION("Graphics Pipeline has no shaders");
+		if(info.shaders.empty()) throw MILO_RUNTIME_EXCEPTION("Graphics Pipeline has no shaders");
 #endif
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo{};
@@ -22,8 +22,8 @@ namespace milo {
 
 		VK_CALL(vkCreatePipelineLayout(device->logical(), &layoutCreateInfo, nullptr, &m_PipelineLayout));
 
-		ArrayList<VkShaderModule> shaderModules = toShaderModules(device->logical(), info.shaderInfos);
-		ArrayList<VkPipelineShaderStageCreateInfo> shaderStages = createShaderPipelineStages(info.shaderInfos, shaderModules);
+		ArrayList<VkShaderModule> shaderModules = toShaderModules(device->logical(), info.shaders);
+		ArrayList<VkPipelineShaderStageCreateInfo> shaderStages = createShaderPipelineStages(info.shaders, shaderModules);
 
 		VkPipelineVertexInputStateCreateInfo vertexInputState = createVertexInputState(info.vertexInputInfo);
 

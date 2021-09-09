@@ -26,7 +26,7 @@ namespace milo {
 	public:
 		void allocateMaterialResources(Material* material) override;
 		void freeMaterialResources(Material* material) override;
-		VkDescriptorSet descriptorSetOf(Material* material, uint32_t& dynamicOffset);
+		VkDescriptorSet descriptorSetOf(Material* material, uint32_t& dynamicOffset) const;
 		VkDescriptorSetLayout materialDescriptorSetLayout() const;
 	private:
 		void createUniformBuffer();

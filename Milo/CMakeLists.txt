@@ -37,7 +37,7 @@ file(GLOB_RECURSE IMGUI_SOURCE_FILES
 # add_library(${PROJECT_NAME} STATIC ${ENGINE_HEADER_FILES} ${ENGINE_SOURCE_FILES})
 
 # Build this project as an executable
-add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} ${IMGUI_SOURCE_FILES} src/milo/graphics/rendering/FrameGraphResourcePool.cpp)
+add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} ${IMGUI_SOURCE_FILES} src/milo/graphics/rendering/FrameGraphResourcePool.cpp include/milo/editor/EditorCamera.h src/milo/editor/EditorCamera.cpp include/milo/assets/Asset.h include/milo/graphics/vulkan/textures/VulkanIconFactory.h src/milo/graphics/vulkan/textures/VulkanIconFactory.cpp)
 
 # CMAKE PROJECT DEPENDENCIES
 message("Handling Milo Engine dependencies...")

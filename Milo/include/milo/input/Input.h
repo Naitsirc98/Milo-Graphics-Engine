@@ -3,6 +3,7 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "milo/events/EventSystem.h"
+#include "milo/graphics/Window.h"
 
 namespace milo {
 
@@ -31,6 +32,9 @@ namespace milo {
 
 		static const Vector2& getMousePosition();
 		static const Vector2& getMouseScroll();
+
+		static CursorMode cursorMode();
+		static void setCursorMode(CursorMode mode);
 	private:
 		static Input* s_Instance;
 	private:

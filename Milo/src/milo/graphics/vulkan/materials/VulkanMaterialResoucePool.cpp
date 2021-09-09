@@ -73,8 +73,8 @@ namespace milo {
 		m_FreeIndices.push_back(index);
 	}
 
-	VkDescriptorSet VulkanMaterialResourcePool::descriptorSetOf(Material* material, uint32_t& dynamicOffset) {
-		uint32_t index = m_MaterialIndices[material->name()];
+	VkDescriptorSet VulkanMaterialResourcePool::descriptorSetOf(Material* material, uint32_t& dynamicOffset) const {
+		uint32_t index = m_MaterialIndices.at(material->name());
 		dynamicOffset = index * m_UniformBuffer->elementSize();
 		return m_DescriptorPool->get(index);
 	}

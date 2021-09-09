@@ -10,11 +10,12 @@
 namespace milo {
 
 	UIRenderer* MiloEditor::s_Renderer = nullptr;
+	EditorCamera MiloEditor::s_Camera{};
 	SceneHierarchyPanel MiloEditor::s_SceneHierarchyPanel{};
 	PropertiesPanel MiloEditor::s_PropertiesPanel{};
 
 	void MiloEditor::update() {
-		// TODO
+		s_Camera.update();
 	}
 
 	void MiloEditor::render() {
@@ -133,12 +134,20 @@ namespace milo {
 		}
 	}
 
+	EditorCamera &MiloEditor::camera() {
+		return s_Camera;
+	}
+
 	void MiloEditor::init() {
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 			s_Renderer = new VulkanUIRenderer();
 		} else {
 			throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");
 		}
+
+		Size size = Window::get()->size();
+
+		s_Camera = EditorCamera(perspectiveFov(radians(45.0f), (float)size.width, (float)size.height, 0.1f, 1000.0f));
 	}
 
 	void MiloEditor::shutdown() {

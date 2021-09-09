@@ -2,7 +2,7 @@
 
 namespace milo {
 
-	Skybox::Skybox(String name, String filename) : m_Name(std::move(name)), m_Filename(std::move(filename)) {
+	Skybox::Skybox(String name, String filename) : Asset((std::move(name)), std::move(filename)) {
 	}
 
 	Skybox::~Skybox() {
@@ -10,14 +10,6 @@ namespace milo {
 		DELETE_PTR(m_PrefilterMap);
 		DELETE_PTR(m_IrradianceMap);
 		DELETE_PTR(m_BRDFMap);
-	}
-
-	const String& Skybox::name() const {
-		return m_Name;
-	}
-
-	const String& Skybox::filename() const {
-		return m_Filename;
 	}
 
 	Cubemap* Skybox::environmentMap() const {

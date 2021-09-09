@@ -4,15 +4,12 @@
 
 namespace milo {
 
-	Mesh::Mesh(String filename) : m_Filename(std::move(filename)) {
+	Mesh::Mesh(String filename) {
+		m_Filename = std::move(filename);
 	}
 
 	Mesh::~Mesh() {
 		DELETE_PTR(m_Buffers);
-	}
-
-	const String& Mesh::filename() const {
-		return m_Filename;
 	}
 
 	const ArrayList<milo::Vertex>& Mesh::vertices() const {

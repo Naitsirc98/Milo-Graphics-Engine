@@ -278,6 +278,8 @@ IM_MSVC_RUNTIME_CHECKS_RESTORE
 // (Note that ImGui:: being a namespace, you can add extra ImGui:: functions in your own separate file. Please don't modify imgui source files!)
 //-----------------------------------------------------------------------------
 
+#define IMGUI_LEFT_LABEL(func, label, ...) (ImGui::TextUnformatted(label), ImGui::SameLine(), func("##" label, __VA_ARGS__))
+
 namespace ImGui
 {
     // Context creation and access

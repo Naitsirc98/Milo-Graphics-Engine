@@ -2,6 +2,7 @@
 #include "milo/assets/meshes/MeshLoader.h"
 #include "milo/io/Files.h"
 #include "milo/assets/meshes/loaders/ObjMeshLoader.h"
+#include "milo/assets/AssetManager.h"
 
 #define CUBE_MESH_NAME "SM_Cube"
 #define SPHERE_MESH_NAME "SM_Sphere"
@@ -13,12 +14,6 @@
 namespace milo {
 
 	MeshManager::MeshManager() {
-		load(CUBE_MESH_NAME, "resources/meshes/Cube.obj");
-		load(SPHERE_MESH_NAME, "resources/meshes/Sphere.obj");
-		load(PLANE_MESH_NAME, "resources/meshes/Plane.obj");
-		load(QUAD_MESH_NAME, "resources/meshes/Quad.obj");
-		load(CYLINDER_MESH_NAME, "resources/meshes/Cylinder.obj");
-		load(MONKEY_MESH_NAME, "resources/meshes/Monkey.obj");
 	}
 
 	MeshManager::~MeshManager() {
@@ -26,6 +21,15 @@ namespace milo {
 			DELETE_PTR(mesh);
 		}
 		m_Meshes.clear();
+	}
+
+	void MeshManager::init() {
+		load(CUBE_MESH_NAME, "resources/meshes/Cube.obj");
+		load(SPHERE_MESH_NAME, "resources/meshes/Sphere.obj");
+		load(PLANE_MESH_NAME, "resources/meshes/Plane.obj");
+		load(QUAD_MESH_NAME, "resources/meshes/Quad.obj");
+		load(CYLINDER_MESH_NAME, "resources/meshes/Cylinder.obj");
+		load(MONKEY_MESH_NAME, "resources/meshes/Monkey.obj");
 	}
 
 	Mesh* MeshManager::getQuad() const {
@@ -64,6 +68,7 @@ namespace milo {
 					mesh = loader->load(filename);
 					createGraphicsBuffers(filename, mesh);
 					createBoundingVolume(filename, mesh);
+					mesh->m_Icon = Assets::textures().createIcon(name, mesh, Assets::materials().getDefault());
 					m_Meshes[name] = mesh;
 				}
 			}

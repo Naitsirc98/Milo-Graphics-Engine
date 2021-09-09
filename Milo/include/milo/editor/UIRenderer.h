@@ -20,8 +20,20 @@ namespace milo {
 
 	namespace UI {
 
-		void image(const Texture2D& texture, const Size& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1,1),
+		static bool isMouseEnabled() {
+			return ImGui::GetIO().ConfigFlags & ~ImGuiConfigFlags_NoMouse;
+		}
+
+		static void setMouseEnabled(bool enable) {
+			if (enable)
+				ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+			else
+				ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+		}
+
+		void image(const Texture2D& texture, const Size& size = {0, 0}, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1,1),
 				   const ImVec4& tint_col = ImVec4(1,1,1,1), const ImVec4& border_col = ImVec4(0,0,0,0));
+
 	}
 
 }

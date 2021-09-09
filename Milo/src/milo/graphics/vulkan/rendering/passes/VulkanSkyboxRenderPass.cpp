@@ -5,6 +5,7 @@
 #include "milo/scenes/Entity.h"
 #include "milo/graphics/vulkan/buffers/VulkanMeshBuffers.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
+#include "milo/editor/MiloEditor.h"
 
 namespace milo {
 
@@ -64,11 +65,23 @@ namespace milo {
 		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
 		VulkanQueue* queue = m_Device->graphicsQueue();
 
-		Camera* camera = scene->camera();
 
 		UniformBuffer uniformBufferData{};
-		uniformBufferData.viewMatrix = camera->viewMatrix(scene->cameraEntity().getComponent<Transform>().translation);
-		uniformBufferData.projMatrix = camera->projectionMatrix();
+
+		if(getSimulationState() == SimulationState::Editor) {
+
+			EditorCamera& camera = MiloEditor::camera();
+			uniformBufferData.projMatrix = camera.projMatrix();
+			uniformBufferData.viewMatrix = camera.viewMatrix();
+
+		} else {
+
+			Entity cameraEntity = scene->cameraEntity();
+			Camera& camera = cameraEntity.getComponent<Camera>();
+			uniformBufferData.projMatrix = camera.projectionMatrix();
+			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+		}
+
 		uniformBufferData.textureLOD = scene->skybox()->prefilterLODBias();
 		uniformBufferData.intensity = 1; // TODO
 
@@ -226,8 +239,8 @@ namespace milo {
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 		pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
-		pipelineInfo.shaderInfos.push_back({"resources/shaders/skybox/skybox.vert", VK_SHADER_STAGE_VERTEX_BIT});
-		pipelineInfo.shaderInfos.push_back({"resources/shaders/skybox/skybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/skybox/skybox.vert", VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/skybox/skybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
@@ -251,13 +264,21 @@ namespace milo {
 			throw MILO_RUNTIME_EXCEPTION("Main Camera Entity is not valid");
 		}
 
-		Camera& camera = cameraEntity.getComponent<Camera>();
-		Matrix4 proj = camera.projectionMatrix();
-		Matrix4 view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
-
 		UniformBuffer uniformBufferData{};
-		uniformBufferData.viewMatrix = view;
-		uniformBufferData.projMatrix = proj;
+
+		if(getSimulationState() == SimulationState::Editor) {
+
+			EditorCamera& camera = MiloEditor::camera();
+			uniformBufferData.projMatrix = camera.projMatrix();
+			uniformBufferData.viewMatrix = camera.viewMatrix();
+
+		} else {
+
+			Camera& camera = cameraEntity.getComponent<Camera>();
+			uniformBufferData.projMatrix = camera.projectionMatrix();
+			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+		}
+
 		uniformBufferData.textureLOD = skybox->prefilterLODBias();
 		uniformBufferData.intensity = 1; // TODO
 
