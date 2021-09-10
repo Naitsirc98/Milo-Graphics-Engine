@@ -133,6 +133,7 @@ namespace milo {
 
 		Transform& transform = entity.getComponent<Transform>();
 		transform.setMatrix(node->transform);
+		transform.scale *= 0.2f;
 
 		if(node->mesh != nullptr) {
 			MeshView& meshView = entity.addComponent<MeshView>();

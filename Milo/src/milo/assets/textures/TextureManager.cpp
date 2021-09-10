@@ -69,6 +69,7 @@ namespace milo {
 		allocInfo.pixels = image->pixels();
 
 		texture->allocate(allocInfo);
+		texture->generateMipmaps();
 
 		DELETE_PTR(image);
 

@@ -8,9 +8,9 @@ namespace milo {
 	static const int ASSIMP_FLAGS = aiProcess_OptimizeMeshes
 			//| aiProcess_OptimizeGraph
 			| aiProcess_Triangulate
-			| aiProcess_FlipUVs
-			| aiProcess_JoinIdenticalVertices
-			| aiProcess_GenSmoothNormals;
+			//| aiProcess_FlipUVs
+			| aiProcess_JoinIdenticalVertices;
+			//| aiProcess_GenSmoothNormals;
 
 	Model* AssimpModelLoader::load(const String& filename) {
 
@@ -150,19 +150,19 @@ namespace milo {
 
 		Material::Data& mat = outMaterial->m_Data;
 
-		getColor(aiMaterial, AI_MATKEY_BASE_COLOR, mat.albedo);
+		getColor(aiMaterial, AI_MATKEY_COLOR_DIFFUSE, mat.albedo);
 		getColor(aiMaterial, AI_MATKEY_COLOR_EMISSIVE, mat.emissiveColor);
 
 		getFloat(aiMaterial, AI_MATKEY_METALLIC_FACTOR, mat.metallic);
 		getFloat(aiMaterial, AI_MATKEY_OPACITY, mat.alpha);
 		getFloat(aiMaterial, AI_MATKEY_ROUGHNESS_FACTOR, mat.roughness);
 
-		outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE, PixelFormat::RGBA8);
+		outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE, PixelFormat::SRGBA);
 		//outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_BASE_COLOR, PixelFormat::RGBA8);
-		outMaterial->m_EmissiveMap = getTexture(aiScene, aiMaterial, aiTextureType_EMISSIVE, PixelFormat::RGBA8);
-		outMaterial->m_NormalMap = getTexture(aiScene, aiMaterial, aiTextureType_NORMALS, PixelFormat::RGBA8);
-		outMaterial->m_MetallicMap = getTexture(aiScene, aiMaterial, aiTextureType_METALNESS, PixelFormat::RGBA8);
-		outMaterial->m_RoughnessMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE_ROUGHNESS, PixelFormat::RGBA8);
-		outMaterial->m_OcclusionMap = getTexture(aiScene, aiMaterial, aiTextureType_AMBIENT_OCCLUSION, PixelFormat::RGBA8);
+		outMaterial->m_EmissiveMap = getTexture(aiScene, aiMaterial, aiTextureType_EMISSIVE, PixelFormat::SRGBA);
+		outMaterial->m_NormalMap = getTexture(aiScene, aiMaterial, aiTextureType_NORMALS, PixelFormat::SRGBA);
+		outMaterial->m_MetallicMap = getTexture(aiScene, aiMaterial, aiTextureType_METALNESS, PixelFormat::SRGBA);
+		outMaterial->m_RoughnessMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE_ROUGHNESS, PixelFormat::SRGBA);
+		outMaterial->m_OcclusionMap = getTexture(aiScene, aiMaterial, aiTextureType_AMBIENT_OCCLUSION, PixelFormat::SRGBA);
 	}
 }

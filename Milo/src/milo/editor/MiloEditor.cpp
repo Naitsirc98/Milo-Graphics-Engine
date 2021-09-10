@@ -147,7 +147,7 @@ namespace milo {
 
 		Size size = Window::get()->size();
 
-		s_Camera = EditorCamera(perspectiveFov(radians(45.0f), (float)size.width, (float)size.height, 0.05f, 10000.0f));
+		s_Camera = EditorCamera(perspectiveFov(radians(45.0f), (float)size.width, (float)size.height, 0.05f, 100000.0f));
 	}
 
 	void MiloEditor::shutdown() {

@@ -1,5 +1,6 @@
 #include "milo/editor/PropertiesPanel.h"
 #include "milo/editor/UIRenderer.h"
+#include "milo/assets/AssetManager.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
@@ -157,7 +158,11 @@ namespace milo {
 			Mesh* mesh = meshView.mesh;
 			ImGui::Text("Mesh");
 			if(mesh != nullptr) {
-				UI::image(*mesh->icon()); // TODO
+				if(mesh->icon()) {
+					UI::image(*mesh->icon());
+				} else {
+					UI::image(*Assets::textures().getIcon("DefaultMeshIcon"));
+				}
 				ImGui::SameLine();
 				ImGui::Text(mesh->filename().c_str());
 				ImGui::SameLine();
@@ -169,7 +174,11 @@ namespace milo {
 			Material* material = meshView.material;
 			ImGui::Text("Material");
 			if(material != nullptr) {
-				UI::image(*material->icon()); // TODO
+				if(mesh->icon()) {
+					UI::image(*material->icon());
+				} else {
+					UI::image(*Assets::textures().getIcon("DefaultMaterialIcon"));
+				}
 				ImGui::SameLine();
 				ImGui::Text(material->filename().c_str());
 				ImGui::SameLine();
