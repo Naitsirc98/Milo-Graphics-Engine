@@ -8,6 +8,7 @@ namespace milo {
 
 	class MeshManager {
 		friend class AssetManager;
+		friend class AssimpModelLoader;
 	private:
 		HashMap<String, Mesh*> m_Meshes;
 		Mutex m_Mutex;
@@ -27,6 +28,8 @@ namespace milo {
 		bool exists(const String& name);
 		Mesh* find(const String& name);
 		void destroy(const String& name);
+	private:
+		void addMesh(const String& name, Mesh* mesh);
 	private:
 		static Ref<MeshLoader> getMeshLoaderOf(const String& filename);
 		static void createGraphicsBuffers(const String& filename, Mesh* mesh);

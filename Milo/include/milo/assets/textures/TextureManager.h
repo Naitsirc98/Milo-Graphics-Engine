@@ -28,6 +28,7 @@ namespace milo {
 		Ref<Cubemap> m_WhiteCubemap;
 		Ref<Cubemap> m_BlackCubemap;
 		IconFactory* m_IconFactory{nullptr};
+		HashMap<String, Ref<Texture2D>> m_Cache;
 		HashMap<String, Ref<Texture2D>> m_Icons;
 	private:
 		TextureManager();

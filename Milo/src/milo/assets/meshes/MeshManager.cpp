@@ -103,6 +103,13 @@ namespace milo {
 		m_Mutex.unlock();
 	}
 
+	void MeshManager::addMesh(const String& name, Mesh* mesh) {
+		if(exists(name)) {
+			destroy(name);
+		}
+		m_Meshes[name] = mesh;
+	}
+
 	Ref<MeshLoader> MeshManager::getMeshLoaderOf(const String& filename) {
 
 		switch(MeshFormats::formatOf(filename)) {

@@ -56,6 +56,8 @@ namespace milo {
 
 	Ref<Texture2D> TextureManager::load(const String& filename, PixelFormat format, bool flipY) {
 
+		if(m_Cache.find(filename) != m_Cache.end()) return m_Cache.at(filename);
+
 		Image* image = Image::loadImage(filename, format, flipY);
 
 		Texture2D* texture = Texture2D::create();
@@ -70,7 +72,11 @@ namespace milo {
 
 		DELETE_PTR(image);
 
-		return Ref<Texture2D>(texture);
+		auto result = Ref<Texture2D>(texture);
+
+		m_Cache[filename] = result;
+
+		return result;
 	}
 
 	Ref<Texture2D> TextureManager::getIcon(const String &name) const {

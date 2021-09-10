@@ -3,6 +3,7 @@
 #include <imgui/imgui_internal.h>
 #include "milo/scenes/Scene.h"
 #include "milo/scenes/Entity.h"
+#include "milo/assets/AssetManager.h"
 
 namespace milo {
 
@@ -29,5 +30,6 @@ namespace milo {
 		void handleDragDrop(const ImRect& windowRect);
 		void handlePopupMenu(Scene* scene);
 		void createEntityWithMesh(Scene* scene, const String& name, Mesh* mesh);
+		void createEntityModelTree(Scene* scene, Model* model, Model::Node node, Entity entity);
 	};
 }

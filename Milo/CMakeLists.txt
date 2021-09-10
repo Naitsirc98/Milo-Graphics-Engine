@@ -37,7 +37,7 @@ file(GLOB_RECURSE IMGUI_SOURCE_FILES
 # add_library(${PROJECT_NAME} STATIC ${ENGINE_HEADER_FILES} ${ENGINE_SOURCE_FILES})
 
 # Build this project as an executable
-add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} ${IMGUI_SOURCE_FILES} src/milo/graphics/rendering/FrameGraphResourcePool.cpp include/milo/editor/EditorCamera.h src/milo/editor/EditorCamera.cpp include/milo/assets/Asset.h include/milo/graphics/vulkan/textures/VulkanIconFactory.h src/milo/graphics/vulkan/textures/VulkanIconFactory.cpp)
+add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} ${IMGUI_SOURCE_FILES} src/milo/graphics/rendering/FrameGraphResourcePool.cpp include/milo/editor/EditorCamera.h src/milo/editor/EditorCamera.cpp include/milo/assets/Asset.h include/milo/graphics/vulkan/textures/VulkanIconFactory.h src/milo/graphics/vulkan/textures/VulkanIconFactory.cpp include/milo/assets/models/Model.h include/milo/assets/models/ModelManager.h include/milo/assets/models/ModelLoader.h src/milo/assets/models/ModelManager.cpp include/milo/assets/models/loaders/AssimpModelLoader.h src/milo/assets/models/loaders/AssimpModelLoader.cpp)
 
 # CMAKE PROJECT DEPENDENCIES
 message("Handling Milo Engine dependencies...")
@@ -45,6 +45,7 @@ add_subdirectory("${PROJECT_DEPENDENCIES_DIR}/glfw")
 add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/glm)
 set(SHADERC_SKIP_TESTS ON)
 add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/shaderc)
+set(ASSIMP_BUILD_TESTS OFF)
 add_subdirectory(${PROJECT_DEPENDENCIES_DIR}/assimp)
 
 #set(BOOST_ROOT $ENV{BOOST_HOME})

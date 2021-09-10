@@ -5,6 +5,7 @@
 #include "milo/assets/materials/MaterialManager.h"
 #include "milo/assets/shaders/ShaderManager.h"
 #include "milo/assets/skybox/SkyboxManager.h"
+#include "milo/assets/models/ModelManager.h"
 
 namespace milo {
 
@@ -14,6 +15,7 @@ namespace milo {
 		static MeshManager* s_MeshManager;
 		static TextureManager* s_TextureManager;
 		static MaterialManager* s_MaterialManager;
+		static ModelManager* s_ModelManager;
 		static ShaderManager* s_ShaderManager;
 		static SkyboxManager* s_SkyboxManager;
 		// TODO ...
@@ -21,6 +23,7 @@ namespace milo {
 		static MeshManager& meshes();
 		static TextureManager& textures();
 		static MaterialManager& materials();
+		static ModelManager& models();
 		static ShaderManager& shaders();
 		static SkyboxManager& skybox();
 	private:

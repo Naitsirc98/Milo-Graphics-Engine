@@ -8,6 +8,7 @@ namespace milo {
 	class Material : public Asset {
 		friend class MaterialManager;
 		friend class MaterialResourcePool;
+		friend class AssimpModelLoader;
 	public:
 		struct Data {
 			Color albedo{Colors::WHITE};

@@ -73,6 +73,13 @@ namespace milo {
 		m_Mutex.unlock();
 	}
 
+	void MaterialManager::addMaterial(const String& name, Material* material) {
+		if(exists(name)) {
+			destroy(name);
+		}
+		m_Materials[name] = material;
+	}
+
 	MaterialResourcePool& MaterialManager::resourcePool() const {
 		return *m_ResourcePool;
 	}

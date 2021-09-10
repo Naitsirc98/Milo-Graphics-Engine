@@ -1,6 +1,7 @@
 #pragma once
 
 #include "milo/math/Math.h"
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace milo {
 
@@ -19,6 +20,12 @@ namespace milo {
 
 		inline Matrix4 modelMatrix() const noexcept {
 			return milo::translate(translation) * milo::scale(scale) * milo::toMat4(rotation);
+		}
+
+		inline void setMatrix(const Matrix4& matrix) {
+			Vector3 skew;
+			Vector4 perspective;
+			milo::decompose(matrix, scale, rotation, translation, skew, perspective);
 		}
 	};
 }
