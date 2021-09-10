@@ -30,6 +30,6 @@ namespace milo {
 		void handleDragDrop(const ImRect& windowRect);
 		void handlePopupMenu(Scene* scene);
 		void createEntityWithMesh(Scene* scene, const String& name, Mesh* mesh);
-		void createEntityModelTree(Scene* scene, Model* model, Model::Node node, Entity entity);
+		void createEntityModelTree(Scene* scene, Model* model, const Model::Node* node, Entity entity);
 	};
 }

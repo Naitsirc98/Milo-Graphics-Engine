@@ -106,7 +106,7 @@ namespace milo {
 					if (ImGui::MenuItem("Sponza"))
 					{
 						Model* model = Assets::models().find("Sponza");
-						createEntityModelTree(scene, model, model->root(), scene->createEntity(model->root().name));
+						createEntityModelTree(scene, model, model->root(), scene->createEntity(model->root()->name));
 						//m_SelectedEntity.getComponent<Transform>().scale *= 0.1f;
 					}
 					ImGui::EndMenu();
@@ -129,18 +129,20 @@ namespace milo {
 		selectEntity(newEntity);
 	}
 
-	void SceneHierarchyPanel::createEntityModelTree(Scene* scene, Model* model, Model::Node node, Entity entity) {
+	void SceneHierarchyPanel::createEntityModelTree(Scene* scene, Model* model, const Model::Node* node, Entity entity) {
 
 		Transform& transform = entity.getComponent<Transform>();
-		transform.setMatrix(node.transform);
+		transform.setMatrix(node->transform);
 
-		MeshView& meshView = entity.addComponent<MeshView>();
-		meshView.mesh = node.mesh;
-		meshView.material = node.material;
+		if(node->mesh != nullptr) {
+			MeshView& meshView = entity.addComponent<MeshView>();
+			meshView.mesh = node->mesh;
+			meshView.material = node->material;
+		}
 
-		for(uint32_t i = 0;i < node.children.size();++i) {
-			Model::Node childNode = model->get(node.children[i]);
-			Entity childEntity = scene->createEntity(childNode.name);
+		for(uint32_t i = 0;i < node->children.size();++i) {
+			const Model::Node* childNode = model->get(node->children[i]);
+			Entity childEntity = scene->createEntity(childNode->name);
 			entity.addChild(childEntity.id());
 			createEntityModelTree(scene, model, childNode, childEntity);
 		}

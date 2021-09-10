@@ -78,6 +78,7 @@ namespace milo {
 			destroy(name);
 		}
 		m_Materials[name] = material;
+		m_ResourcePool->allocateMaterialResources(material);
 	}
 
 	MaterialResourcePool& MaterialManager::resourcePool() const {

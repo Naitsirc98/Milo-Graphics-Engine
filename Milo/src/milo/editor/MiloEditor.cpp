@@ -28,15 +28,15 @@ namespace milo {
 
 		if(s_SceneHierarchyPanel.selectedEntity()) {
 			s_PropertiesPanel.render(s_SceneHierarchyPanel.selectedEntity());
+		} else {
+			ImGui::Begin("PropertiesPanel");
+			ImGui::End();
 		}
 
 		ImGui::Begin("SceneViewportPanel", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		auto texture = WorldRenderer::get().getFramebuffer().colorAttachments()[0];
 		UI::image(*texture, texture->size());
 		SceneManager::activeScene()->setFocused(ImGui::IsWindowFocused());
-		ImGui::End();
-
-		ImGui::Begin("PropertiesPanel");
 		ImGui::End();
 
 		ImGui::Begin("AssetExplorerPanel");

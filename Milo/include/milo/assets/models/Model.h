@@ -29,31 +29,35 @@ namespace milo {
 	public:
 		inline static const Node Empty{nullptr, UINT32_MAX, "", Matrix4(1.0f), nullptr, nullptr, {}};
 	private:
-		ArrayList<Node> m_Nodes;
+		ArrayList<Node*> m_Nodes;
 	private:
 		Model() = default;
-		~Model() override = default;
+		~Model() override {
+			for(auto node : m_Nodes) {
+				DELETE_PTR(node);
+			}
+		}
 	public:
 		Model(const Model& other) = delete;
 		Model& operator=(const Model& other) = delete;
-		inline Node root() const {return m_Nodes[0];}
-		inline Node get(uint32_t index) const {return m_Nodes[index];}
-		inline Node get(const String& name) const {
-			for(const Node& node : m_Nodes) {
-				if(node.name == name) return node;
+		inline const Node* root() const {return m_Nodes[0];}
+		inline const Node* get(uint32_t index) const {return m_Nodes[index];}
+		inline const Node* get(const String& name) const {
+			for(uint32_t i = 0;i < size();++i) {
+				if(m_Nodes[i]->name == name) return m_Nodes[i];
 			}
-			return Empty;
+			return &Empty;
 		}
-		inline Node operator[](uint32_t index) const {
+		inline const Node* operator[](uint32_t index) const {
 			return m_Nodes[index];
 		}
-		inline const ArrayList<Node>& nodes() const {return m_Nodes;}
+		inline const ArrayList<Node*>& nodes() const {return m_Nodes;}
 		inline uint32_t size() const {return m_Nodes.size();}
 
-		inline Node createNode() {
-			Node node{};
-			node.model = this;
-			node.index = m_Nodes.size();
+		inline Node* createNode() {
+			Node* node = new Node();
+			node->model = this;
+			node->index = m_Nodes.size();
 			m_Nodes.push_back(node);
 			return node;
 		}

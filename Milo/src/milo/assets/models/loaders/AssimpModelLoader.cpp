@@ -6,7 +6,7 @@
 namespace milo {
 
 	static const int ASSIMP_FLAGS = aiProcess_OptimizeMeshes
-			| aiProcess_OptimizeGraph
+			//| aiProcess_OptimizeGraph
 			| aiProcess_Triangulate
 			| aiProcess_FlipUVs
 			| aiProcess_JoinIdenticalVertices
@@ -34,8 +34,8 @@ namespace milo {
 
 	void AssimpModelLoader::processScene(const aiScene* aiScene, Model* outModel) {
 		const aiNode* aiNode = aiScene->mRootNode;
-		Model::Node node = outModel->createNode();
-		processNode(aiScene, aiNode, &node);
+		Model::Node* node = outModel->createNode();
+		processNode(aiScene, aiNode, node);
 	}
 
 	void AssimpModelLoader::processNode(const aiScene* aiScene, const aiNode* aiNode, Model::Node* outNode) {
@@ -52,7 +52,7 @@ namespace milo {
 				mesh = new Mesh(m_File);
 				mesh->m_Name = aiMesh->mName.C_Str();
 				processMesh(aiScene, aiMesh, mesh);
-				Assets::meshes().addMesh(aiMesh->mName.C_Str(), mesh);
+				Assets::meshes().addMesh(mesh->name(), mesh);
 			}
 			outNode->mesh = mesh;
 
@@ -63,6 +63,7 @@ namespace milo {
 				if(material == nullptr) {
 					material = new Material(aiMaterial->GetName().C_Str(), m_File);
 					processMaterial(aiScene, aiMaterial, material);
+					Assets::materials().addMaterial(material->name(), material);
 				}
 				outNode->material = material;
 			}
@@ -71,9 +72,9 @@ namespace milo {
 		// Children
 		for(uint32_t i = 0;i < aiNode->mNumChildren;++i) {
 			const auto* aiChild = aiNode->mChildren[i];
-			Model::Node child = outNode->model->createNode();
-			outNode->children.push_back(child.index);
-			processNode(aiScene, aiChild, &child);
+			Model::Node* child = outNode->model->createNode();
+			outNode->children.push_back(child->index);
+			processNode(aiScene, aiChild, child);
 		}
 	}
 
@@ -115,9 +116,9 @@ namespace milo {
 	}
 
 	inline static void getColor(const aiMaterial* aiMaterial, const char* name, uint32_t type, uint32_t idx, Color& outColor) {
-		ai_real color[4];
+		ai_real color[3]{0, 0, 0};
 		aiMaterial->Get(name, type, idx, color, nullptr);
-		memcpy(&outColor, color, sizeof(Color));
+		memcpy(&outColor, color, sizeof(float) * 3);
 	}
 
 	inline static void getFloat(const aiMaterial* aiMaterial, const char* name, uint32_t type, uint32_t idx, float& outFloat) {
@@ -126,7 +127,7 @@ namespace milo {
 		outFloat = aiFloat;
 	}
 
-	inline static Ref<Texture2D> getTexture(const aiScene* aiScene, const aiMaterial* aiMaterial, aiTextureType type, PixelFormat format) {
+	Ref<Texture2D> AssimpModelLoader::getTexture(const aiScene* aiScene, const aiMaterial* aiMaterial, aiTextureType type, PixelFormat format) {
 
 		if(aiMaterial->GetTextureCount(type) == 0) {
 			if(type == aiTextureType_EMISSIVE) return Assets::textures().blackTexture();
@@ -136,7 +137,13 @@ namespace milo {
 		aiString path;
 		aiMaterial->GetTexture(type, 0, &path);
 
-		return Assets::textures().load(path.C_Str(), format);
+		String textureFile = path.C_Str();
+
+		if(!Files::isAbsolute(textureFile)) {
+			textureFile = Files::append(m_Dir, textureFile);
+		}
+
+		return Assets::textures().load(textureFile, format);
 	}
 
 	void AssimpModelLoader::processMaterial(const aiScene* aiScene, const aiMaterial* aiMaterial, Material* outMaterial) {
@@ -150,7 +157,8 @@ namespace milo {
 		getFloat(aiMaterial, AI_MATKEY_OPACITY, mat.alpha);
 		getFloat(aiMaterial, AI_MATKEY_ROUGHNESS_FACTOR, mat.roughness);
 
-		outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_BASE_COLOR, PixelFormat::RGBA8);
+		outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE, PixelFormat::RGBA8);
+		//outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_BASE_COLOR, PixelFormat::RGBA8);
 		outMaterial->m_EmissiveMap = getTexture(aiScene, aiMaterial, aiTextureType_EMISSIVE, PixelFormat::RGBA8);
 		outMaterial->m_NormalMap = getTexture(aiScene, aiMaterial, aiTextureType_NORMALS, PixelFormat::RGBA8);
 		outMaterial->m_MetallicMap = getTexture(aiScene, aiMaterial, aiTextureType_METALNESS, PixelFormat::RGBA8);

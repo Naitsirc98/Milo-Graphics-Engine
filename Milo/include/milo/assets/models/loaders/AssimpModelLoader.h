@@ -18,6 +18,7 @@ namespace milo {
 		void processMesh(const aiScene* scene, const aiMesh* mesh, Mesh* outMesh);
 		void processIndices(const aiMesh* aiMesh, Mesh* outMesh);
 		void processMaterial(const aiScene* scene, const aiMaterial* aiMaterial, Material* outMaterial);
+		Ref<Texture2D> getTexture(const aiScene* aiScene, const aiMaterial* aiMaterial, aiTextureType type, PixelFormat format);
 	};
 
 }

@@ -108,6 +108,8 @@ namespace milo {
 			destroy(name);
 		}
 		m_Meshes[name] = mesh;
+		createGraphicsBuffers(mesh->filename(), mesh);
+		createBoundingVolume(mesh->filename(), mesh);
 	}
 
 	Ref<MeshLoader> MeshManager::getMeshLoaderOf(const String& filename) {
