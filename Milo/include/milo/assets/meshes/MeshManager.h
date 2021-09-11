@@ -23,7 +23,6 @@ namespace milo {
 		Mesh* getSphere() const;
 		Mesh* getCylinder() const;
 		Mesh* getMonkey() const;
-		Mesh* getSponza() const;
 		Mesh* load(const String& name, const String& filename);
 		bool exists(const String& name);
 		Mesh* find(const String& name);

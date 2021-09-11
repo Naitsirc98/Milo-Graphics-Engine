@@ -6,7 +6,6 @@
 namespace milo {
 
 	VulkanEnvironmentMapPass::VulkanEnvironmentMapPass(VulkanDevice* device) : m_Device(device) {
-
 		createDescriptorSetLayout();
 		createDescriptorPool();
 		createPipelineLayout();
@@ -25,32 +24,33 @@ namespace milo {
 	void VulkanEnvironmentMapPass::execute(const VulkanSkyboxPassExecuteInfo& execInfo) {
 
 		VkCommandBuffer commandBuffer = execInfo.commandBuffer;
-
 		VulkanCubemap* environmentMap = execInfo.environmentMap;
 
 		uint32_t mapSize = execInfo.loadInfo->environmentMapSize;
 
-		Cubemap::AllocInfo allocInfo{};
-		allocInfo.width = mapSize;
-		allocInfo.height = mapSize;
-		allocInfo.format = PixelFormat::RGBA32F;
-		allocInfo.mipLevels = 4;
+		if(environmentMap->vkImageView() == VK_NULL_HANDLE) {
+			Cubemap::AllocInfo allocInfo{};
+			allocInfo.width = mapSize;
+			allocInfo.height = mapSize;
+			allocInfo.format = PixelFormat::RGBA32F;
+			allocInfo.mipLevels = 4;
 
-		environmentMap->allocate(allocInfo);
-		environmentMap->generateMipmaps();
+			environmentMap->allocate(allocInfo);
+			environmentMap->generateMipmaps();
 
-		VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+			VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
+			samplerInfo.magFilter = VK_FILTER_LINEAR;
+			samplerInfo.minFilter = VK_FILTER_LINEAR;
+			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
 
-		VkSampler sampler = VulkanContext::get()->samplerMap()->get(samplerInfo);
+			VkSampler sampler = VulkanContext::get()->samplerMap()->get(samplerInfo);
 
-		environmentMap->vkSampler(sampler);
+			environmentMap->vkSampler(sampler);
+		}
 
 		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
 

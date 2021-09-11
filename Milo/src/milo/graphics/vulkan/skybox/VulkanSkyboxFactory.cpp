@@ -1,5 +1,6 @@
 #include "milo/graphics/vulkan/skybox/VulkanSkyboxFactory.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
+#include "milo/assets/AssetManager.h"
 
 namespace milo {
 
@@ -9,6 +10,7 @@ namespace milo {
 		m_IrradiancePass = new VulkanIrradianceMapPass(m_Device);
 		m_PrefilterPass = new VulkanPrefilterMapPass(m_Device);
 		//m_BRDFPass = new VulkanBRDFPass(m_Device);
+		m_PreethamSkyPass = new VulkanPreethamSkyEnvironmentPass(m_Device);
 	}
 
 	VulkanSkyboxFactory::~VulkanSkyboxFactory() {
@@ -21,7 +23,6 @@ namespace milo {
 	Skybox* VulkanSkyboxFactory::create(const String& name, const String& imageFile, const SkyboxLoadInfo& loadInfo) {
 
 		VulkanTexture2D* equirectangularTexture = createEquirectangularTexture(imageFile);
-
 		VulkanCubemap* environmentMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 		VulkanCubemap* irradianceMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 		VulkanCubemap* prefilterMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
@@ -42,7 +43,9 @@ namespace milo {
 			m_PrefilterPass->execute(execInfo);
 		});
 
+
 		Skybox* skybox = new Skybox(name, imageFile);
+		skybox->m_EquirectangularTexture = Ref<VulkanTexture2D>(equirectangularTexture);
 		skybox->m_EnvironmentMap = environmentMap;
 		skybox->m_IrradianceMap = irradianceMap;
 		skybox->m_PrefilterMap = prefilterMap;
@@ -50,8 +53,9 @@ namespace milo {
 		skybox->m_PrefilterLODBias = loadInfo.lodBias;
 		skybox->m_MaxPrefilterLOD = loadInfo.maxLOD;
 
-		DELETE_PTR(equirectangularTexture);
+		Assets::textures().addIcon(name, skybox->equirectangularTexture());
 
+		equirectangularTexture->setName(name + "_EquirectangularTexture");
 		environmentMap->setName(name + "_EnvironmentMap");
 		irradianceMap->setName(name + "_IrradianceMap");
 		prefilterMap->setName(name + "_PrefilterMap");
@@ -87,5 +91,77 @@ namespace milo {
 		DELETE_PTR(image);
 
 		return texture;
+	}
+
+	PreethamSky* VulkanSkyboxFactory::createPreethamSky(const String& name, const SkyboxLoadInfo& loadInfo,
+														float turbidity, float azimuth, float inclination) {
+
+		VulkanCubemap* environmentMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
+		VulkanCubemap* irradianceMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
+		VulkanCubemap* prefilterMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
+		//VulkanTexture2D* brdfMap = VulkanTexture2D::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
+
+		VulkanSkyboxPassExecuteInfo execInfo{};
+		execInfo.environmentMap = environmentMap;
+		execInfo.irradianceMap = irradianceMap;
+		execInfo.prefilterMap = prefilterMap;
+		//execInfo.brdfMap = brdfMap;
+		execInfo.loadInfo = &loadInfo;
+		execInfo.turbidity = turbidity;
+		execInfo.azimuth = azimuth;
+		execInfo.inclination = inclination;
+
+		m_Device->computeCommandPool()->execute([&](VkCommandBuffer commandBuffer) {
+			execInfo.commandBuffer = commandBuffer;
+			m_PreethamSkyPass->execute(execInfo);
+			m_IrradiancePass->execute(execInfo);
+			m_PrefilterPass->execute(execInfo);
+		});
+
+		PreethamSky* sky = new PreethamSky(name);
+		sky->m_EnvironmentMap = environmentMap;
+		sky->m_IrradianceMap = irradianceMap;
+		sky->m_PrefilterMap = prefilterMap;
+		//sky->m_BRDFMap = brdfMap;
+		sky->m_PrefilterLODBias = loadInfo.lodBias;
+		sky->m_MaxPrefilterLOD = loadInfo.maxLOD;
+		sky->turbidity(turbidity)->azimuth(azimuth)->inclination(inclination);
+		sky->m_Dirty = false;
+
+		environmentMap->setName(name + "_EnvironmentMap");
+		irradianceMap->setName(name + "_IrradianceMap");
+		prefilterMap->setName(name + "_PrefilterMap");
+
+		return sky;
+	}
+
+	void VulkanSkyboxFactory::updatePreethamSky(PreethamSky* sky) {
+
+		SkyboxLoadInfo loadInfo{};
+		loadInfo.environmentMapSize = sky->environmentMap()->width();
+		loadInfo.irradianceMapSize = sky->irradianceMap()->width();
+		loadInfo.prefilterMapSize = sky->prefilterMap()->width();
+		//loadInfo.brdfSize = sky->brdfMap()->width();
+		loadInfo.lodBias = sky->m_PrefilterLODBias;
+		loadInfo.maxLOD = sky->m_MaxPrefilterLOD;
+
+		VulkanSkyboxPassExecuteInfo execInfo{};
+		execInfo.environmentMap = dynamic_cast<VulkanCubemap*>(sky->environmentMap());
+		execInfo.irradianceMap = dynamic_cast<VulkanCubemap*>(sky->irradianceMap());
+		execInfo.prefilterMap = dynamic_cast<VulkanCubemap*>(sky->prefilterMap());
+		//execInfo.brdfMap = brdfMap;
+		execInfo.loadInfo = &loadInfo;
+		execInfo.turbidity = sky->turbidity();
+		execInfo.azimuth = sky->azimuth();
+		execInfo.inclination = sky->inclination();
+
+		m_Device->computeCommandPool()->execute([&](VkCommandBuffer commandBuffer) {
+			execInfo.commandBuffer = commandBuffer;
+			m_PreethamSkyPass->execute(execInfo);
+			m_IrradiancePass->execute(execInfo);
+			m_PrefilterPass->execute(execInfo);
+		});
+
+		sky->m_Dirty = false;
 	}
 }

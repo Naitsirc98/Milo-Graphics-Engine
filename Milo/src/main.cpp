@@ -12,9 +12,14 @@ public:
 
 		Scene* scene = SceneManager::activeScene();
 
-		Skybox* skybox = Assets::skybox().getDefault();
+		Skybox* skybox = Assets::skybox().getPreethamSky();
 
-		scene->setSkybox(skybox);
+		Entity skyboxEntity = scene->createEntity("Skybox");
+		SkyboxView& skyboxView = skyboxEntity.addComponent<SkyboxView>();
+		skyboxView.skybox = skybox;
+		skyboxView.type = SkyType::Dynamic;
+
+		scene->setSkyEntity(skyboxEntity.id());
 
 		Entity s1 = createSphere(scene, {0, 0, -3}, Assets::materials().getDefault());
 		Entity s2 = createSphere(scene, {3, 0, -3}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));

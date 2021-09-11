@@ -3,9 +3,13 @@
 
 namespace milo {
 
+	static const String PREETHAM_SKYBOX_NAME = "SK_PreethamSky";
+	static const String INDOOR_SKYBOX_NAME = "SK_Indoor";
+
 	SkyboxManager::SkyboxManager() {
 		m_SkyboxFactory = SkyboxFactory::create();
-		load(DEFAULT_SKYBOX_NAME, Files::resource("textures/skybox/indoor.hdr"));
+		createPreethamSky();
+		load(INDOOR_SKYBOX_NAME, Files::resource("textures/skybox/indoor.hdr"));
 	}
 
 	SkyboxManager::~SkyboxManager() {
@@ -14,8 +18,12 @@ namespace milo {
 		}
 	}
 
-	Skybox* SkyboxManager::getDefault() const {
-		return m_Skyboxes.at(DEFAULT_SKYBOX_NAME);
+	PreethamSky* SkyboxManager::getPreethamSky() const {
+		return (PreethamSky*)m_Skyboxes.at(PREETHAM_SKYBOX_NAME);
+	}
+
+	Skybox* SkyboxManager::getIndoorSkybox() const {
+		return m_Skyboxes.at(INDOOR_SKYBOX_NAME);
 	}
 
 	Skybox* SkyboxManager::load(const String& name, const String& filename) {
@@ -51,6 +59,16 @@ namespace milo {
 		Skybox* skybox = m_Skyboxes[name];
 		DELETE_PTR(skybox);
 		m_Skyboxes.erase(name);
+	}
+
+	void SkyboxManager::updatePreethamSky(PreethamSky* sky) {
+		if(sky == nullptr) return;
+		m_SkyboxFactory->updatePreethamSky(sky);
+	}
+
+	void SkyboxManager::createPreethamSky() {
+		m_Skyboxes[PREETHAM_SKYBOX_NAME] = m_SkyboxFactory->createPreethamSky(PREETHAM_SKYBOX_NAME, SkyboxLoadInfo(), 2, 0, 0);
+		Log::debug("Created Preetham sky");
 	}
 
 	Skybox* SkyboxManager::createSkybox(const String& name, const String& filename) {

@@ -61,10 +61,14 @@ namespace milo {
 
 	void VulkanSkyboxRenderPass::execute(Scene* scene) {
 
+		SkyboxView* skyboxView = scene->skyboxView();
+		if(skyboxView == nullptr) return;
+
+		Skybox* skybox = skyboxView->skybox;
+
 		uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
 		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
 		VulkanQueue* queue = m_Device->graphicsQueue();
-
 
 		UniformBuffer uniformBufferData{};
 
@@ -82,7 +86,7 @@ namespace milo {
 			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
 		}
 
-		uniformBufferData.textureLOD = scene->skybox()->prefilterLODBias();
+		uniformBufferData.textureLOD = skybox->prefilterLODBias();
 		uniformBufferData.intensity = 1; // TODO
 
 		m_UniformBuffer->update(imageIndex, uniformBufferData);
@@ -255,7 +259,10 @@ namespace milo {
 
 		Scene* scene = SceneManager::activeScene();
 
-		Skybox* skybox = scene->skybox();
+		SkyboxView* skyboxView = scene->skyboxView();
+		if(skyboxView == nullptr) return;
+
+		Skybox* skybox = skyboxView->skybox;
 
 		Entity cameraEntity = scene->cameraEntity();
 

@@ -185,6 +185,35 @@ namespace milo {
 			}
 			ImGui::Button("..."); // TODO
 		});
+
+		drawComponent<SkyboxView>("SkyboxView", entity, [](SkyboxView& skyboxView) {
+
+			if(skyboxView.type == SkyType::Static) {
+
+				ImGui::Text("Skybox");
+				IMGUI_LEFT_LABEL(ImGui::Text, "Name: ", skyboxView.skybox->name().c_str());
+				ImGui::SameLine();
+				UI::image(*Assets::textures().getIcon(skyboxView.skybox->name()));
+
+			} else {
+
+				PreethamSky* sky = (PreethamSky*)skyboxView.skybox;
+				float turbidity = sky->turbidity();
+				float azimuth = sky->azimuth();
+				float inclination = degrees(sky->inclination());
+
+				ImGui::Text("Skybox");
+				if(ImGui::DragFloat("Turbidity", &turbidity, 0.01f, 0.0f)) {
+					sky->turbidity(turbidity);
+				}
+				if(ImGui::DragFloat("Azimuth", &azimuth, 0.1f, 0.0f)) {
+					sky->azimuth(azimuth);
+				}
+				if(ImGui::DragFloat("Inclination", &inclination, 0.5f, 0.0f, 360.0f)) {
+					sky->inclination(radians(inclination));
+				}
+			}
+		});
 	}
 
 	bool PropertiesPanel::drawVector3Control(const String& label, Vector3& vector, float resetValue, float columnWidth) {

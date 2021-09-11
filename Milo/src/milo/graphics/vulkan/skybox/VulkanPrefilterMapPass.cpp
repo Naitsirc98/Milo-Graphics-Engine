@@ -25,32 +25,33 @@ namespace milo {
 	void VulkanPrefilterMapPass::execute(const VulkanSkyboxPassExecuteInfo& execInfo) {
 
 		VkCommandBuffer commandBuffer = execInfo.commandBuffer;
-
 		VulkanCubemap* prefilterMap = execInfo.prefilterMap;
 
 		uint32_t mapSize = execInfo.loadInfo->prefilterMapSize;
 
-		Cubemap::AllocInfo allocInfo{};
-		allocInfo.width = mapSize;
-		allocInfo.height = mapSize;
-		allocInfo.format = PixelFormat::RGBA32F;
-		allocInfo.mipLevels = 4;
+		if(prefilterMap->vkImageView() == VK_NULL_HANDLE) {
+			Cubemap::AllocInfo allocInfo{};
+			allocInfo.width = mapSize;
+			allocInfo.height = mapSize;
+			allocInfo.format = PixelFormat::RGBA32F;
+			allocInfo.mipLevels = 4;
 
-		prefilterMap->allocate(allocInfo);
-		prefilterMap->generateMipmaps();
+			prefilterMap->allocate(allocInfo);
+			prefilterMap->generateMipmaps();
 
-		VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+			VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
+			samplerInfo.magFilter = VK_FILTER_LINEAR;
+			samplerInfo.minFilter = VK_FILTER_LINEAR;
+			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
 
-		VkSampler sampler = VulkanContext::get()->samplerMap()->get(samplerInfo);
+			VkSampler sampler = VulkanContext::get()->samplerMap()->get(samplerInfo);
 
-		prefilterMap->vkSampler(sampler);
+			prefilterMap->vkSampler(sampler);
+		}
 
 		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
 
@@ -63,7 +64,7 @@ namespace milo {
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 										 0, 1, &descriptorSet, 0, nullptr));
 
-		uint32_t samples = 8;
+		uint32_t samples = 32;
 		VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(samples), &samples));
 
 		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 6));
@@ -80,8 +81,8 @@ namespace milo {
 
 		VkDescriptorImageInfo equirectangularTextureInfo{};
 		equirectangularTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		equirectangularTextureInfo.imageView = execInfo.equirectangularTexture->vkImageView();
-		equirectangularTextureInfo.sampler = execInfo.equirectangularTexture->vkSampler();
+		equirectangularTextureInfo.imageView = execInfo.environmentMap->vkImageView();
+		equirectangularTextureInfo.sampler = execInfo.environmentMap->vkSampler();
 
 		VkDescriptorImageInfo environmentMapInfo{};
 		environmentMapInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -159,7 +160,7 @@ namespace milo {
 
 	void VulkanPrefilterMapPass::createComputePipeline() {
 
-		Shader* shader = Assets::shaders().load(Files::resource("shaders/skybox/equirectangular_to_cubemap.comp"));
+		Shader* shader = Assets::shaders().load(Files::resource("shaders/skybox/prefilter.comp"));
 		auto* vulkanShader = dynamic_cast<VulkanShader*>(shader);
 
 		VkShaderModuleCreateInfo shaderModuleCreateInfo{};

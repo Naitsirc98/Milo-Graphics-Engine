@@ -44,6 +44,7 @@ namespace milo {
 		Ref<Texture2D> load(const String& filename, PixelFormat format = PixelFormat::RGBA8, bool flipY = false);
 		Ref<Texture2D> getIcon(const String& name) const;
 		void addIcon(const String& name, Ref<Texture2D> texture);
+		void removeIcon(const String& name);
 		Ref<Texture2D> createIcon(const String& name, Mesh* mesh, Material* material);
 	private:
 		uint32_t nextTextureId();

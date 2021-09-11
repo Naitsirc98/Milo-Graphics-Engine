@@ -4,8 +4,6 @@
 
 namespace milo {
 
-	const String DEFAULT_SKYBOX_NAME = "SK_Default";
-
 	class SkyboxManager {
 		friend class AssetManager;
 	private:
@@ -15,12 +13,15 @@ namespace milo {
 		SkyboxManager();
 		~SkyboxManager();
 	public:
-		Skybox* getDefault() const;
+		PreethamSky* getPreethamSky() const;
+		Skybox* getIndoorSkybox() const;
 		Skybox* load(const String& name, const String& filename);
 		bool exists(const String& name) const;
 		Skybox* find(const String& name) const;
 		void destroy(const String& name);
+		void updatePreethamSky(PreethamSky* sky);
 	private:
+		void createPreethamSky();
 		Skybox* createSkybox(const String& name, const String& filename);
 		Skybox* loadCache(const String& originalFilename, const String& cacheFilename);
 		void loadCachedSkyboxes();

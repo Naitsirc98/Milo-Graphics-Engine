@@ -21,7 +21,7 @@ namespace milo {
 		const String m_Name;
 		ECSRegistry m_Registry;
 		EntityId m_MainCameraEntity = NULL_ENTITY;
-		Skybox* m_Skybox{nullptr};
+		EntityId m_SkyEntity = NULL_ENTITY;
 		LightEnvironment m_LightEnvironment{};
 		Viewport m_Viewport{};
 		bool m_Focused = false;
@@ -39,8 +39,8 @@ namespace milo {
 		Entity cameraEntity() noexcept;
 		Camera* camera() noexcept;
 		void setMainCamera(EntityId id) noexcept;
-		Skybox* skybox() const;
-		void setSkybox(Skybox* skybox);
+		SkyboxView* skyboxView() const;
+		void setSkyEntity(EntityId id);
 		const LightEnvironment& lightEnvironment() const noexcept;
 		LightEnvironment& lightEnvironment() noexcept;
 		const Viewport& viewport() const noexcept;

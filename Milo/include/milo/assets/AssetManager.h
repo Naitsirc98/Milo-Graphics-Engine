@@ -6,6 +6,7 @@
 #include "milo/assets/shaders/ShaderManager.h"
 #include "milo/assets/skybox/SkyboxManager.h"
 #include "milo/assets/models/ModelManager.h"
+#include "milo/io/Files.h"
 
 namespace milo {
 

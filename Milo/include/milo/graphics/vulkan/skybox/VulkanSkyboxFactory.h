@@ -16,6 +16,9 @@ namespace milo {
 		VulkanCubemap* prefilterMap;
 		VulkanTexture2D* brdfMap;
 		const SkyboxLoadInfo* loadInfo;
+		float turbidity;
+		float azimuth;
+		float inclination;
 		VkCommandBuffer commandBuffer;
 	};
 
@@ -95,6 +98,26 @@ namespace milo {
 		void createComputePipeline();
 	};
 
+	class VulkanPreethamSkyEnvironmentPass {
+	private:
+		VulkanDevice* m_Device;
+		VkDescriptorSetLayout m_DescriptorSetLayout{VK_NULL_HANDLE};
+		VulkanDescriptorPool* m_DescriptorPool{nullptr};
+		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
+		VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
+	public:
+		VulkanPreethamSkyEnvironmentPass(VulkanDevice* device);
+		~VulkanPreethamSkyEnvironmentPass();
+		void execute(const VulkanSkyboxPassExecuteInfo& execInfo);
+		void update(VkCommandBuffer commandBuffer, VulkanCubemap* environmentMap, float turbidity, float azimuth, float inclination);
+	private:
+		void updateDescriptorSet(VulkanCubemap* environmentMap);
+		void createDescriptorSetLayout();
+		void createDescriptorPool();
+		void createPipelineLayout();
+		void createComputePipeline();
+	};
+
 	class VulkanSkyboxFactory : public SkyboxFactory {
 		friend class SkyboxFactory;
 	private:
@@ -103,11 +126,14 @@ namespace milo {
 		VulkanIrradianceMapPass* m_IrradiancePass{nullptr};
 		VulkanPrefilterMapPass* m_PrefilterPass{nullptr};
 		VulkanBRDFPass* m_BRDFPass{nullptr};
+		VulkanPreethamSkyEnvironmentPass* m_PreethamSkyPass{nullptr};
 	private:
 		VulkanSkyboxFactory();
 		~VulkanSkyboxFactory() override;
 	public:
 		Skybox* create(const String& name, const String& imageFile, const SkyboxLoadInfo& loadInfo = DEFAULT_SKYBOX_LOAD_INFO) override;
+		PreethamSky* createPreethamSky(const String& name, const SkyboxLoadInfo& loadInfo, float turbidity, float azimuth, float inclination) override;
+		void updatePreethamSky(PreethamSky* sky) override;
 	private:
 		VulkanTexture2D* createEquirectangularTexture(const String& imageFile);
 	};

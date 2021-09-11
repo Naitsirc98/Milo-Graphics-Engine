@@ -5,10 +5,10 @@
 namespace milo {
 
 	struct SkyboxLoadInfo {
-		int environmentMapSize{2048};
-		int irradianceMapSize{32};
-		int prefilterMapSize{128};
-		int brdfSize{512};
+		uint32_t environmentMapSize{2048};
+		uint32_t irradianceMapSize{32};
+		uint32_t prefilterMapSize{128};
+		uint32_t brdfSize{512};
 		float maxLOD{4.0f};
 		float lodBias{-0.5f};
 	};
@@ -19,6 +19,8 @@ namespace milo {
 	public:
 		virtual ~SkyboxFactory() = default;
 		virtual Skybox* create(const String& name, const String& imageFile, const SkyboxLoadInfo& loadInfo = DEFAULT_SKYBOX_LOAD_INFO) = 0;
+		virtual PreethamSky* createPreethamSky(const String& name, const SkyboxLoadInfo& loadInfo, float turbidity, float azimuth, float inclination) = 0;
+		virtual void updatePreethamSky(PreethamSky* sky) = 0;
 	public:
 		static SkyboxFactory* create();
 	};

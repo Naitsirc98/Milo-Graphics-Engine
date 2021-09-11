@@ -9,17 +9,19 @@ namespace milo {
 		friend class SkyboxManager;
 		friend class SkyboxFactory;
 		friend class VulkanSkyboxFactory;
-	private:
+	protected:
+		Ref<Texture2D> m_EquirectangularTexture;
 		Cubemap* m_EnvironmentMap{nullptr};
 		Cubemap* m_IrradianceMap{nullptr};
 		Cubemap* m_PrefilterMap{nullptr};
 		Texture2D* m_BRDFMap{nullptr};
 		float m_MaxPrefilterLOD{4.0f};
 		float m_PrefilterLODBias{-0.25f};
-	private:
+	protected:
 		Skybox(String name, String filename);
-		~Skybox();
+		virtual ~Skybox();
 	public:
+		Ref<Texture2D> equirectangularTexture() const;
 		Cubemap* environmentMap() const;
 		Cubemap* irradianceMap() const;
 		Cubemap* prefilterMap() const;
@@ -30,4 +32,26 @@ namespace milo {
 		void prefilterLODBias(float value);
 	};
 
+	class PreethamSky : public Skybox {
+		friend class SkyboxManager;
+		friend class SkyboxFactory;
+		friend class VulkanSkyboxFactory;
+	private:
+		float m_Turbidity{2};
+		float m_Azimuth{0};
+		float m_Inclination{0};
+		bool m_Dirty{true};
+	private:
+		PreethamSky(const String& name);
+		~PreethamSky() override;
+	public:
+		float turbidity() const;
+		PreethamSky* turbidity(float value);
+		float azimuth() const;
+		PreethamSky* azimuth(float value);
+		float inclination() const;
+		PreethamSky* inclination(float value);
+		bool dirty() const;
+		void update();
+	};
 }

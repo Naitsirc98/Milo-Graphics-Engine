@@ -25,7 +25,7 @@ namespace milo {
 
 		//push<PBRForwardRenderPass>();
 
-		if(scene->skybox() != nullptr) {
+		if(scene->skyboxView() != nullptr) {
 			push<SkyboxRenderPass>();
 		}
 

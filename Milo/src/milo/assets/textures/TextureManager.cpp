@@ -88,6 +88,10 @@ namespace milo {
 		m_Icons[name] = texture;
 	}
 
+	void TextureManager::removeIcon(const String& name) {
+		m_Icons.erase(name);
+	}
+
 	Ref<Texture2D> TextureManager::createIcon(const String &name, Mesh *mesh, Material *material) {
 		Ref<Texture2D> icon = Ref<Texture2D>(m_IconFactory->createIcon(mesh, material));
 		addIcon(name, icon);

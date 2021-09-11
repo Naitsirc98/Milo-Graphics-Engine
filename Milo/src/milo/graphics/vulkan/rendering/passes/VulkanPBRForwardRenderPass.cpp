@@ -95,7 +95,7 @@ namespace milo {
 
 				updateCameraUniformData(imageIndex, camera, cameraTransform);
 				updateLightsUniformData(imageIndex, scene->lightEnvironment());
-				updateSkyboxUniformData(imageIndex, scene->skybox());
+				//updateSkyboxUniformData(imageIndex, scene->skybox());
 
 				bindSceneDescriptorSet(commandBuffer, imageIndex);
 

@@ -67,12 +67,14 @@ namespace milo {
 		return m_Registry;
 	}
 
-	Skybox* Scene::skybox() const {
-		return m_Skybox;
+	SkyboxView* Scene::skyboxView() const {
+		if(m_SkyEntity == NULL_ENTITY) return nullptr;
+		Entity entity(m_SkyEntity, const_cast<Scene*>(this));
+		return &entity.getComponent<SkyboxView>();
 	}
 
-	void Scene::setSkybox(Skybox* skybox) {
-		m_Skybox = skybox;
+	void Scene::setSkyEntity(EntityId id) {
+		m_SkyEntity = id;
 	}
 
 	const LightEnvironment& Scene::lightEnvironment() const noexcept {
@@ -92,6 +94,16 @@ namespace milo {
 	}
 
 	void Scene::update() {
+
+		if(m_SkyEntity != NULL_ENTITY) {
+			SkyboxView* skyboxView = this->skyboxView();
+			if(skyboxView->type == SkyType::Dynamic) {
+				PreethamSky* sky = (PreethamSky*)skyboxView->skybox;
+				if(sky->dirty()) {
+					sky->update();
+				}
+			}
+		}
 
 		if(getSimulationState() == SimulationState::Editor) return;
 

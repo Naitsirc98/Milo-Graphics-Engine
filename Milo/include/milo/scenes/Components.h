@@ -7,3 +7,4 @@
 #include "milo/scenes/components/NativeScript.h"
 #include "milo/scenes/components/CameraController.h"
 #include "milo/scenes/components/EntityBasicInfo.h"
+#include "milo/scenes/components/SkyboxView.h"

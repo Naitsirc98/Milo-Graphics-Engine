@@ -11,7 +11,6 @@
 #define QUAD_MESH_NAME "SM_Quad"
 #define CYLINDER_MESH_NAME "SM_Cylinder"
 #define MONKEY_MESH_NAME "SM_Monkey"
-#define SPONZA_MESH_NAME "SM_Sponza"
 
 namespace milo {
 
@@ -32,7 +31,6 @@ namespace milo {
 		load(QUAD_MESH_NAME, "resources/meshes/Quad.obj");
 		load(CYLINDER_MESH_NAME, "resources/meshes/Cylinder.obj");
 		load(MONKEY_MESH_NAME, "resources/meshes/Monkey.obj");
-		load(SPONZA_MESH_NAME, "resources/meshes/Sponza/Sponza.obj");
 	}
 
 	Mesh* MeshManager::getQuad() const {
@@ -57,10 +55,6 @@ namespace milo {
 
 	Mesh* MeshManager::getMonkey() const {
 		return m_Meshes.at(MONKEY_MESH_NAME);
-	}
-
-	Mesh* MeshManager::getSponza() const {
-		return m_Meshes.at(SPONZA_MESH_NAME);
 	}
 
 	Mesh* MeshManager::load(const String& name, const String& filename) {
