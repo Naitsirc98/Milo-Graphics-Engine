@@ -28,6 +28,7 @@ namespace milo {
 		VkBufferCreateInfo m_VkBufferInfo = {};
 		MemoryProperties m_MemoryProperties = {};
 		void* m_MappedMemory = nullptr;
+		String m_Name;
 	public:
 		explicit VulkanBuffer(const CreateInfo& createInfo);
 		explicit VulkanBuffer(const VulkanBuffer& other) = delete;
@@ -42,6 +43,9 @@ namespace milo {
 		VmaAllocation allocation();
 		uint64_t size() const override;
 		bool isCPUAllocated() const;
+
+		const String& name() const;
+		void setName(const String& name);
 
 		void allocate(const AllocInfo& allocInfo) override;
 		void update(const UpdateInfo& updateInfo) override;

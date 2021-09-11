@@ -107,7 +107,6 @@ namespace milo {
 					{
 						Model* model = Assets::models().find("Sponza");
 						createEntityModelTree(scene, model, model->root(), scene->createEntity(model->root()->name));
-						//m_SelectedEntity.getComponent<Transform>().scale *= 0.1f;
 					}
 					ImGui::EndMenu();
 				}
@@ -133,7 +132,7 @@ namespace milo {
 
 		Transform& transform = entity.getComponent<Transform>();
 		transform.setMatrix(node->transform);
-		transform.scale *= 0.2f;
+		transform.scale *= 0.1f;
 
 		if(node->mesh != nullptr) {
 			MeshView& meshView = entity.addComponent<MeshView>();

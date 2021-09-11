@@ -1,6 +1,7 @@
 #include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/Graphics.h"
+#include "milo/graphics/vulkan/debug/VulkanDebugMessenger.h"
 
 namespace milo {
 
@@ -54,6 +55,15 @@ namespace milo {
 	bool VulkanBuffer::isCPUAllocated() const {
 		const VmaMemoryUsage usage = m_MemoryProperties.usage;
 		return usage == VMA_MEMORY_USAGE_CPU_ONLY || usage == VMA_MEMORY_USAGE_CPU_TO_GPU || usage == VMA_MEMORY_USAGE_CPU_COPY;
+	}
+
+	const String& VulkanBuffer::name() const {
+		return m_Name;
+	}
+
+	void VulkanBuffer::setName(const String& name) {
+		VulkanDebugMessenger::setName(m_VkBuffer, name.c_str());
+		m_Name = name;
 	}
 
 	void VulkanBuffer::allocate(const AllocInfo& allocInfo) {

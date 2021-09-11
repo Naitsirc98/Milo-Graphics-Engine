@@ -12,6 +12,10 @@ namespace milo {
 		explicit VulkanDebugMessenger(VulkanContext* context);
 		~VulkanDebugMessenger();
 		 VkDebugUtilsMessengerEXT vkDebugUtilsMessenger() const;
+	public:
+		static void setName(VkImage image, const char* name);
+		static void setName(VkImageView imageView, const char* name);
+		static void setName(VkBuffer buffer, const char* name);
 		static VkDebugUtilsMessengerCreateInfoEXT getDebugMessengerCreateInfo();
 	};
 }

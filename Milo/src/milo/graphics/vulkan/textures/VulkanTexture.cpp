@@ -1,6 +1,7 @@
 #include "milo/graphics/vulkan/textures/VulkanTexture.h"
 #include "milo/graphics/vulkan/VulkanAllocator.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
+#include "milo/graphics/vulkan/debug/VulkanDebugMessenger.h"
 
 namespace milo {
 
@@ -88,6 +89,11 @@ namespace milo {
 
 	VmaMemoryUsage VulkanTexture::memoryUsage() const {
 		return m_Usage;
+	}
+
+	void VulkanTexture::setDebugName(const String& name) {
+		VulkanDebugMessenger::setName(m_VkImage, name.c_str());
+		VulkanDebugMessenger::setName(m_VkImageView, name.c_str());
 	}
 
 	void VulkanTexture::resize(const Size& size) {

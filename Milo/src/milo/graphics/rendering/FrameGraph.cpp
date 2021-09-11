@@ -29,7 +29,7 @@ namespace milo {
 			push<SkyboxRenderPass>();
 		}
 
-		push<FinalRenderPass>();
+		//push<FinalRenderPass>();
 	}
 
 	void FrameGraph::compile(Scene* scene) {

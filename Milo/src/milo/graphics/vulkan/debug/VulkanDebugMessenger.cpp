@@ -66,7 +66,7 @@ namespace milo {
 				break;
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 #ifdef THROW_EXCEPTION_ON_ERROR
-				throw MILO_RUNTIME_EXCEPTION(message);
+				//throw MILO_RUNTIME_EXCEPTION(message);
 #endif
 				Log::error(message);
 				break;
@@ -100,4 +100,42 @@ namespace milo {
 		return createInfo;
 	}
 
+	static void setObjectName(VkInstance instance, VkDevice device, VkDebugUtilsObjectNameInfoEXT& nameInfo) {
+#ifdef _DEBUG
+		auto vkFunction = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+		if(vkFunction == nullptr)
+			throw MILO_RUNTIME_EXCEPTION("Failed to find function vkDestroyDebugUtilsMessengerEXT");
+		VK_CALL(vkFunction(device, &nameInfo));
+#endif
+	}
+
+	void VulkanDebugMessenger::setName(VkImage image, const char* name) {
+		VulkanContext* context = VulkanContext::get();
+		VkDebugUtilsObjectNameInfoEXT nameInfo{};
+		nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		nameInfo.objectHandle = (uint64_t)image;
+		nameInfo.objectType = VK_OBJECT_TYPE_IMAGE;
+		nameInfo.pObjectName = name;
+		setObjectName(context->vkInstance(), context->device()->logical(), nameInfo);
+	}
+
+	void VulkanDebugMessenger::setName(VkImageView imageView, const char* name) {
+		VulkanContext* context = VulkanContext::get();
+		VkDebugUtilsObjectNameInfoEXT nameInfo{};
+		nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		nameInfo.objectHandle = (uint64_t)imageView;
+		nameInfo.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+		nameInfo.pObjectName = name;
+		setObjectName(context->vkInstance(), context->device()->logical(), nameInfo);
+	}
+
+	void VulkanDebugMessenger::setName(VkBuffer buffer, const char* name) {
+		VulkanContext* context = VulkanContext::get();
+		VkDebugUtilsObjectNameInfoEXT nameInfo{};
+		nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		nameInfo.objectHandle = (uint64_t)buffer;
+		nameInfo.objectType = VK_OBJECT_TYPE_BUFFER;
+		nameInfo.pObjectName = name;
+		setObjectName(context->vkInstance(), context->device()->logical(), nameInfo);
+	}
 }

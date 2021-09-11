@@ -40,7 +40,6 @@ namespace milo {
 		VmaMemoryUsage m_Usage = VMA_MEMORY_USAGE_UNKNOWN;
 
 		VulkanTexture::CreateInfo m_CreateInfo;
-
 	public:
 		explicit VulkanTexture(const CreateInfo& createInfo);
 		virtual ~VulkanTexture();
@@ -55,6 +54,7 @@ namespace milo {
 		VmaAllocation allocation() const;
 		VkImageLayout layout() const;
 		VmaMemoryUsage memoryUsage() const;
+		void setDebugName(const String& name);
 
 		void resize(const Size& size);
 

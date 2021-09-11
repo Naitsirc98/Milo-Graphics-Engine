@@ -1,5 +1,6 @@
 #include "milo/graphics/vulkan/ui/VulkanUIRenderer.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
+#include "milo/graphics/rendering/WorldRenderer.h"
 
 #define IMGUI_IMPLEMENTATION
 #include <imgui/imgui.h>
@@ -72,6 +73,9 @@ namespace milo {
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		//ImGuizmo::BeginFrame();
+
+		auto texture = dynamic_cast<VulkanTexture2D*>(WorldRenderer::get().getFramebuffer().colorAttachments()[0]);
+		texture->setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 	void VulkanUIRenderer::end() {

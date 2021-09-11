@@ -38,6 +38,7 @@ namespace milo {
 	private:
 		TextureId m_Id{NULL};
 		TextureUsageFlags m_Usage{TEXTURE_USAGE_UNDEFINED_BIT};
+		String m_Name;
 	public:
 		Texture2D(TextureUsageFlags usage);
 		virtual ~Texture2D();
@@ -45,10 +46,14 @@ namespace milo {
 		inline TextureUsageFlags usage() const {return m_Usage;};
 		virtual uint32_t width() const = 0;
 		virtual uint32_t height() const = 0;
+		const String& name() const {return m_Name;}
+		void setName(const String& name) {doSetName(name); m_Name = name;}
 		Size size() const {return {(int32_t)width(), (int32_t)height()};}
 		virtual void allocate(const AllocInfo& allocInfo) = 0;
 		virtual void update(const UpdateInfo& updateInfo) = 0;
 		virtual void generateMipmaps() = 0;
+	protected:
+		virtual void doSetName(const String& name) = 0;
 	public:
 		static Texture2D* create(TextureUsageFlags usage = TEXTURE_USAGE_SAMPLED_BIT);
 	};
@@ -72,6 +77,7 @@ namespace milo {
 	private:
 		TextureId m_Id{NULL};
 		TextureUsageFlags m_Usage{TEXTURE_USAGE_UNDEFINED_BIT};
+		String m_Name;
 	public:
 		Cubemap(TextureUsageFlags usage);
 		virtual ~Cubemap();
@@ -79,10 +85,14 @@ namespace milo {
 		inline TextureUsageFlags usage() const {return m_Usage;};
 		virtual uint32_t width() const = 0;
 		virtual uint32_t height() const = 0;
+		const String& name() const {return m_Name;}
+		void setName(const String& name) {doSetName(name); m_Name = name;}
 		Size size() const {return {(int32_t)width(), (int32_t)height()};}
 		virtual void allocate(const AllocInfo& allocInfo) = 0;
 		virtual void update(const UpdateInfo& updateInfo) = 0;
 		virtual void generateMipmaps() = 0;
+	protected:
+		virtual void doSetName(const String& name) = 0;
 	public:
 		static Cubemap* create(TextureUsageFlags usage = TEXTURE_USAGE_SAMPLED_BIT);
 	};

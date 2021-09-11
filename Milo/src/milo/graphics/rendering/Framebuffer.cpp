@@ -63,6 +63,20 @@ namespace milo {
 		return m_Size;
 	}
 
+	const String& Framebuffer::name() const {
+		return m_Name;
+	}
+
+	void Framebuffer::setName(const String& name) {
+		m_Name = name;
+		for(uint32_t i = 0;i < m_ColorAttachments.size();++i) {
+			m_ColorAttachments[i]->setName(name + "_ColorAttachment_" + str(i));
+		}
+		for(uint32_t i = 0;i < m_DepthAttachments.size();++i) {
+			m_DepthAttachments[i]->setName(name + "_ColorAttachment_" + str(i));
+		}
+	}
+
 	Framebuffer* Framebuffer::create(const Framebuffer::CreateInfo& createInfo) {
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 			CreateInfo vulkanCreateInfo = createInfo;

@@ -187,6 +187,10 @@ namespace milo {
 		m_Device->graphicsCommandPool()->execute(task);
 	}
 
+	void VulkanTexture2D::doSetName(const String& name) {
+		VulkanTexture::setDebugName(name);
+	}
+
 	VulkanTexture2D* VulkanTexture2D::create(TextureUsageFlags usage) {
 
 		CreateInfo createInfo{};

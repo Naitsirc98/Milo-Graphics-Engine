@@ -259,7 +259,6 @@ namespace milo {
 				renderPassInfo.clearValueCount = 1;
 
 				auto texture = dynamic_cast<VulkanTexture2D*>(pool->getDefaultFramebuffer(i)->colorAttachments()[0]);
-
 				texture->setLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 				VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));

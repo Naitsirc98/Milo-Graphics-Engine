@@ -94,7 +94,9 @@ namespace milo {
 		createInfo.depthAttachments.push_back(PixelFormat::DEPTH);
 
 		for(uint32_t i = 0;i < maxFramebufferCount;++i) {
-			m_DefaultFramebuffers.push_back(Framebuffer::create(createInfo));
+			Framebuffer* framebuffer = Framebuffer::create(createInfo);
+			framebuffer->setName("DefaultFramebuffer[" + str(i) + "]");
+			m_DefaultFramebuffers.push_back(framebuffer);
 		}
 	}
 

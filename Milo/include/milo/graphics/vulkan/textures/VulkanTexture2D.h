@@ -23,6 +23,8 @@ namespace milo {
 
 		void generateMipmaps() override;
 
+	protected:
+		void doSetName(const String& name) override;
 	public:
 		static VulkanTexture2D* create(TextureUsageFlags usage);
 	};

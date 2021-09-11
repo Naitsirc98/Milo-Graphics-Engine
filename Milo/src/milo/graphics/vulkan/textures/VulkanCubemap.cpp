@@ -177,6 +177,10 @@ namespace milo {
 		m_Device->graphicsCommandPool()->execute(task);
 	}
 
+	void VulkanCubemap::doSetName(const String& name) {
+		VulkanTexture::setDebugName(name);
+	}
+
 	VulkanCubemap* VulkanCubemap::create(TextureUsageFlags usage) {
 
 		CreateInfo createInfo{};

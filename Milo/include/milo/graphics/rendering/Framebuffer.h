@@ -16,6 +16,7 @@ namespace milo {
 		ArrayList<Texture2D*> m_ColorAttachments;
 		ArrayList<Texture2D*> m_DepthAttachments;
 		Size m_Size{};
+		String m_Name;
 	public:
 		Framebuffer(const CreateInfo& createInfo);
 		virtual ~Framebuffer();
@@ -23,6 +24,8 @@ namespace milo {
 		const ArrayList<Texture2D*>& colorAttachments() const;
 		const ArrayList<Texture2D*>& depthAttachments() const;
 		const Size& size() const;
+		const String& name() const;
+		void setName(const String& name);
 		virtual void resize(const Size& size) = 0;
 	public:
 		static Framebuffer* create(const CreateInfo& createInfo);

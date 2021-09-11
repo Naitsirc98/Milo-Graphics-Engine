@@ -52,6 +52,10 @@ namespace milo {
 
 		DELETE_PTR(equirectangularTexture);
 
+		environmentMap->setName(name + "_EnvironmentMap");
+		irradianceMap->setName(name + "_IrradianceMap");
+		prefilterMap->setName(name + "_PrefilterMap");
+
 		return skybox;
 	}
 

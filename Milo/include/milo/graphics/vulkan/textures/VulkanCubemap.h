@@ -21,7 +21,8 @@ namespace milo {
 		void update(const Cubemap::UpdateInfo& updateInfo) override;
 
 		void generateMipmaps() override;
-
+	protected:
+		void doSetName(const String& name) override;
 	public:
 		static VulkanCubemap* create(TextureUsageFlags usage);
 	};

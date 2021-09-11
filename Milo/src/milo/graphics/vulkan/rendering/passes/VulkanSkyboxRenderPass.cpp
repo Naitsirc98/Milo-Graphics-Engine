@@ -329,7 +329,6 @@ namespace milo {
 					m_UniformBuffer->update(imageIndex, uniformBufferData);
 
 					VkDescriptorSet descriptorSet = m_DescriptorPool->get(imageIndex);
-
 					updateDescriptorSets(skybox, imageIndex, descriptorSet);
 
 					VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
