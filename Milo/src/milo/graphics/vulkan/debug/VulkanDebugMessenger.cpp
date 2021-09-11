@@ -66,7 +66,7 @@ namespace milo {
 				break;
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 #ifdef THROW_EXCEPTION_ON_ERROR
-				//throw MILO_RUNTIME_EXCEPTION(message);
+				throw MILO_RUNTIME_EXCEPTION(message);
 #endif
 				Log::error(message);
 				break;

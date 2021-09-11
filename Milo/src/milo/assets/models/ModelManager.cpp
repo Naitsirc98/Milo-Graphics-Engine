@@ -20,7 +20,10 @@ namespace milo {
 
 	Model* ModelManager::load(const String& name, const String& filename) {
 		if(exists(name)) return m_Models[name];
+		Log::debug("Loading model {}...", name);
+		float start = Time::millis();
 		Model* model = AssimpModelLoader().load(filename);
+		Log::debug("Model {} loaded in {} ms", name, Time::millis() - start);
 		if(model != nullptr) {
 			model->m_Name = name;
 			model->m_Filename = filename;

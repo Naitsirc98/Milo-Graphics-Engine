@@ -1,0 +1,17 @@
+#pragma once
+
+#include "RenderPass.h"
+
+namespace milo {
+
+	class GridRenderPass : public RenderPass {
+	public:
+		GridRenderPass() = default;
+		virtual ~GridRenderPass() override = default;
+		RenderPassId getId() const override;
+		const String& name() const override;
+	public:
+		static GridRenderPass* create();
+		static size_t id();
+	};
+}

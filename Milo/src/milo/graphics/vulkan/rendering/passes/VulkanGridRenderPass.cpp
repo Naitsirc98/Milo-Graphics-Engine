@@ -1,6 +1,7 @@
-#include "milo/graphics/vulkan/rendering/passes/VulkanSkyboxRenderPass.h"
+#include <milo/graphics/vulkan/buffers/VulkanFramebuffer.h>
+#include "milo/graphics/vulkan/rendering/passes/VulkanGridRenderPass.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
-#include "milo/assets/AssetManager.h"
+#include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/scenes/SceneManager.h"
 #include "milo/scenes/Entity.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
@@ -9,62 +10,53 @@
 
 namespace milo {
 
-	VulkanSkyboxRenderPass::VulkanSkyboxRenderPass() {
+	static const Matrix4 TRANSFORM = scale(Matrix4(1.0f), Vector3(8.0f));
 
+	VulkanGridRenderPass::VulkanGridRenderPass() {
 		m_Device = VulkanContext::get()->device();
-
 		createRenderPass();
-
+		createUniformBuffer();
 		createDescriptorSetLayout();
 		createDescriptorPool();
-		createUniformBuffer();
 		createDescriptorSets();
-
 		createSemaphores();
-
-		m_CommandBuffers.fill(VK_NULL_HANDLE);
 	}
 
-	VulkanSkyboxRenderPass::~VulkanSkyboxRenderPass() {
-
-		destroyTransientResources();
-
-		VkDevice device = m_Device->logical();
-
-		VK_CALLV(vkDestroyRenderPass(device, m_RenderPass, nullptr));
-
-		DELETE_PTR(m_UniformBuffer);
-		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, nullptr));
-		DELETE_PTR(m_DescriptorPool);
-
+	VulkanGridRenderPass::~VulkanGridRenderPass() {
+		m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());
 		DELETE_PTR(m_GraphicsPipeline);
-
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALLV(vkDestroySemaphore(device, m_SignalSemaphores[i], nullptr));
+		DELETE_PTR(m_UniformBuffer);
+		DELETE_PTR(m_DescriptorPool);
+		VK_CALLV(vkDestroyDescriptorSetLayout(m_Device->logical(), m_DescriptorSetLayout, nullptr));
+		VK_CALLV(vkDestroyRenderPass(m_Device->logical(), m_RenderPass, nullptr));
+		for(VkSemaphore semaphore : m_SignalSemaphores) {
+			VK_CALLV(vkDestroySemaphore(m_Device->logical(), semaphore, nullptr));
 		}
 	}
 
-	bool VulkanSkyboxRenderPass::shouldCompile(Scene* scene) const {
+	bool VulkanGridRenderPass::shouldCompile(Scene* scene) const {
 		return WorldRenderer::get().getFramebuffer().size() != m_LastFramebufferSize;
 	}
 
-	void VulkanSkyboxRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
+	void VulkanGridRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
 
-		m_LastFramebufferSize = WorldRenderer::get().getFramebuffer().size();
-
-		destroyTransientResources();
-
+		if(m_GraphicsPipeline != nullptr) {
+			DELETE_PTR(m_GraphicsPipeline);
+		}
 		createGraphicsPipeline();
 
+		if(m_CommandBuffers[0] != VK_NULL_HANDLE) {
+			m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());
+		}
 		createCommandBuffers(resourcePool);
+
+		m_LastFramebufferSize = WorldRenderer::get().getFramebuffer().size();
 	}
 
-	void VulkanSkyboxRenderPass::execute(Scene* scene) {
+	void VulkanGridRenderPass::execute(Scene* scene) {
 
 		SkyboxView* skyboxView = scene->skyboxView();
 		if(skyboxView == nullptr) return;
-
-		Skybox* skybox = skyboxView->skybox;
 
 		uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
 		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
@@ -75,19 +67,20 @@ namespace milo {
 		if(getSimulationState() == SimulationState::Editor) {
 
 			EditorCamera& camera = MiloEditor::camera();
-			uniformBufferData.projMatrix = camera.projMatrix();
-			uniformBufferData.viewMatrix = camera.viewMatrix();
+			Matrix4 modelMatrix = translate(Matrix4(1.0f), camera.position() - Vector3(0, 1, 0)) * scale(Matrix4(1.0f), Vector3(10.0f));
+			uniformBufferData.projViewModel = camera.projMatrix() * camera.viewMatrix() * modelMatrix;
 
 		} else {
 
 			Entity cameraEntity = scene->cameraEntity();
 			Camera& camera = cameraEntity.getComponent<Camera>();
-			uniformBufferData.projMatrix = camera.projectionMatrix();
-			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+			uniformBufferData.projViewModel = camera.projectionMatrix()
+					* camera.viewMatrix(cameraEntity.getComponent<Transform>().translation)
+					* TRANSFORM;
 		}
 
-		uniformBufferData.textureLOD = skybox->prefilterLODBias();
-		uniformBufferData.intensity = 1; // TODO
+		uniformBufferData.scale = 16;//16.025f;
+		uniformBufferData.size  = 0.05f;//0.025f;
 
 		m_UniformBuffer->update(imageIndex, uniformBufferData);
 
@@ -106,26 +99,7 @@ namespace milo {
 		queue->submit(submitInfo, VK_NULL_HANDLE);
 	}
 
-	void VulkanSkyboxRenderPass::updateDescriptorSets(Skybox* skybox, uint32_t imageIndex, VkDescriptorSet descriptorSet) {
-
-		auto* environmentMap = dynamic_cast<VulkanCubemap*>(skybox->environmentMap());
-
-		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = m_UniformBuffer->vkBuffer();
-		bufferInfo.offset = imageIndex * m_UniformBuffer->elementSize();
-		bufferInfo.range = sizeof(UniformBuffer);
-
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageView = environmentMap->vkImageView();
-		imageInfo.sampler = environmentMap->vkSampler();
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-		VkWriteDescriptorSet writeDescriptors = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &imageInfo);
-
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptors, 0, nullptr));
-	}
-
-	void VulkanSkyboxRenderPass::createRenderPass() {
+	void VulkanGridRenderPass::createRenderPass() {
 
 		VkAttachmentDescription colorAttachment = mvk::AttachmentDescription::createColorAttachment(VK_FORMAT_R32G32B32A32_SFLOAT);
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
@@ -172,68 +146,60 @@ namespace milo {
 		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassInfo, nullptr, &m_RenderPass));
 	}
 
-	void VulkanSkyboxRenderPass::createDescriptorSetLayout() {
+	void VulkanGridRenderPass::createDescriptorSetLayout() {
 
-		Array<VkDescriptorSetLayoutBinding, 2> bindings{};
+		VkDescriptorSetLayoutBinding binding{};
 		// Uniform buffer
-		bindings[0].binding = 0;
-		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		bindings[0].descriptorCount = 1;
-		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		// Cubemap
-		bindings[1].binding = 1;
-		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		bindings[1].descriptorCount = 1;
-		bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		binding.binding = 0;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		binding.descriptorCount = 1;
+		binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkDescriptorSetLayoutCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		createInfo.pBindings = bindings.data();
-		createInfo.bindingCount = 2;
+		createInfo.pBindings = &binding;
+		createInfo.bindingCount = 1;
 
 		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &createInfo, nullptr, &m_DescriptorSetLayout));
 	}
 
-	void VulkanSkyboxRenderPass::createDescriptorPool() {
+	void VulkanGridRenderPass::createDescriptorPool() {
 
-		Array<VkDescriptorPoolSize, 2> poolSizes{};
+		VkDescriptorPoolSize poolSizes{};
 		// Uniform buffer
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = MAX_SWAPCHAIN_IMAGE_COUNT;
-		// Cubemap
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = MAX_SWAPCHAIN_IMAGE_COUNT;
+		poolSizes.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		poolSizes.descriptorCount = MAX_SWAPCHAIN_IMAGE_COUNT;
 
 		VulkanDescriptorPool::CreateInfo createInfo{};
 		createInfo.layout = m_DescriptorSetLayout;
 		createInfo.capacity = MAX_SWAPCHAIN_IMAGE_COUNT;
-		createInfo.poolSizes.push_back(poolSizes[0]);
-		createInfo.poolSizes.push_back(poolSizes[1]);
+		createInfo.poolSizes.push_back(poolSizes);
 
 		m_DescriptorPool = new VulkanDescriptorPool(m_Device, createInfo);
 	}
 
-	void VulkanSkyboxRenderPass::createUniformBuffer() {
+	void VulkanGridRenderPass::createUniformBuffer() {
 		m_UniformBuffer = new VulkanUniformBuffer<UniformBuffer>();
 		m_UniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
-	void VulkanSkyboxRenderPass::createDescriptorSets() {
+	void VulkanGridRenderPass::createDescriptorSets() {
 
 		m_DescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
 
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBuffer->vkBuffer();
-			bufferInfo.offset = index * m_UniformBuffer->elementSize();
+			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBuffer);
 
-			VkWriteDescriptorSet writeDescriptor = mvk::WriteDescriptorSet::createUniformBufferWrite(0, descriptorSet, 1, &bufferInfo);
+			VkWriteDescriptorSet writeDescriptor = mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(
+					0, descriptorSet, 1, &bufferInfo);
 
 			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptor, 0, nullptr));
 		});
 	}
 
-	void VulkanSkyboxRenderPass::createGraphicsPipeline() {
+	void VulkanGridRenderPass::createGraphicsPipeline() {
 
 		VulkanGraphicsPipeline::CreateInfo pipelineInfo{};
 		pipelineInfo.vkRenderPass = m_RenderPass;
@@ -241,55 +207,22 @@ namespace milo {
 		pipelineInfo.setLayouts.push_back(m_DescriptorSetLayout);
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
-		pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
-		pipelineInfo.shaders.push_back({"resources/shaders/skybox/skybox.vert", VK_SHADER_STAGE_VERTEX_BIT});
-		pipelineInfo.shaders.push_back({"resources/shaders/skybox/skybox.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/grid/grid.vert", VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/grid/grid.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
-		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
-		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
-
-		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanSkyboxRenderPass", m_Device, pipelineInfo);
+		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanGridRenderPass", m_Device, pipelineInfo);
 	}
 
-	void VulkanSkyboxRenderPass::createCommandBuffers(FrameGraphResourcePool* resourcePool) {
+	void VulkanGridRenderPass::createCommandBuffers(FrameGraphResourcePool* resourcePool) {
+
 
 		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 												  m_CommandBuffers.size(), m_CommandBuffers.data());
 
 		Scene* scene = SceneManager::activeScene();
 
-		SkyboxView* skyboxView = scene->skyboxView();
-		if(skyboxView == nullptr) return;
-
-		Skybox* skybox = skyboxView->skybox;
-
-		UniformBuffer uniformBufferData{};
-
-		if(getSimulationState() == SimulationState::Editor) {
-
-			EditorCamera& camera = MiloEditor::camera();
-			uniformBufferData.projMatrix = camera.projMatrix();
-			uniformBufferData.viewMatrix = camera.viewMatrix();
-
-		} else {
-
-			Entity cameraEntity = scene->cameraEntity();
-
-			if(!cameraEntity.valid()) {
-				// TODO
-				throw MILO_RUNTIME_EXCEPTION("Main Camera Entity is not valid");
-			}
-
-			Camera& camera = cameraEntity.getComponent<Camera>();
-			uniformBufferData.projMatrix = camera.projectionMatrix();
-			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
-		}
-
-		uniformBufferData.textureLOD = skybox->prefilterLODBias();
-		uniformBufferData.intensity = 1; // TODO
-
-		Mesh* mesh = Assets::meshes().getCube();
+		Mesh* mesh = Assets::meshes().getPlane();
 
 		auto* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(mesh->buffers());
 
@@ -318,29 +251,13 @@ namespace milo {
 				{
 					VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
 
-					VkViewport viewport{};
-					viewport.x = (float)sceneViewport.x;
-					viewport.y = (float)sceneViewport.y;
-					viewport.width = (float)sceneViewport.width;
-					viewport.height = (float)sceneViewport.height;
-					viewport.minDepth = 0;
-					viewport.maxDepth = 1;
-
-					VkRect2D scissor{};
-					scissor.offset = {0, 0};
-					scissor.extent = {(uint32_t)sceneViewport.width, (uint32_t)sceneViewport.height};
-
-					VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
-					VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
-
-					m_UniformBuffer->update(imageIndex, uniformBufferData);
-
 					VkDescriptorSet descriptorSet = m_DescriptorPool->get(imageIndex);
-					updateDescriptorSets(skybox, imageIndex, descriptorSet);
+
+					uint32_t dynamicOffset = m_UniformBuffer->elementSize() * imageIndex;
 
 					VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 													 m_GraphicsPipeline->pipelineLayout(),
-													 0, 1, &descriptorSet, 0, nullptr));
+													 0, 1, &descriptorSet, 1, &dynamicOffset));
 
 					VkBuffer vertexBuffers[] = {meshBuffers->vertexBuffer()->vkBuffer()};
 					VkDeviceSize offsets[] = {0};
@@ -362,7 +279,7 @@ namespace milo {
 		}
 	}
 
-	void VulkanSkyboxRenderPass::createSemaphores() {
+	void VulkanGridRenderPass::createSemaphores() {
 
 		VkSemaphoreCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -372,13 +289,4 @@ namespace milo {
 		}
 	}
 
-	void VulkanSkyboxRenderPass::destroyTransientResources() {
-
-		m_Device->awaitTermination();
-
-		if(m_CommandBuffers[0] != VK_NULL_HANDLE) {
-			m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());
-			m_CommandBuffers.fill(VK_NULL_HANDLE);
-		}
-	}
 }

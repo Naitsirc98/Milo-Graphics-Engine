@@ -1,6 +1,7 @@
 #include "milo/graphics/rendering/FrameGraph.h"
 #include "milo/scenes/SceneManager.h"
 #include "milo/graphics/rendering/passes/AllRenderPasses.h"
+#include "milo/graphics/rendering/WorldRenderer.h"
 
 namespace milo {
 
@@ -27,6 +28,10 @@ namespace milo {
 
 		if(scene->skyboxView() != nullptr) {
 			push<SkyboxRenderPass>();
+		}
+
+		if(WorldRenderer::get().showGrid()) {
+			push<GridRenderPass>();
 		}
 
 		//push<FinalRenderPass>();

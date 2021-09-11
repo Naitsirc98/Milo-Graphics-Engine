@@ -13,12 +13,15 @@ namespace milo {
 		GraphicsPresenter* m_GraphicsPresenter = nullptr;
 		FrameGraphResourcePool* m_ResourcePool = nullptr;
 		FrameGraph m_FrameGraph;
+		bool m_ShowGrid{false};
 	private:
 		WorldRenderer();
 		~WorldRenderer();
 		void render(Scene* scene);
 	public:
 		Framebuffer& getFramebuffer() const;
+		bool showGrid() const;
+		void setShowGrid(bool show);
 	private:
 		static WorldRenderer* s_Instance;
 	public:

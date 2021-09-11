@@ -11,6 +11,8 @@ namespace milo {
 		m_ResourcePool->init();
 
 		m_FrameGraph.init(m_ResourcePool);
+
+		//m_ShowGrid = getSimulationState() == SimulationState::Editor;
 	}
 
 	WorldRenderer::~WorldRenderer() {
@@ -30,6 +32,14 @@ namespace milo {
 
 	Framebuffer& WorldRenderer::getFramebuffer() const {
 		return *m_ResourcePool->getDefaultFramebuffer();
+	}
+
+	bool WorldRenderer::showGrid() const {
+		return m_ShowGrid;
+	}
+
+	void WorldRenderer::setShowGrid(bool show) {
+		m_ShowGrid = show;
 	}
 
 	WorldRenderer* WorldRenderer::s_Instance = nullptr;
