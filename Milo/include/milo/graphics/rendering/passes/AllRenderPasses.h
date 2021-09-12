@@ -5,3 +5,4 @@
 #include "SkyboxRenderPass.h"
 #include "GridRenderPass.h"
 #include "FinalRenderPass.h"
+#include "DepthRenderPass.h"

@@ -116,6 +116,7 @@ namespace milo {
 
 		if(wasUpdated) {
 			SceneManager::lateUpdate();
+			WorldRenderer::update();
 		}
 	}
 

@@ -53,6 +53,7 @@ namespace milo {
 	}
 
 	void VulkanGeometryRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
+
 	}
 
 	void VulkanGeometryRenderPass::execute(Scene* scene) {
@@ -168,49 +169,42 @@ namespace milo {
 		Mesh* lastMesh = nullptr;
 		Material* lastMaterial = nullptr;
 
-		auto components = scene->group<Transform, MeshView>();
-		for(EntityId entityId : components) {
+		for(const DrawCommand& command : WorldRenderer::get().drawCommands()) {
 
-			const Transform& transform = components.get<Transform>(entityId);
-			const MeshView& meshView = components.get<MeshView>(entityId);
+			if(lastMaterial != command.material) {
 
-			if(meshView.mesh == nullptr || meshView.material == nullptr) continue;
-
-			if(lastMaterial != meshView.material) {
-
-				VkDescriptorSet materialDescriptorSet = materialResources.descriptorSetOf(meshView.material, dynamicOffsets[1]);
+				VkDescriptorSet materialDescriptorSet = materialResources.descriptorSetOf(command.material, dynamicOffsets[1]);
 				VkDescriptorSet descriptorSets[] = {cameraDescriptorSet, materialDescriptorSet};
 
 				VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 												 m_GraphicsPipeline->pipelineLayout(),
 												 0, 2, descriptorSets, 2, dynamicOffsets));
 
-				lastMaterial = meshView.material;
+				lastMaterial = command.material;
 			}
 
-			if(lastMesh != meshView.mesh) {
+			if(lastMesh != command.mesh) {
 
-				auto* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(meshView.mesh->buffers());
+				auto* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(command.mesh->buffers());
 
 				VkBuffer vertexBuffers[] = {meshBuffers->vertexBuffer()->vkBuffer()};
 				VkDeviceSize offsets[] = {0};
 				VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
 
-				if(!meshView.mesh->indices().empty()) {
+				if(!command.mesh->indices().empty()) {
 					VK_CALLV(vkCmdBindIndexBuffer(commandBuffer, meshBuffers->indexBuffer()->vkBuffer(), 0, VK_INDEX_TYPE_UINT32));
 				}
 
-				lastMesh = meshView.mesh;
+				lastMesh = command.mesh;
 			}
 
-			PushConstants pushConstants = {transform.modelMatrix()};
 			VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT,
-										0, sizeof(PushConstants), &pushConstants));
+										0, sizeof(Matrix4), &command.transform));
 
-			if(meshView.mesh->indices().empty()) {
-				VK_CALLV(vkCmdDraw(commandBuffer, meshView.mesh->vertices().size(), 1, 0, 0));
+			if(command.mesh->indices().empty()) {
+				VK_CALLV(vkCmdDraw(commandBuffer, command.mesh->vertices().size(), 1, 0, 0));
 			} else {
-				VK_CALLV(vkCmdDrawIndexed(commandBuffer, meshView.mesh->indices().size(), 1, 0, 0, 0));
+				VK_CALLV(vkCmdDrawIndexed(commandBuffer, command.mesh->indices().size(), 1, 0, 0, 0));
 			}
 		}
 	}

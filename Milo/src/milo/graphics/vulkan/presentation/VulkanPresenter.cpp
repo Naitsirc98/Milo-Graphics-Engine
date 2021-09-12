@@ -12,14 +12,14 @@ namespace milo {
 
 		m_MaxImageCount = m_Swapchain->imageCount();
 		m_CurrentImageIndex = 0;
-		m_CurrentFrame = -1;
+		m_CurrentFrame = 0;
 
 		createSyncObjects();
 
 		m_Swapchain->addSwapchainRecreateCallback([&]() {
 			m_MaxImageCount = m_Swapchain->imageCount();
 			m_CurrentImageIndex = 0;
-			m_CurrentFrame = -1;
+			m_CurrentFrame = 0;
 
 			destroySyncObjects();
 			createSyncObjects();
@@ -33,8 +33,6 @@ namespace milo {
 	bool VulkanPresenter::begin() {
 
 		if(Window::get()->size().isZero()) return false;
-
-		m_CurrentFrame = advanceToNextFrame();
 
 		waitForPreviousFrameToComplete();
 
@@ -115,6 +113,8 @@ namespace milo {
 			default:
 				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + mvk::getErrorName(result));
 		}
+
+		m_CurrentFrame = advanceToNextFrame();
 	}
 
 	uint32_t VulkanPresenter::currentImageIndex() const {

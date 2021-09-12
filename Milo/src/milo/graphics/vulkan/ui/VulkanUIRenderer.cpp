@@ -85,8 +85,7 @@ namespace milo {
 		VulkanDevice* device = VulkanContext::get()->device();
 		VulkanSwapchain* swapchain = VulkanContext::get()->swapchain();
 		uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
-		VkCommandBuffer primaryCommandBuffer = m_PrimaryCommandBuffers[imageIndex];
-		VkCommandBuffer secondaryCommandBuffer = m_SecondaryCommandBuffers[imageIndex];
+		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
 
 		VkClearValue clearValues[2];
 		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
@@ -100,59 +99,48 @@ namespace milo {
 		drawCmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 		drawCmdBufInfo.pNext = nullptr;
 
-		VK_CALL(vkBeginCommandBuffer(primaryCommandBuffer, &drawCmdBufInfo));
+		VK_CALL(vkBeginCommandBuffer(commandBuffer, &drawCmdBufInfo));
+		{
+			VkRenderPassBeginInfo renderPassBeginInfo = {};
+			renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassBeginInfo.pNext = nullptr;
+			renderPassBeginInfo.renderPass = m_RenderPass;
+			renderPassBeginInfo.renderArea.offset.x = 0;
+			renderPassBeginInfo.renderArea.offset.y = 0;
+			renderPassBeginInfo.renderArea.extent.width = width;
+			renderPassBeginInfo.renderArea.extent.height = height;
+			renderPassBeginInfo.clearValueCount = 1; // Color + depth
+			renderPassBeginInfo.pClearValues = clearValues;
+			renderPassBeginInfo.framebuffer = m_Framebuffers[imageIndex];
 
-		VkRenderPassBeginInfo renderPassBeginInfo = {};
-		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassBeginInfo.pNext = nullptr;
-		renderPassBeginInfo.renderPass = m_RenderPass;
-		renderPassBeginInfo.renderArea.offset.x = 0;
-		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width = width;
-		renderPassBeginInfo.renderArea.extent.height = height;
-		renderPassBeginInfo.clearValueCount = 1; // Color + depth
-		renderPassBeginInfo.pClearValues = clearValues;
-		renderPassBeginInfo.framebuffer = m_Framebuffers[imageIndex];
+			vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBeginRenderPass(primaryCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+			VkCommandBufferInheritanceInfo inheritanceInfo = {};
+			inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+			inheritanceInfo.renderPass = m_RenderPass;
+			inheritanceInfo.framebuffer = m_Framebuffers[imageIndex];
 
-		VkCommandBufferInheritanceInfo inheritanceInfo = {};
-		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceInfo.renderPass = m_RenderPass;
-		inheritanceInfo.framebuffer = m_Framebuffers[imageIndex];
+			VkViewport viewport = {};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = (float)width;
+			viewport.height = (float)height;
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-		VkCommandBufferBeginInfo cmdBufInfo = {};
-		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdBufInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-		cmdBufInfo.pInheritanceInfo = &inheritanceInfo;
+			VkRect2D scissor = {};
+			scissor.offset.x = 0;
+			scissor.offset.y = 0;
+			scissor.extent.width = width;
+			scissor.extent.height = height;
+			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		VK_CALL(vkBeginCommandBuffer(secondaryCommandBuffer, &cmdBufInfo));
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
-		VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)width;
-		viewport.height = (float)height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(secondaryCommandBuffer, 0, 1, &viewport);
-
-		VkRect2D scissor = {};
-		scissor.offset.x = 0;
-		scissor.offset.y = 0;
-		scissor.extent.width = width;
-		scissor.extent.height = height;
-		vkCmdSetScissor(secondaryCommandBuffer, 0, 1, &scissor);
-
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), secondaryCommandBuffer);
-
-		VK_CALL(vkEndCommandBuffer(secondaryCommandBuffer));
-
-		vkCmdExecuteCommands(primaryCommandBuffer, 1, &secondaryCommandBuffer);
-
-		vkCmdEndRenderPass(primaryCommandBuffer);
-
-		VK_CALL(vkEndCommandBuffer(primaryCommandBuffer));
+			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
+		}
+		VK_CALL(vkEndCommandBuffer(commandBuffer));
 
 		VulkanQueue* queue = device->graphicsQueue();
 		VulkanPresenter* presenter = VulkanContext::get()->vulkanPresenter();
@@ -167,7 +155,7 @@ namespace milo {
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pCommandBuffers = &primaryCommandBuffer;
+		submitInfo.pCommandBuffers = &commandBuffer;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pWaitSemaphores = queue->waitSemaphores().data();
 		submitInfo.waitSemaphoreCount = queue->waitSemaphores().size();
@@ -207,6 +195,7 @@ namespace milo {
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
+		setStyleColors();
 		//SetDarkThemeColors();
 		//ImGui::StyleColorsClassic();
 
@@ -275,45 +264,68 @@ namespace milo {
 		device->awaitTermination();
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 
-		device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_PrimaryCommandBuffers.size(), m_PrimaryCommandBuffers.data());
+		device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_CommandBuffers.size(), m_CommandBuffers.data());
 		device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_SECONDARY, m_SecondaryCommandBuffers.size(), m_SecondaryCommandBuffers.data());
+	}
+
+	void VulkanUIRenderer::setStyleColors() {
+
+		auto& colors = ImGui::GetStyle().Colors;
+		colors[ImGuiCol_WindowBg] = ImVec4{ 0.1f, 0.105f, 0.11f, 1.0f };
+
+		// Headers
+		colors[ImGuiCol_Header] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+		colors[ImGuiCol_HeaderHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
+		colors[ImGuiCol_HeaderActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+
+		// Buttons
+		colors[ImGuiCol_Button] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+		colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
+		colors[ImGuiCol_ButtonActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+
+		// Frame BG
+		colors[ImGuiCol_FrameBg] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+		colors[ImGuiCol_FrameBgHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
+		colors[ImGuiCol_FrameBgActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+
+		// Tabs
+		colors[ImGuiCol_Tab] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TabHovered] = ImVec4{ 0.38f, 0.3805f, 0.381f, 1.0f };
+		colors[ImGuiCol_TabActive] = ImVec4{ 0.28f, 0.2805f, 0.281f, 1.0f };
+		colors[ImGuiCol_TabUnfocused] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+
+		// Title
+		colors[ImGuiCol_TitleBg] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+
+		// Resize Grip
+		colors[ImGuiCol_ResizeGrip] = ImVec4(0.91f, 0.91f, 0.91f, 0.25f);
+		colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.81f, 0.81f, 0.81f, 0.67f);
+		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.46f, 0.46f, 0.46f, 0.95f);
+
+		// Scrollbar
+		colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
+		colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.0f);
+		colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.41f, 0.41f, 1.0f);
+		colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.51f, 0.51f, 0.51f, 1.0f);
+
+		// Check Mark
+		colors[ImGuiCol_CheckMark] = ImVec4(0.94f, 0.94f, 0.94f, 1.0f);
+
+		// Slider
+		colors[ImGuiCol_SliderGrab] = ImVec4(0.51f, 0.51f, 0.51f, 0.7f);
+		colors[ImGuiCol_SliderGrabActive] = ImVec4(0.66f, 0.66f, 0.66f, 1.0f);
+
 	}
 
 	void VulkanUIRenderer::createRenderPass() {
 
-		VulkanDevice* device = VulkanContext::get()->device();
+		RenderPass::Description desc;
+		desc.colorAttachments.push_back({PixelFormat::PresentationFormat, 1, RenderPass::LoadOp::Clear});
 
-		VkAttachmentDescription colorAttachment = mvk::AttachmentDescription::createPresentSrcAttachment();
-
-		VkAttachmentReference attachmentRef{};
-		attachmentRef.attachment = 0;
-		attachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.pColorAttachments = &attachmentRef;
-		subpass.colorAttachmentCount = 1;
-
-		VkAttachmentDescription attachments[] = {colorAttachment};
-
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.pAttachments = attachments;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.subpassCount = 1;
-
-		VK_CALL(vkCreateRenderPass(device->logical(), &renderPassInfo, nullptr, &m_RenderPass));
+		m_RenderPass = mvk::RenderPass::create(desc);
 	}
 
 	void VulkanUIRenderer::createDepthBuffers() {
@@ -361,15 +373,5 @@ namespace milo {
 			framebufferInfo.pAttachments = attachments;
 			VK_CALL(vkCreateFramebuffer(device->logical(), &framebufferInfo, nullptr, &m_Framebuffers[i]));
 		}
-	}
-
-	VulkanDescriptorPool* VulkanUIRenderer::s_DescriptorPool = nullptr;
-
-	VkDescriptorSet VulkanUIRenderer::allocateDescriptorSet(VkDescriptorSetAllocateInfo& allocInfo) {
-		allocInfo.descriptorPool = s_DescriptorPool->vkDescriptorPool();
-		VkDevice device = VulkanContext::get()->device()->logical();
-		VkDescriptorSet descriptorSet;
-		VK_CALL(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet));
-		return descriptorSet;
 	}
 }

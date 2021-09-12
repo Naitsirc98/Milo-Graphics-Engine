@@ -14,8 +14,6 @@ namespace milo {
 	public:
 		virtual void begin() = 0;
 		virtual void end() = 0;
-	public:
-		// TODO
 	};
 
 	namespace UI {
@@ -33,6 +31,12 @@ namespace milo {
 
 		void image(const Texture2D& texture, const Size& size = {0, 0}, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1,1),
 				   const ImVec4& tint_col = ImVec4(1,1,1,1), const ImVec4& border_col = ImVec4(0,0,0,0));
+
+		void imageButton(const String& title, const Texture2D& texture, const Size& size = {0, 0});
+
+		void beginGrid(uint32_t columns = 2);
+
+		void endGrid();
 
 		namespace FileDialog {
 

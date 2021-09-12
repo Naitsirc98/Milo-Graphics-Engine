@@ -27,7 +27,7 @@ namespace milo {
 		// Current State
 		uint32_t m_MaxImageCount = 0;
 		uint32_t m_CurrentImageIndex = 0;
-		uint32_t m_CurrentFrame = -1;
+		uint32_t m_CurrentFrame = 0;
 	private:
 		explicit VulkanPresenter(VulkanContext* context);
 	public:

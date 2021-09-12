@@ -27,7 +27,6 @@ namespace milo {
 		static void setupDockSpace();
 		static void init();
 		static void shutdown();
-
 		static void setupMenuBar();
 	};
 }

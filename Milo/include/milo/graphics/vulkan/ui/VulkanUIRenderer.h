@@ -15,7 +15,7 @@ namespace milo {
 		Array<VkFramebuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_Framebuffers{};
 		Size m_FramebufferSize{};
 
-		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_PrimaryCommandBuffers{};
+		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_CommandBuffers{};
 		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_SecondaryCommandBuffers{};
 	private:
 		VulkanUIRenderer();
@@ -28,18 +28,11 @@ namespace milo {
 		void createRenderPass();
 		void createDepthBuffers();
 		void createFramebuffers();
-
 		void shutdownUIBackend() const;
-
-	private:
-		static VulkanDescriptorPool* s_DescriptorPool;
+		void setStyleColors();
 	public:
-		static VkDescriptorSet allocateDescriptorSet(VkDescriptorSetAllocateInfo& allocInfo);
-
 		void destroy();
-
 		VulkanDevice* destroyRenderAreaDependentResources();
-
 		void createRenderAreaDependentResources();
 	};
 }

@@ -3,7 +3,6 @@
 #include "milo/assets/AssetManager.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-#include <ImGuiFileDialog.h>
 
 namespace milo {
 

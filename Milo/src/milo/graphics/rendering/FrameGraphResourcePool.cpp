@@ -1,6 +1,7 @@
 #include <milo/graphics/rendering/descriptions/ResourceDescriptions.h>
 #include "milo/graphics/Graphics.h"
 #include "milo/graphics/vulkan/rendering/VulkanFrameGraphResourcePool.h"
+#include "milo/scenes/SceneManager.h"
 
 namespace milo {
 
@@ -15,15 +16,15 @@ namespace milo {
 	}
 
 	void FrameGraphResourcePool::init() {
+		const Size& sceneSize = SceneManager::activeScene()->viewportSize();
+		createDefaultFramebuffers(sceneSize);
 	}
 
 	void FrameGraphResourcePool::compile(Scene* scene) {
 
 		const Size& sceneSize = scene->viewportSize();
 
-		if(m_DefaultFramebuffers.empty()) {
-			createDefaultFramebuffers(sceneSize);
-		} else if(sceneSize != m_DefaultFramebuffers[0]->size()) {
+		if(sceneSize != m_DefaultFramebuffers[0]->size()) {
 			for(Framebuffer*& framebuffer : m_DefaultFramebuffers) {
 				framebuffer->resize(sceneSize);
 			}

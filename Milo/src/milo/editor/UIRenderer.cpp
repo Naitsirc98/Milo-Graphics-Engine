@@ -43,6 +43,24 @@ namespace milo::UI {
 		}
 	}
 
+	void imageButton(const String& title, const Texture2D& texture, const Size& size) {
+
+
+	}
+
+	static int32_t g_UIStackId = 1;
+
+	void beginGrid(uint32_t columns) {
+		ImGui::PushID(g_UIStackId++);
+		ImGui::Columns((int32_t)columns);
+	}
+
+	void endGrid() {
+		if(g_UIStackId == 1) throw MILO_RUNTIME_EXCEPTION("UI Stack Underflow Exception");
+		ImGui::PopID();
+		--g_UIStackId;
+	}
+
 	namespace FileDialog {
 
 		Optional<String> open(const char* filter) {

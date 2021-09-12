@@ -39,9 +39,6 @@ namespace milo {
 		SceneManager::activeScene()->setFocused(ImGui::IsWindowFocused());
 		ImGui::End();
 
-		ImGui::Begin("AssetExplorerPanel");
-		ImGui::End();
-
 		s_Renderer->end();
 	}
 
@@ -99,17 +96,12 @@ namespace milo {
 				// Split left side by 2: upper (scene hierarchy) and lower (properties)
 				ImGui::DockBuilderSplitNode(left, ImGuiDir_Up, 0.50f, &upperLeft, &lowerLeft);
 				// Split right side by 2: upper (scene viewport) and lower (asset explorer)
-				ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 0.70f, &upperRight, &lowerRight);
-
-				//auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.25f, nullptr, &dockspace_id);
-				//auto dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25f, nullptr, &dockspace_id);
-				//auto dock_id_center = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.75f, nullptr, &dockspace_id);
-				//auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25f, nullptr, &dockspace_id);
+				//ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 0.70f, &upperRight, &lowerRight);
 
 				ImGui::DockBuilderDockWindow("SceneHierarchyPanel", upperLeft);
 				ImGui::DockBuilderDockWindow("PropertiesPanel", lowerLeft);
-				ImGui::DockBuilderDockWindow("SceneViewportPanel", upperRight);
-				ImGui::DockBuilderDockWindow("AssetExplorerPanel", lowerRight);
+				ImGui::DockBuilderDockWindow("SceneViewportPanel", right);
+				//ImGui::DockBuilderDockWindow("ContentBrowserPanel", lowerRight);
 
 				ImGui::DockBuilderFinish(dockspace_id);
 			}

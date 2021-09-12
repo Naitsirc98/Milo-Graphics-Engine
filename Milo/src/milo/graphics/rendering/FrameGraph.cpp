@@ -22,6 +22,10 @@ namespace milo {
 
 	void FrameGraph::setup(Scene* scene) {
 
+		if(WorldRenderer::get().shadowsEnabled()) {
+			//push<DepthRenderPass>();
+		}
+
 		push<GeometryRenderPass>();
 
 		//push<PBRForwardRenderPass>();
