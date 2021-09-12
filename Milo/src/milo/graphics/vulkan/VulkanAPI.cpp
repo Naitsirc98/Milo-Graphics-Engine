@@ -309,6 +309,94 @@ namespace milo {
 
 	// =====
 
+	namespace mvk::RenderPass {
+
+		VkRenderPass create(const milo::RenderPass::Description& desc) {
+
+			ArrayList<VkAttachmentDescription> attachments(desc.colorAttachments.size() + (desc.depthAttachment.has_value() ? 1 : 0));
+			ArrayList<VkAttachmentReference> colorReferences(attachments.size());
+			VkAttachmentReference depthStencilReference{};
+
+			for(uint32_t i = 0;i < desc.colorAttachments.size();++i) {
+				VkAttachmentDescription& attachment = attachments[i];
+				attachment.format = mvk::fromPixelFormat(desc.colorAttachments[i].format);
+				attachment.samples = mvk::fromSamples(desc.colorAttachments[i].samples);
+				attachment.loadOp = mvk::fromLoadOp(desc.colorAttachments[i].loadOp);
+				attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				attachment.initialLayout = colorLayoutFromLoadOp(desc.colorAttachments[i].loadOp);
+				attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+				VkAttachmentReference& reference = colorReferences[i];
+				reference.layout = attachment.finalLayout;
+				reference.attachment = i;
+			}
+
+			if(desc.depthAttachment.has_value()) {
+				const milo::RenderPass::Attachment& depthAttachment = desc.depthAttachment.value();
+				VkAttachmentDescription& attachment = attachments[attachments.size() - 1];
+				attachment.format = mvk::fromPixelFormat(depthAttachment.format);
+				attachment.samples = mvk::fromSamples(depthAttachment.samples);
+				attachment.loadOp = mvk::fromLoadOp(depthAttachment.loadOp);
+				attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				attachment.initialLayout = depthLayoutFromLoadOp(depthAttachment.loadOp);
+				attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+
+				depthStencilReference.layout = attachment.finalLayout;
+				depthStencilReference.attachment = attachments.size() - 1;
+			}
+
+			VkSubpassDependency dependency = {};
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			dependency.srcAccessMask = 0;
+			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+			VkSubpassDescription subpass = {};
+			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			subpass.pColorAttachments = colorReferences.data();
+			subpass.colorAttachmentCount = colorReferences.size();
+			if(desc.depthAttachment.has_value())
+				subpass.pDepthStencilAttachment = &depthStencilReference;
+
+			VkRenderPassCreateInfo renderPassInfo = {};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+			renderPassInfo.pAttachments = attachments.data();
+			renderPassInfo.attachmentCount = attachments.size();
+			renderPassInfo.pDependencies = &dependency;
+			renderPassInfo.dependencyCount = 1;
+			renderPassInfo.pSubpasses = &subpass;
+			renderPassInfo.subpassCount = 1;
+
+			VkRenderPass renderPass;
+			VK_CALL(vkCreateRenderPass(VulkanContext::get()->device()->logical(), &renderPassInfo, nullptr, &renderPass));
+
+			return renderPass;
+		}
+	}
+
+	VkImageLayout mvk::RenderPass::colorLayoutFromLoadOp(milo::RenderPass::LoadOp loadOp) {
+		switch(loadOp) {
+			case milo::RenderPass::LoadOp::Load:
+				return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			default:
+				return VK_IMAGE_LAYOUT_UNDEFINED;
+		}
+	}
+
+	VkImageLayout mvk::RenderPass::depthLayoutFromLoadOp(milo::RenderPass::LoadOp loadOp) {
+		switch(loadOp) {
+			case milo::RenderPass::LoadOp::Load:
+				return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+			default:
+				return VK_IMAGE_LAYOUT_UNDEFINED;
+		}
+	}
 
 	// =====
 
@@ -357,6 +445,38 @@ namespace milo {
 			case VK_PIPELINE_COMPILE_REQUIRED_EXT: return "VK_PIPELINE_COMPILE_REQUIRED_EXT";
 		}
 		return "Unknown Error";
+	}
+
+	VkSampleCountFlagBits mvk::fromSamples(uint32_t samples) {
+		switch(samples) {
+			case 1:
+				return VK_SAMPLE_COUNT_1_BIT;
+			case 2:
+				return VK_SAMPLE_COUNT_2_BIT;
+			case 4:
+				return VK_SAMPLE_COUNT_4_BIT;
+			case 8:
+				return VK_SAMPLE_COUNT_8_BIT;
+			case 16:
+				return VK_SAMPLE_COUNT_16_BIT;
+			case 32:
+				return VK_SAMPLE_COUNT_32_BIT;
+			case 64:
+				return VK_SAMPLE_COUNT_64_BIT;
+		}
+		throw MILO_RUNTIME_EXCEPTION(fmt::format("Unsupported number of samples {}", samples));
+	}
+
+	VkAttachmentLoadOp mvk::fromLoadOp(milo::RenderPass::LoadOp loadOp) {
+		switch(loadOp) {
+			case milo::RenderPass::LoadOp::Undefined:
+				return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			case milo::RenderPass::LoadOp::Clear:
+				return VK_ATTACHMENT_LOAD_OP_CLEAR;
+			case milo::RenderPass::LoadOp::Load:
+				return VK_ATTACHMENT_LOAD_OP_LOAD;
+		}
+		throw MILO_RUNTIME_EXCEPTION("Unsupported attachment load operation");
 	}
 
 	PixelFormat mvk::toPixelFormat(VkFormat format) {
@@ -579,6 +699,8 @@ namespace milo {
 				return VulkanContext::get()->device()->depthFormat();
 			case PixelFormat::DEPTH32:
 				return VK_FORMAT_D32_SFLOAT;
+			case PixelFormat::PresentationFormat:
+				return VulkanContext::get()->swapchain()->format();
 			default:
 				throw MILO_RUNTIME_EXCEPTION("Unsupported pixel format");
 		}

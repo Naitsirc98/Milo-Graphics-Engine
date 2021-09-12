@@ -88,38 +88,10 @@ namespace milo {
 
 	void VulkanFinalRenderPass::createRenderPass() {
 
-		VkAttachmentDescription colorAttachment = mvk::AttachmentDescription::createPresentSrcAttachment();
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		RenderPass::Description desc;
+		desc.colorAttachments.push_back({PixelFormat::PresentationFormat, 1, LoadOp::Clear});
 
-		VkAttachmentReference attachmentRef{};
-		attachmentRef.attachment = 0;
-		attachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.pColorAttachments = &attachmentRef;
-		subpass.colorAttachmentCount = 1;
-
-		VkAttachmentDescription attachments[] = {colorAttachment};
-
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.pAttachments = attachments;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.subpassCount = 1;
-
-		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassInfo, nullptr, &m_RenderPass));
+		m_RenderPass = mvk::RenderPass::create(desc);
 	}
 
 	void VulkanFinalRenderPass::createFramebuffers(FrameGraphResourcePool* pool) {

@@ -12,6 +12,19 @@ namespace milo {
 	class RenderPass {
 		friend class FrameGraph;
 	public:
+		enum class LoadOp {
+			Undefined, Clear, Load
+		};
+		struct Attachment {
+			PixelFormat format{PixelFormat::RGBA32F};
+			uint32_t samples{1};
+			LoadOp loadOp{LoadOp::Undefined};
+		};
+		struct Description {
+			ArrayList<Attachment> colorAttachments;
+			Optional<Attachment> depthAttachment;
+		};
+	public:
 		virtual ~RenderPass() = default;
 		virtual RenderPassId getId() const = 0;
 		virtual bool shouldCompile(Scene* scene) const = 0;

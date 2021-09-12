@@ -7,6 +7,7 @@
 #include "milo/assets/images/PixelFormat.h"
 #include "milo/assets/shaders/Shader.h"
 #include "milo/graphics/textures/Texture.h"
+#include "milo/graphics/rendering/passes/RenderPass.h"
 
 #define MAX_FRAMES_IN_FLIGHT 2
 #define MAX_SWAPCHAIN_IMAGE_COUNT 3
@@ -86,7 +87,15 @@ namespace milo {
 			VkWriteDescriptorSet createStorageImageWrite(uint32_t binding, VkDescriptorSet set, uint32_t descriptorCount, VkDescriptorImageInfo* pImageInfo);
 		}
 
+		namespace RenderPass {
+			VkRenderPass create(const milo::RenderPass::Description& desc);
+			VkImageLayout colorLayoutFromLoadOp(milo::RenderPass::LoadOp loadOp);
+			VkImageLayout depthLayoutFromLoadOp(milo::RenderPass::LoadOp loadOp);
+		}
+
 		String getErrorName(VkResult vkResult) noexcept;
+		VkSampleCountFlagBits fromSamples(uint32_t samples);
+		VkAttachmentLoadOp fromLoadOp(milo::RenderPass::LoadOp loadOp);
 		PixelFormat toPixelFormat(VkFormat format);
 		VkFormat fromPixelFormat(PixelFormat pixelFormat);
 		VkShaderStageFlags fromShaderType(Shader::Type type);

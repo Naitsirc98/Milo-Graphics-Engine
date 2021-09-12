@@ -6,6 +6,7 @@ namespace milo {
 
 	enum class PixelFormat {
 		Undefined,
+		PresentationFormat,
 
 		R8,
 		R8I,
