@@ -3,6 +3,7 @@
 #include "milo/graphics/vulkan/rendering/VulkanFrameGraphResourcePool.h"
 #include "milo/scenes/SceneManager.h"
 #include "milo/scenes/Entity.h"
+#include "milo/graphics/vulkan/buffers/VulkanMeshBuffers.h"
 
 namespace milo {
 
@@ -38,13 +39,13 @@ namespace milo {
 
 		if(m_GraphicsPipeline != nullptr) {
 			DELETE_PTR(m_GraphicsPipeline);
-			createGraphicsPipeline();
 		}
+		createGraphicsPipeline();
 
 		if(m_CommandBuffers[0] != VK_NULL_HANDLE) {
 			m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());
-			m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_CommandBuffers.size(), m_CommandBuffers.data());
 		}
+		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_CommandBuffers.size(), m_CommandBuffers.data());
 	}
 
 	void VulkanDepthRenderPass::execute(Scene* scene) {
@@ -129,82 +130,42 @@ namespace milo {
 
 	void VulkanDepthRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene, Entity cameraEntity) {
 
-		/*
-
-		CameraData cameraData{};
-
-		if(getSimulationState() == SimulationState::Editor) {
-
-			EditorCamera& camera = MiloEditor::camera();
-			cameraData.proj = camera.projMatrix();
-			cameraData.view = camera.viewMatrix();
-			cameraData.projView = cameraData.proj * cameraData.view;
-
-		} else {
-
-			Camera& camera = cameraEntity.getComponent<Camera>();
-			cameraData.proj = camera.projectionMatrix();
-			cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
-			cameraData.projView = cameraData.proj * cameraData.view;
-		}
-
-		m_CameraUniformBuffer->update(imageIndex, cameraData);
-
-		VkDescriptorSet cameraDescriptorSet = m_CameraDescriptorPool->get(imageIndex);
-
-		uint32_t dynamicOffsets[] = {imageIndex * m_CameraUniformBuffer->elementSize(), 0};
-
-		auto& materialResources = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
-
 		Mesh* lastMesh = nullptr;
-		Material* lastMaterial = nullptr;
 
-		auto components = scene->group<Transform, MeshView>();
-		for(EntityId entityId : components) {
+		for(const DrawCommand& command : WorldRenderer::get().drawCommands()) {
 
-			const Transform& transform = components.get<Transform>(entityId);
-			const MeshView& meshView = components.get<MeshView>(entityId);
+			if(lastMesh != command.mesh) {
 
-			if(meshView.mesh == nullptr || meshView.material == nullptr) continue;
-
-			if(lastMaterial != meshView.material) {
-
-				VkDescriptorSet materialDescriptorSet = materialResources.descriptorSetOf(meshView.material, dynamicOffsets[1]);
-				VkDescriptorSet descriptorSets[] = {cameraDescriptorSet, materialDescriptorSet};
-
-				VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-												 m_GraphicsPipeline->pipelineLayout(),
-												 0, 2, descriptorSets, 2, dynamicOffsets));
-
-				lastMaterial = meshView.material;
-			}
-
-			if(lastMesh != meshView.mesh) {
-
-				auto* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(meshView.mesh->buffers());
+				auto* meshBuffers = dynamic_cast<VulkanMeshBuffers*>(command.mesh->buffers());
 
 				VkBuffer vertexBuffers[] = {meshBuffers->vertexBuffer()->vkBuffer()};
 				VkDeviceSize offsets[] = {0};
 				VK_CALLV(vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets));
 
-				if(!meshView.mesh->indices().empty()) {
+				if(!command.mesh->indices().empty()) {
 					VK_CALLV(vkCmdBindIndexBuffer(commandBuffer, meshBuffers->indexBuffer()->vkBuffer(), 0, VK_INDEX_TYPE_UINT32));
 				}
 
-				lastMesh = meshView.mesh;
+				lastMesh = command.mesh;
 			}
 
-			PushConstants pushConstants = {transform.modelMatrix()};
-			VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT,
-										0, sizeof(PushConstants), &pushConstants));
+			PushConstants pushConstants;
+			pushConstants.modelMatrix = command.transform;
 
-			if(meshView.mesh->indices().empty()) {
-				VK_CALLV(vkCmdDraw(commandBuffer, meshView.mesh->vertices().size(), 1, 0, 0));
-			} else {
-				VK_CALLV(vkCmdDrawIndexed(commandBuffer, meshView.mesh->indices().size(), 1, 0, 0, 0));
+			for(uint32_t i = 0;i < 4;++i) {
+
+				pushConstants.cascadeIndex = i;
+
+				VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT,
+											0, sizeof(PushConstants), &pushConstants));
+
+				if(command.mesh->indices().empty()) {
+					VK_CALLV(vkCmdDraw(commandBuffer, command.mesh->vertices().size(), 1, 0, 0));
+				} else {
+					VK_CALLV(vkCmdDrawIndexed(commandBuffer, command.mesh->indices().size(), 1, 0, 0, 0));
+				}
 			}
 		}
-		 */
 	}
 
 	void VulkanDepthRenderPass::createRenderPass() {
@@ -283,6 +244,13 @@ namespace milo {
 
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+
+		VkPushConstantRange pushConstant;
+		pushConstant.offset = 0;
+		pushConstant.size = sizeof(PushConstants);
+		pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		pipelineInfo.pushConstantRanges.push_back(pushConstant);
 
 		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanDepthRenderPass", m_Device, pipelineInfo);
 	}

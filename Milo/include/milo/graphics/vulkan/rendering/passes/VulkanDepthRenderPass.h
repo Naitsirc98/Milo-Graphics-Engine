@@ -11,6 +11,11 @@ namespace milo {
 	class VulkanDepthRenderPass : public DepthRenderPass {
 		friend class DepthRenderPass;
 	private:
+		struct PushConstants {
+			Matrix4 modelMatrix;
+			uint32_t cascadeIndex;
+		};
+
 		struct UniformBuffer {
 			Matrix4 cascadeShadowMapMatrices[4];
 		};

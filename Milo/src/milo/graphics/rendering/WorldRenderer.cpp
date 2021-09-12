@@ -63,10 +63,6 @@ namespace milo {
 			shadowsDrawCommands.push_back(drawCommand);
 		}
 
-		ArrayList<int> l = {1, 2, 5, 2, 1, 5, 67, 8};
-
-		std::sort(l.begin(), l.end());
-
 		std::sort(drawCommands.begin(), drawCommands.end());
 		std::sort(shadowsDrawCommands.begin(), shadowsDrawCommands.end());
 	}

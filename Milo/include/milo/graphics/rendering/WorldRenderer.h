@@ -12,8 +12,15 @@ namespace milo {
 		Mesh* mesh{nullptr};
 		Material* material{nullptr};
 
+		inline uint64_t hash() const noexcept {
+			// TODO: use handles
+			uint64_t materialId = (uint64_t) material;
+			uint32_t meshId = (uint32_t)(((uint64_t) mesh) & 0xFFFFFFFF);
+			return (materialId << 32) | meshId;
+		}
+
 		inline bool operator<(const DrawCommand& other) const noexcept {
-			return ((uint64_t)material) < ((uint64_t)other.material);
+			return hash() < other.hash();
 		}
 	};
 
