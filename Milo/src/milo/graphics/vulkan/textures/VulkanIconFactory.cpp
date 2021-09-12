@@ -2,6 +2,7 @@
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/materials/VulkanMaterialResourcePool.h"
 #include "milo/graphics/vulkan/buffers/VulkanMeshBuffers.h"
+#include "milo/graphics/rendering/passes/RenderPass.h"
 
 namespace milo {
 
@@ -73,7 +74,7 @@ namespace milo {
 				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
 				VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
 
-				Matrix4 view = milo::lookAt(Vector3(0.0f, 0.0f, 3.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
+				static Matrix4 view = milo::lookAt(Vector3(0.0f, 0.0f, 3.0f), Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f));
 				Matrix4 proj = milo::perspective(radians(45.0f), (float)size.width / (float)size.height, 0.1f, 100.0f);
 
 				Matrix4 projView = proj * view;
@@ -123,44 +124,11 @@ namespace milo {
 
 	void VulkanIconFactory::createRenderPass() {
 
-		VkAttachmentDescription colorAttachment = mvk::AttachmentDescription::createColorAttachment(VK_FORMAT_R8G8B8A8_UNORM);
+		milo::RenderPass::Description desc;
+		desc.colorAttachments.push_back({PixelFormat::RGBA8, 1, RenderPass::LoadOp::Clear});
+		desc.depthAttachment = {PixelFormat::DEPTH, 1, RenderPass::LoadOp::Clear};
 
-		VkAttachmentDescription depthAttachment = mvk::AttachmentDescription::createDepthStencilAttachment();
-
-		VkAttachmentReference colorAttachmentRef = {};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthAttachmentRef = {};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		VkSubpassDescription subpass = {};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.pColorAttachments = &colorAttachmentRef;
-		subpass.colorAttachmentCount = 1;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-		VkAttachmentDescription attachments[] = {colorAttachment, depthAttachment};
-
-		VkRenderPassCreateInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.pAttachments = attachments;
-		renderPassInfo.attachmentCount = 2;
-		renderPassInfo.pDependencies = &dependency;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.subpassCount = 1;
-
-		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassInfo, nullptr, &m_RenderPass));
+		m_RenderPass = mvk::RenderPass::create(desc);
 	}
 
 	void VulkanIconFactory::createDepthTexture(const Size& size) {

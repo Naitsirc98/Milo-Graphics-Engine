@@ -314,7 +314,7 @@ namespace milo {
 		VkRenderPass create(const milo::RenderPass::Description& desc) {
 
 			ArrayList<VkAttachmentDescription> attachments(desc.colorAttachments.size() + (desc.depthAttachment.has_value() ? 1 : 0));
-			ArrayList<VkAttachmentReference> colorReferences(attachments.size());
+			ArrayList<VkAttachmentReference> colorReferences;
 			VkAttachmentReference depthStencilReference{};
 
 			for(uint32_t i = 0;i < desc.colorAttachments.size();++i) {
@@ -328,9 +328,7 @@ namespace milo {
 				attachment.initialLayout = colorLayoutFromLoadOp(desc.colorAttachments[i].loadOp);
 				attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-				VkAttachmentReference& reference = colorReferences[i];
-				reference.layout = attachment.finalLayout;
-				reference.attachment = i;
+				colorReferences.push_back({i, attachment.finalLayout});
 			}
 
 			if(desc.depthAttachment.has_value()) {
@@ -343,7 +341,7 @@ namespace milo {
 				attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 				attachment.initialLayout = depthLayoutFromLoadOp(depthAttachment.loadOp);
-				attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+				attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 				depthStencilReference.layout = attachment.finalLayout;
 				depthStencilReference.attachment = attachments.size() - 1;
@@ -392,7 +390,7 @@ namespace milo {
 	VkImageLayout mvk::RenderPass::depthLayoutFromLoadOp(milo::RenderPass::LoadOp loadOp) {
 		switch(loadOp) {
 			case milo::RenderPass::LoadOp::Load:
-				return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+				return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 			default:
 				return VK_IMAGE_LAYOUT_UNDEFINED;
 		}

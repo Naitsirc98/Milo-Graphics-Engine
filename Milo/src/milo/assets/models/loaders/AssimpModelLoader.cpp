@@ -56,17 +56,18 @@ namespace milo {
 			}
 			outNode->mesh = mesh;
 
+			Material* material = Assets::materials().getDefault();
 			if(aiMesh->mMaterialIndex >= 0) {
 				const aiMaterial* aiMaterial = aiScene->mMaterials[aiMesh->mMaterialIndex];
-				Material* material = Assets::materials().find(aiMaterial->GetName().C_Str());
+				material = Assets::materials().find(aiMaterial->GetName().C_Str());
 
 				if(material == nullptr) {
 					material = new Material(aiMaterial->GetName().C_Str(), m_File);
 					processMaterial(aiScene, aiMaterial, material);
 					Assets::materials().addMaterial(material->name(), material);
 				}
-				outNode->material = material;
 			}
+			outNode->material = material;
 		}
 
 		// Children

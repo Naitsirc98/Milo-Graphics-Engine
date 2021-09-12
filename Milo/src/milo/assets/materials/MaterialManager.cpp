@@ -79,6 +79,7 @@ namespace milo {
 		}
 		m_Materials[name] = material;
 		m_ResourcePool->allocateMaterialResources(material);
+		material->m_Icon = Assets::textures().createIcon(name, Assets::meshes().getSphere(), material);
 	}
 
 	MaterialResourcePool& MaterialManager::resourcePool() const {

@@ -174,6 +174,8 @@ namespace milo {
 			const Transform& transform = components.get<Transform>(entityId);
 			const MeshView& meshView = components.get<MeshView>(entityId);
 
+			if(meshView.mesh == nullptr || meshView.material == nullptr) continue;
+
 			if(lastMaterial != meshView.material) {
 
 				VkDescriptorSet materialDescriptorSet = materialResources.descriptorSetOf(meshView.material, dynamicOffsets[1]);

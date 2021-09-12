@@ -104,6 +104,7 @@ namespace milo {
 		m_Meshes[name] = mesh;
 		createGraphicsBuffers(mesh->filename(), mesh);
 		createBoundingVolume(mesh->filename(), mesh);
+		mesh->m_Icon = Assets::textures().createIcon(name, mesh, Assets::materials().getDefault());
 	}
 
 	Ref<MeshLoader> MeshManager::getMeshLoaderOf(const String& filename) {
