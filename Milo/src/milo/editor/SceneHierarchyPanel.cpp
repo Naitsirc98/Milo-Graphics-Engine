@@ -149,8 +149,7 @@ namespace milo {
 	}
 
 	void SceneHierarchyPanel::handleDragDrop(const ImRect& windowRect) {
-		if (ImGui::BeginDragDropTargetCustom(windowRect, ImGui::GetCurrentWindow()->ID))
-		{
+		if (ImGui::BeginDragDropTargetCustom(windowRect, ImGui::GetCurrentWindow()->ID)) {
 			const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SceneHierarchyPanel", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
 
 			if (payload) {

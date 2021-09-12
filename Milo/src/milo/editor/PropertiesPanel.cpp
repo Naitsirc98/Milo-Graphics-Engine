@@ -3,6 +3,7 @@
 #include "milo/assets/AssetManager.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include <ImGuiFileDialog.h>
 
 namespace milo {
 
@@ -153,7 +154,7 @@ namespace milo {
 
 		}, false);
 
-		drawComponent<MeshView>("MeshView", entity, [](MeshView& meshView) {
+		drawComponent<MeshView>("MeshView", entity, [this](MeshView& meshView) {
 
 			Mesh* mesh = meshView.mesh;
 			ImGui::Text("Mesh");
@@ -164,10 +165,16 @@ namespace milo {
 					UI::image(*Assets::textures().getIcon("DefaultMeshIcon"));
 				}
 				ImGui::SameLine();
-				ImGui::Text(mesh->filename().c_str());
-				ImGui::SameLine();
+				ImGui::Text(mesh->name().c_str());
 			}
-			ImGui::Button("..."); // TODO
+			if(ImGui::Button("Select Mesh")) {
+				auto file = UI::FileDialog::open("*.obj;*.fbx;*.gltf;*.collada");
+				if(file.has_value()) {
+					String& filename = file.value();
+					mesh = Assets::meshes().load(Files::getName(filename, true), filename);
+					meshView.mesh = mesh;
+				}
+			}
 
 			ImGui::Separator();
 
@@ -180,10 +187,18 @@ namespace milo {
 					UI::image(*Assets::textures().getIcon("DefaultMaterialIcon"));
 				}
 				ImGui::SameLine();
-				ImGui::Text(material->filename().c_str());
-				ImGui::SameLine();
+				ImGui::Text(material->name().c_str());
 			}
-			ImGui::Button("..."); // TODO
+			if(ImGui::Button("Select Material")) {
+				auto file = UI::FileDialog::open("*.mat");
+				if(file.has_value()) {
+					if(file.has_value()) {
+						String& filename = file.value();
+						material = Assets::materials().load(Files::getName(filename, true), filename);
+						meshView.material = material;
+					}
+				}
+			}
 		});
 
 		drawComponent<SkyboxView>("SkyboxView", entity, [](SkyboxView& skyboxView) {

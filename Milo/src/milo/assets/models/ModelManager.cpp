@@ -15,7 +15,7 @@ namespace milo {
 	}
 
 	void ModelManager::init() {
-		load("Sponza", "resources/models/Sponza/Sponza.obj");
+		load("Sponza", "resources/models/Sponza/Sponza.gltf");
 	}
 
 	Model* ModelManager::load(const String& name, const String& filename) {

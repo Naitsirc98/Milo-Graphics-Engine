@@ -293,7 +293,7 @@ namespace milo {
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 
-		pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_FRONT_BIT;
+		//pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_FRONT_BIT;
 
 		pipelineInfo.shaders.push_back({"resources/shaders/geometry/geometry.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaders.push_back({"resources/shaders/geometry/geometry.frag", VK_SHADER_STAGE_FRAGMENT_BIT});

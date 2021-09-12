@@ -44,30 +44,8 @@ namespace milo {
 
 		memcpy(&outNode->transform, &aiNode->mTransformation, sizeof(Matrix4));
 
-		if(aiNode->mNumMeshes > 0) {
-			const aiMesh* aiMesh = aiScene->mMeshes[aiNode->mMeshes[0]];
-			Mesh* mesh = Assets::meshes().find(aiMesh->mName.C_Str());
-
-			if(mesh == nullptr) {
-				mesh = new Mesh(m_File);
-				mesh->m_Name = aiMesh->mName.C_Str();
-				processMesh(aiScene, aiMesh, mesh);
-				Assets::meshes().addMesh(mesh->name(), mesh);
-			}
-			outNode->mesh = mesh;
-
-			Material* material = Assets::materials().getDefault();
-			if(aiMesh->mMaterialIndex >= 0) {
-				const aiMaterial* aiMaterial = aiScene->mMaterials[aiMesh->mMaterialIndex];
-				material = Assets::materials().find(aiMaterial->GetName().C_Str());
-
-				if(material == nullptr) {
-					material = new Material(aiMaterial->GetName().C_Str(), m_File);
-					processMaterial(aiScene, aiMaterial, material);
-					Assets::materials().addMaterial(material->name(), material);
-				}
-			}
-			outNode->material = material;
+		for(uint32_t i = 0;i < aiNode->mNumMeshes;++i) {
+			processNodeMeshes(aiScene, aiNode, outNode);
 		}
 
 		// Children
@@ -76,6 +54,42 @@ namespace milo {
 			Model::Node* child = outNode->model->createNode();
 			outNode->children.push_back(child->index);
 			processNode(aiScene, aiChild, child);
+		}
+	}
+
+	void AssimpModelLoader::processNodeMeshes(const aiScene* aiScene, const aiNode* aiNode, Model::Node* outNode) {
+
+		for(uint32_t i = 0;i < aiNode->mNumMeshes;++i) {
+
+			Model::Node* node = outNode->model->createNode();
+			outNode->children.push_back(node->index);
+
+			const aiMesh* aiMesh = aiScene->mMeshes[aiNode->mMeshes[i]];
+			Mesh* mesh = Assets::meshes().find(aiMesh->mName.C_Str());
+
+			node->name = aiMesh->mName.C_Str();
+
+			if(mesh == nullptr) {
+				mesh = new Mesh(m_File);
+				mesh->m_Name = aiMesh->mName.C_Str();
+				processMesh(aiScene, aiMesh, mesh);
+				Assets::meshes().addMesh(mesh->name(), mesh);
+			}
+			node->mesh = mesh;
+
+			Material* material = Assets::materials().getDefault();
+			if(aiMesh->mMaterialIndex >= 0) {
+				const aiMaterial* aiMaterial = aiScene->mMaterials[aiMesh->mMaterialIndex];
+				String materialName = str("M_") + node->name + str(i);
+				material = Assets::materials().find(materialName);
+
+				if(material == nullptr) {
+					material = new Material(materialName, m_File);
+					processMaterial(aiScene, aiMaterial, material);
+					Assets::materials().addMaterial(material->name(), material);
+				}
+			}
+			node->material = material;
 		}
 	}
 
@@ -117,9 +131,9 @@ namespace milo {
 	}
 
 	inline static void getColor(const aiMaterial* aiMaterial, const char* name, uint32_t type, uint32_t idx, Color& outColor) {
-		ai_real color[3]{0, 0, 0};
+		ai_real color[4]{0, 0, 0, 0};
 		aiMaterial->Get(name, type, idx, color, nullptr);
-		memcpy(&outColor, color, sizeof(float) * 3);
+		memcpy(&outColor, color, sizeof(float) * 4);
 	}
 
 	inline static void getFloat(const aiMaterial* aiMaterial, const char* name, uint32_t type, uint32_t idx, float& outFloat) {

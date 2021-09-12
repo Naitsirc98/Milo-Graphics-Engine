@@ -5,6 +5,16 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_vulkan.h>
 
+#ifdef _WINDOWS
+
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include "milo/graphics/Window.h"
+
+#include <Windows.h>
+
+#endif
+
 namespace milo::UI {
 
 	void image(const Texture2D& texture, const Size& size, const ImVec2& uv0, const ImVec2& uv1,
@@ -33,4 +43,51 @@ namespace milo::UI {
 		}
 	}
 
+	namespace FileDialog {
+
+		Optional<String> open(const char* filter) {
+#ifdef _WINDOWS
+
+			OPENFILENAMEA ofn;
+			CHAR szFile[260]{0};
+
+			ZeroMemory(&ofn, sizeof(OPENFILENAME));
+			ofn.lStructSize = sizeof(OPENFILENAME);
+			ofn.hwndOwner = glfwGetWin32Window(Window::get()->handle());
+			ofn.lpstrFile = szFile;
+			ofn.nMaxFile = sizeof(szFile);
+			ofn.lpstrFilter = filter;
+			ofn.nFilterIndex = 1;
+			ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+			if (GetOpenFileNameA(&ofn) == TRUE) {
+				return ofn.lpstrFile;
+			}
+#endif
+			return {};
+		}
+
+		Optional<String> save(const char* filter) {
+#ifdef _WINDOWS
+
+			OPENFILENAMEA ofn;
+			CHAR szFile[260]{0};
+
+			ZeroMemory(&ofn, sizeof(OPENFILENAME));
+			ofn.lStructSize = sizeof(OPENFILENAME);
+			ofn.hwndOwner = glfwGetWin32Window(Window::get()->handle());
+			ofn.lpstrFile = szFile;
+			ofn.nMaxFile = sizeof(szFile);
+			ofn.lpstrFilter = filter;
+			ofn.nFilterIndex = 1;
+			ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+			if (GetSaveFileNameA(&ofn) == TRUE) {
+				return ofn.lpstrFile;
+			}
+#endif
+			return {};
+		}
+
+	}
 }

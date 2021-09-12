@@ -15,7 +15,7 @@ namespace milo {
 
 	class Files {
 	public:
-		static String getName(const String& filename);
+		static String getName(const String& filename, bool removeExtension = false);
 		static String normalize(const String& filename);
 		static String resource(const String& filename);
 		static bool exists(const String& filename);

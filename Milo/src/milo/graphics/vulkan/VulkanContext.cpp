@@ -18,7 +18,9 @@ namespace milo {
 		DELETE_PTR(m_Swapchain);
 		DELETE_PTR(m_Device);
 		DELETE_PTR(m_WindowSurface);
+#ifdef _DEBUG
 		DELETE_PTR(m_DebugMessenger);
+#endif
 
 		VK_CALLV(vkDestroyInstance(m_VkInstance, nullptr));
 		m_VkInstance = VK_NULL_HANDLE;

@@ -4,8 +4,10 @@
 
 namespace milo {
 
-	String Files::getName(const String& filename) {
-		return Path(filename).filename().string();
+	String Files::getName(const String& filename, bool removeExtension) {
+		String name = Path(filename).filename().string();
+		if(removeExtension) name = milo::replace(name, Regex(extension(name)), "");
+		return name;
 	}
 
 	String Files::normalize(const String& filename) {
