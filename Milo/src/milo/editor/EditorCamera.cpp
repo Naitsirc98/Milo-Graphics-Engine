@@ -320,4 +320,9 @@ namespace milo {
 		return std::min(distance * distance, 100.0f);
 	}
 
+	float EditorCamera::aspect() const {
+		if(m_ViewportHeight == 0) return 0;
+		return (float) m_ViewportWidth / (float) m_ViewportHeight;
+	}
+
 }

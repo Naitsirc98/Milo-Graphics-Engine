@@ -6,7 +6,7 @@
 namespace milo {
 
 	FrameGraph::FrameGraph() {
-		m_RenderPasses.reserve(64);
+		m_RenderPasses.reserve(16);
 		m_RenderPassExecutionList.reserve(m_RenderPasses.capacity());
 	}
 
@@ -27,6 +27,8 @@ namespace milo {
 		}
 
 		push<GeometryRenderPass>();
+
+		push<BoundingVolumeRenderPass>();
 
 		//push<PBRForwardRenderPass>();
 

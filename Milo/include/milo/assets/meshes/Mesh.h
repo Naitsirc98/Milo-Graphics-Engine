@@ -28,8 +28,8 @@ namespace milo {
 	private:
 		ArrayList<Vertex> m_Vertices;
 		ArrayList<uint32_t> m_Indices;
-		GraphicsBuffers* m_Buffers = nullptr;
-		// TODO: bounds (AABB, SPHERE, ETC)
+		GraphicsBuffers* m_Buffers{nullptr};
+		BoundingVolume* m_BoundingVolume{nullptr};
 	private:
 		explicit Mesh(String filename);
 		~Mesh();
@@ -37,6 +37,7 @@ namespace milo {
 		const ArrayList<Vertex>& vertices() const;
 		const ArrayList<uint32_t>& indices() const;
 		GraphicsBuffers* buffers() const;
+		const BoundingVolume& boundingVolume() const;
 	};
 
 	class VertexList {
@@ -51,19 +52,19 @@ namespace milo {
 
 		~VertexList() = default;
 
-		Vertex operator[](uint32_t index) const {
+		inline const Vertex& operator[](uint32_t index) const {
 			return m_Vertices[(m_Indices.empty() ? index : m_Indices[index])];
 		}
 
-		size_t size() const {
+		inline size_t size() const {
 			return m_Indices.empty() ? m_Vertices.size() : m_Indices.size();
 		}
 
-		ArrayList<Vertex>::const_iterator begin() const {
+		inline ArrayList<Vertex>::const_iterator begin() const {
 			return m_Vertices.cbegin();
 		}
 
-		ArrayList<Vertex>::const_iterator end() const {
+		inline ArrayList<Vertex>::const_iterator end() const {
 			return m_Vertices.cend();
 		}
 	};

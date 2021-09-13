@@ -82,6 +82,8 @@ namespace milo {
 		float speed() const;
 		void setSpeed(float speed);
 
+		float aspect() const;
+
 	private:
 
 		void updateCameraView();

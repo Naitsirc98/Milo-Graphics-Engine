@@ -10,6 +10,7 @@ namespace milo {
 
 	Mesh::~Mesh() {
 		DELETE_PTR(m_Buffers);
+		DELETE_PTR(m_BoundingVolume);
 	}
 
 	const ArrayList<milo::Vertex>& Mesh::vertices() const {
@@ -22,6 +23,10 @@ namespace milo {
 
 	Mesh::GraphicsBuffers* Mesh::buffers() const {
 		return m_Buffers;
+	}
+
+	const BoundingVolume& Mesh::boundingVolume() const {
+		return *m_BoundingVolume;
 	}
 
 	// ====

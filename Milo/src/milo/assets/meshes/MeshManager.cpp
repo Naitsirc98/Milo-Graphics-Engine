@@ -67,6 +67,7 @@ namespace milo {
 				Ref<MeshLoader> loader = getMeshLoaderOf(filename);
 				if(loader) {
 					mesh = loader->load(filename);
+					mesh->m_Name = name;
 					createGraphicsBuffers(filename, mesh);
 					createBoundingVolume(filename, mesh);
 					mesh->m_Icon = Assets::textures().createIcon(name, mesh, Assets::materials().getDefault());
@@ -112,10 +113,8 @@ namespace milo {
 		switch(MeshFormats::formatOf(filename)) {
 			case MeshFormat::Obj:
 				return std::make_shared<ObjMeshLoader>();
-			//case MeshFormat::Unknown:
 			default:
 				return std::make_shared<AssimpLoader>();
-				//return nullptr;
 		}
 	}
 
@@ -124,6 +123,14 @@ namespace milo {
 	}
 
 	void MeshManager::createBoundingVolume(const String& filename, Mesh* mesh) {
-		// TODO
+		if(mesh->name() == SPHERE_MESH_NAME) {
+			BoundingSphere* boundingSphere = new BoundingSphere();
+			*boundingSphere = BoundingSphere::of(mesh);
+			mesh->m_BoundingVolume = boundingSphere;
+		} else {
+			OrientedBoundingBox* obb = new OrientedBoundingBox();
+			*obb = OrientedBoundingBox::of(mesh);
+			mesh->m_BoundingVolume = obb;
+		}
 	}
 }

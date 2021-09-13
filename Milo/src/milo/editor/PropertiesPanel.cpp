@@ -131,6 +131,8 @@ namespace milo {
 			addComponentButton<Tag>(entity);
 			addComponentButton<Camera>(entity);
 			addComponentButton<MeshView>(entity);
+			addComponentButton<SphereCollider>(entity);
+			addComponentButton<BoxCollider>(entity);
 			// addComponentButton<NativeScript>(entity);
 			// TODO
 
@@ -234,6 +236,19 @@ namespace milo {
 					sky->inclination(radians(inclination));
 				}
 			}
+		});
+
+		drawComponent<SphereCollider>("SphereCollider", entity, [](SphereCollider& collider) {
+			drawVector3Control("Center", collider.sphere.center);
+			ImGui::DragFloat("Radius", &collider.sphere.radius, 0);
+		});
+
+		drawComponent<BoxCollider>("BoxCollider", entity, [](BoxCollider& collider) {
+			drawVector3Control("Center", collider.box.center);
+			drawVector3Control("Size", collider.box.size);
+			drawVector3Control("X Axis", collider.box.xAxis);
+			drawVector3Control("Y Axis", collider.box.yAxis);
+			drawVector3Control("Z Axis", collider.box.zAxis);
 		});
 	}
 

@@ -1,6 +1,7 @@
 #include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/scenes/SceneManager.h"
 #include "milo/scenes/Entity.h"
+#include "milo/editor/MiloEditor.h"
 
 namespace milo {
 
@@ -13,8 +14,8 @@ namespace milo {
 
 		m_FrameGraph.init(m_ResourcePool);
 
-		m_DrawCommands.reserve(1024);
-		m_ShadowDrawCommands.reserve(1024);
+		m_DrawCommands.reserve(8192);
+		m_ShadowDrawCommands.reserve(8192);
 
 		//m_ShowGrid = getSimulationState() == SimulationState::Editor;
 	}
@@ -47,15 +48,35 @@ namespace milo {
 		drawCommands.clear();
 		shadowsDrawCommands.clear();
 
+		Polyhedron frustum;
+
+		if(getSimulationState() == SimulationState::Editor) {
+			const auto& camera = MiloEditor::camera();
+			float fov, znear, zfar;
+			decomposeProjectionMatrix(camera.projMatrix(), fov, znear, zfar);
+			frustum = buildFrustumPolyhedron(camera.viewMatrix(), fov, camera.aspect(), znear, zfar);
+		} else {
+			const auto* camera = scene->camera();
+			float fov, znear, zfar;
+			decomposeProjectionMatrix(camera->projectionMatrix(), fov, znear, zfar);
+			float aspect = camera->viewport().x / camera->viewport().y;
+			Matrix4 viewMatrix = camera->viewMatrix(scene->cameraEntity().getComponent<Transform>().translation);
+			frustum = buildFrustumPolyhedron(viewMatrix, fov, aspect, znear, zfar);
+		}
+
 		auto components = scene->group<Transform, MeshView>();
 		for(EntityId entityId : components) {
 
 			const Transform& transform = components.get<Transform>(entityId);
 			const MeshView& meshView = components.get<MeshView>(entityId);
+
+			Matrix4 modelMatrix = transform.modelMatrix();
+
 			if(meshView.mesh == nullptr || meshView.material == nullptr) continue;
+			//if(!meshView.mesh->boundingVolume().isVisible(modelMatrix, frustum.plane, 6)) continue; // TODO
 
 			DrawCommand drawCommand;
-			drawCommand.transform = transform.modelMatrix();
+			drawCommand.transform = modelMatrix;
 			drawCommand.mesh = meshView.mesh;
 			drawCommand.material = meshView.material;
 

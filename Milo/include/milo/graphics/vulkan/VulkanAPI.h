@@ -8,6 +8,8 @@
 #include "milo/assets/shaders/Shader.h"
 #include "milo/graphics/textures/Texture.h"
 #include "milo/graphics/rendering/passes/RenderPass.h"
+#include "milo/graphics/rendering/Framebuffer.h"
+#include "milo/common/Collections.h"
 
 #define MAX_FRAMES_IN_FLIGHT 2
 #define MAX_SWAPCHAIN_IMAGE_COUNT 3
@@ -30,7 +32,6 @@ namespace milo {
 		static void pushVkCall(StackTrace&& stackTrace, const char* function, const char* file, uint32_t line);
 		static VkResult pushVkCall(StackTrace&& stackTrace, const char* function, const char* file, uint32_t line, VkResult vkResult);
 	};
-
 
 	namespace mvk {
 
@@ -91,6 +92,29 @@ namespace milo {
 			VkRenderPass create(const milo::RenderPass::Description& desc);
 			VkImageLayout colorLayoutFromLoadOp(milo::RenderPass::LoadOp loadOp);
 			VkImageLayout depthLayoutFromLoadOp(milo::RenderPass::LoadOp loadOp);
+		}
+
+		namespace Semaphore {
+			void create(uint32_t count, VkSemaphore* semaphores);
+			void destroy(uint32_t count, VkSemaphore* semaphores);
+		}
+
+		namespace CommandBuffer {
+
+			struct BeginGraphicsRenderPassInfo {
+				VkRenderPass renderPass = VK_NULL_HANDLE; // Mandatory
+				VkPipeline graphicsPipeline = VK_NULL_HANDLE; // Mandatory
+				const Framebuffer* framebuffer = nullptr;
+				const Viewport* viewport = nullptr;
+				uint32_t clearValuesCount = UINT32_MAX;
+				const VkClearValue* clearValues = nullptr;
+				bool dynamicViewport = true;
+				bool dynamicScissor = true;
+			};
+
+			void beginGraphicsRenderPass(VkCommandBuffer commandBuffer, const BeginGraphicsRenderPassInfo& info);
+
+			void endGraphicsRenderPass(VkCommandBuffer commandBuffer);
 		}
 
 		String getErrorName(VkResult vkResult) noexcept;

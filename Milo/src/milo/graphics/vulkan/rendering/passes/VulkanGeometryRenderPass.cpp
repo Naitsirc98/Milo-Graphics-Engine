@@ -83,63 +83,18 @@ namespace milo {
 
 	void VulkanGeometryRenderPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
 
-		const Viewport& sceneViewport = scene->viewport();
+		mvk::CommandBuffer::BeginGraphicsRenderPassInfo beginInfo{};
+		beginInfo.renderPass = m_RenderPass;
+		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
 
-		Entity cameraEntity = scene->cameraEntity();
-
-		auto& framebuffer = dynamic_cast<VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer());
-		VkFramebuffer vkFramebuffer = framebuffer.get(m_RenderPass);
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
 		{
-			VkRenderPassBeginInfo renderPassInfo = {};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = m_RenderPass;
-			renderPassInfo.framebuffer = vkFramebuffer;
-			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent.width = framebuffer.size().width;
-			renderPassInfo.renderArea.extent.height = framebuffer.size().height;
-
-			VkClearValue clearValues[2];
-			clearValues[0].color = {0.01f, 0.01f, 0.01f, 1};
-			clearValues[1].depthStencil = {1.0f, 0};
-
-			renderPassInfo.clearValueCount = 2;
-			renderPassInfo.pClearValues = clearValues;
-
-			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
-			{
-				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
-
-				VkViewport viewport{};
-				viewport.x = (float)sceneViewport.x;
-				viewport.y = (float)sceneViewport.y;
-				viewport.width = (float)sceneViewport.width;
-				viewport.height = (float)sceneViewport.height;
-				viewport.minDepth = 0;
-				viewport.maxDepth = 1;
-
-				VkRect2D scissor{};
-				scissor.offset = {0, 0};
-				scissor.extent = {(uint32_t)viewport.width, (uint32_t)viewport.height};
-
-				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
-				VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
-
-				if(cameraEntity.valid()) {
-					renderMeshViews(imageIndex, commandBuffer, scene, cameraEntity);
-				}
-			}
-			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
+			renderMeshViews(imageIndex, commandBuffer, scene);
 		}
-		VK_CALLV(vkEndCommandBuffer(commandBuffer));
+		mvk::CommandBuffer::endGraphicsRenderPass(commandBuffer);
 	}
 
-	void VulkanGeometryRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene,
-												   const Entity& cameraEntity) {
+	void VulkanGeometryRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
 
 		CameraData cameraData{};
 
@@ -152,6 +107,7 @@ namespace milo {
 
 		} else {
 
+			Entity cameraEntity = scene->cameraEntity();
 			Camera& camera = cameraEntity.getComponent<Camera>();
 			cameraData.proj = camera.projectionMatrix();
 			cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);

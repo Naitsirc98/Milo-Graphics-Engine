@@ -1,5 +1,8 @@
 #include "milo/graphics/vulkan/VulkanAPI.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
+#include "milo/graphics/vulkan/buffers/VulkanFramebuffer.h"
+#include "milo/graphics/rendering/WorldRenderer.h"
+#include "milo/scenes/SceneManager.h"
 
 namespace milo {
 
@@ -401,6 +404,113 @@ namespace milo {
 
 	// =====
 
+	namespace mvk::Semaphore {
+
+		void create(uint32_t count, VkSemaphore* semaphores) {
+
+			VkSemaphoreCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+			VkDevice device = VulkanContext::get()->device()->logical();
+			for(uint32_t i = 0;i < count;++i) {
+				VK_CALL(vkCreateSemaphore(device, &createInfo, nullptr, &semaphores[i]));
+			}
+		}
+
+		void destroy(uint32_t count, VkSemaphore* semaphores) {
+			VkDevice device = VulkanContext::get()->device()->logical();
+			for(uint32_t i = 0;i < count;++i) {
+				VK_CALLV(vkDestroySemaphore(device, semaphores[i], nullptr));
+			}
+		}
+	}
+
+	// =====
+
+	namespace mvk::CommandBuffer {
+
+		void beginGraphicsRenderPass(VkCommandBuffer commandBuffer, const BeginGraphicsRenderPassInfo& info) {
+
+			const Framebuffer* fb = info.framebuffer;
+
+			VkFramebuffer vkFramebuffer;
+			if(fb == nullptr) {
+				fb = &WorldRenderer::get().getFramebuffer();
+			}
+			vkFramebuffer = ((VulkanFramebuffer*)(fb))->get(info.renderPass);
+
+			Viewport sceneViewport{};
+
+			if(info.viewport == nullptr) {
+				sceneViewport = SceneManager::activeScene()->viewport();
+			} else {
+				sceneViewport = *info.viewport;
+			}
+
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+			VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+
+			VkRenderPassBeginInfo renderPassInfo = {};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassInfo.renderPass = info.renderPass;
+			renderPassInfo.framebuffer = vkFramebuffer;
+			renderPassInfo.renderArea.offset = {0, 0};
+			renderPassInfo.renderArea.extent.width = fb->size().width;
+			renderPassInfo.renderArea.extent.height = fb->size().height;
+
+			VkClearValue clearValues[8];
+			uint32_t clearValuesCount = 0;
+
+			if(info.clearValuesCount == UINT32_MAX || info.clearValues == nullptr) {
+
+				for(uint32_t i = 0;i < fb->colorAttachments().size();++i) {
+					clearValues[clearValuesCount++].color = {0, 0, 0, 0};
+				}
+
+				for(uint32_t i = 0;i < fb->depthAttachments().size();++i) {
+					clearValues[clearValuesCount++].depthStencil = {1, 0};
+				}
+
+			} else {
+				memcpy(clearValues, info.clearValues, info.clearValuesCount * sizeof(VkClearValue));
+				clearValuesCount = info.clearValuesCount;
+			}
+
+			renderPassInfo.clearValueCount = clearValuesCount;
+			renderPassInfo.pClearValues = clearValues;
+
+			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
+
+			VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, info.graphicsPipeline));
+
+			if(info.dynamicViewport) {
+				VkViewport viewport{};
+				viewport.x = (float)sceneViewport.x;
+				viewport.y = (float)sceneViewport.y;
+				viewport.width = (float)sceneViewport.width;
+				viewport.height = (float)sceneViewport.height;
+				viewport.minDepth = 0;
+				viewport.maxDepth = 1;
+
+				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
+			}
+
+			if(info.dynamicScissor) {
+				VkRect2D scissor{};
+				scissor.offset = {0, 0};
+				scissor.extent = {(uint32_t)sceneViewport.width, (uint32_t)sceneViewport.height};
+
+				VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
+			}
+		}
+
+		void endGraphicsRenderPass(VkCommandBuffer commandBuffer) {
+			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
+			VK_CALLV(vkEndCommandBuffer(commandBuffer));
+		}
+	}
 
 	// =====
 
@@ -723,7 +833,7 @@ namespace milo {
 				return VK_SHADER_STAGE_COMPUTE_BIT;
 			case Shader::Type::Undefined:
 			default:
-			throw MILO_RUNTIME_EXCEPTION("Unknown shader type");
+				throw MILO_RUNTIME_EXCEPTION("Unknown shader type");
 		}
 	}
 }

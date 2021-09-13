@@ -1,5 +1,7 @@
 #pragma once
 
+#define NOMINMAX
+
 #include "Collections.h"
 #include "Strings.h"
 #include "Memory.h"

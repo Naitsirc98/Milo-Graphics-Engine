@@ -6,3 +6,4 @@
 #include "GridRenderPass.h"
 #include "FinalRenderPass.h"
 #include "DepthRenderPass.h"
+#include "BoundingVolumeRenderPass.h"
