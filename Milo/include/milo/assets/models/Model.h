@@ -3,8 +3,6 @@
 #include "milo/assets/meshes/Mesh.h"
 #include "milo/assets/materials/Material.h"
 
-#define MILO_MODEL_NODE_MAX_NUM_CHILDREN 32
-
 namespace milo {
 
 	class Model : public Asset {

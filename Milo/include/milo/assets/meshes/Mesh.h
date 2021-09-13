@@ -39,4 +39,32 @@ namespace milo {
 		GraphicsBuffers* buffers() const;
 	};
 
+	class VertexList {
+	private:
+		const ArrayList<Vertex>& m_Vertices;
+		const ArrayList<uint32_t>& m_Indices;
+	public:
+		VertexList(Mesh* mesh) : VertexList(mesh->vertices(), mesh->indices()) {}
+		VertexList(const ArrayList<Vertex>& vertices, const ArrayList<uint32_t>& indices)
+			: m_Vertices(vertices), m_Indices(indices) {
+		}
+
+		~VertexList() = default;
+
+		Vertex operator[](uint32_t index) const {
+			return m_Vertices[(m_Indices.empty() ? index : m_Indices[index])];
+		}
+
+		size_t size() const {
+			return m_Indices.empty() ? m_Vertices.size() : m_Indices.size();
+		}
+
+		ArrayList<Vertex>::const_iterator begin() const {
+			return m_Vertices.cbegin();
+		}
+
+		ArrayList<Vertex>::const_iterator end() const {
+			return m_Vertices.cend();
+		}
+	};
 }

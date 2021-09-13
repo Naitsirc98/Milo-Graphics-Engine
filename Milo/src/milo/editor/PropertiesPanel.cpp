@@ -39,9 +39,16 @@ namespace milo {
 	}
 
 	template<typename T>
+	static String nameof() {
+		static const uint32_t offset = strlen("milo::");
+		const String name = typeid(T).name();
+		return name.substr(offset);
+	}
+
+	template<typename T>
 	static void addComponentButton(Entity entity) {
 		if(!entity.hasComponent<T>()) {
-			if(ImGui::Button(typeid(T).name()))
+			if(ImGui::Button(nameof<T>().c_str()))
 			{
 				entity.addComponent<T>();
 				ImGui::CloseCurrentPopup();
