@@ -6,11 +6,11 @@
 namespace milo {
 
 	static const int ASSIMP_FLAGS = aiProcess_OptimizeMeshes
-			//| aiProcess_OptimizeGraph
+			| aiProcess_OptimizeGraph
 			| aiProcess_Triangulate
 			//| aiProcess_FlipUVs
-			| aiProcess_JoinIdenticalVertices;
-			//| aiProcess_GenSmoothNormals;
+			| aiProcess_JoinIdenticalVertices
+			| aiProcess_GenSmoothNormals;
 
 	Model* AssimpModelLoader::load(const String& filename) {
 
@@ -44,6 +44,11 @@ namespace milo {
 
 		memcpy(&outNode->transform, &aiNode->mTransformation, sizeof(Matrix4));
 
+		if(outNode->parent >= 0) {
+			const Model::Node* parent = outNode->model->get(outNode->parent);
+			outNode->transform = parent->transform * outNode->transform;
+		}
+
 		for(uint32_t i = 0;i < aiNode->mNumMeshes;++i) {
 			processNodeMeshes(aiScene, aiNode, outNode);
 		}
@@ -53,6 +58,7 @@ namespace milo {
 			const auto* aiChild = aiNode->mChildren[i];
 			Model::Node* child = outNode->model->createNode();
 			outNode->children.push_back(child->index);
+			child->parent = outNode->index;
 			processNode(aiScene, aiChild, child);
 		}
 	}

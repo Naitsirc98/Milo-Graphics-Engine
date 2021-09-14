@@ -27,14 +27,14 @@ namespace milo {
 		}
 
 		push<GeometryRenderPass>();
-
-		push<BoundingVolumeRenderPass>();
-
+		
 		//push<PBRForwardRenderPass>();
 
 		if(scene->skyboxView() != nullptr) {
 			push<SkyboxRenderPass>();
 		}
+
+		push<BoundingVolumeRenderPass>();
 
 		if(WorldRenderer::get().showGrid()) {
 			push<GridRenderPass>();

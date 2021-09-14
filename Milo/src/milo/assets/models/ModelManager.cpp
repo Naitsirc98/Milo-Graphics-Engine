@@ -15,7 +15,8 @@ namespace milo {
 	}
 
 	void ModelManager::init() {
-		load("Sponza", "resources/models/Sponza/Sponza.gltf");
+		Model* sponza = load("Sponza", "resources/models/Sponza/Sponza.gltf");
+		sponza->setCanBeCulled(false);
 	}
 
 	Model* ModelManager::load(const String& name, const String& filename) {

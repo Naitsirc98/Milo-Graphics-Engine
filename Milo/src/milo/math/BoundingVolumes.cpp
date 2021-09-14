@@ -144,14 +144,14 @@ namespace milo {
 					float dt = dot(t, vertices[i].position);
 					float du = dot(u, vertices[i].position);
 
-					smin = milo::min(smin, ds);
-					smax = milo::max(smax, ds);
+					smin = std::min(smin, ds);
+					smax = std::max(smax, ds);
 
-					tmin = milo::min(tmin, dt);
-					tmax = milo::max(tmax, dt);
+					tmin = std::min(tmin, dt);
+					tmax = std::max(tmax, dt);
 
-					umin = milo::min(umin, du);
-					umax = milo::max(umax, du);
+					umin = std::min(umin, du);
+					umax = std::max(umax, du);
 				}
 
 				float hx = (smax - smin) * 0.5f;

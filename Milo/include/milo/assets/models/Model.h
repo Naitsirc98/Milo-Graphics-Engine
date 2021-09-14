@@ -20,6 +20,7 @@ namespace milo {
 			Mesh* mesh{nullptr};
 			Material* material{nullptr};
 			ArrayList<uint32_t> children;
+			int32_t parent{-1};
 
 		private:
 			Node() = default;
@@ -58,6 +59,14 @@ namespace milo {
 			node->index = m_Nodes.size();
 			m_Nodes.push_back(node);
 			return node;
+		}
+
+		inline void setCanBeCulled(bool value) {
+			for(Node* node : m_Nodes) {
+				if(node->mesh != nullptr) {
+					node->mesh->setCanBeCulled(value);
+				}
+			}
 		}
 	};
 }

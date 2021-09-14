@@ -72,13 +72,15 @@ namespace milo {
 
 			Matrix4 modelMatrix = transform.modelMatrix();
 
-			if(meshView.mesh == nullptr || meshView.material == nullptr) continue;
-			//if(!meshView.mesh->boundingVolume().isVisible(modelMatrix, frustum.plane, 6)) continue; // TODO
+			Mesh* mesh = meshView.mesh;
+			Material* material = meshView.material;
+			if(mesh == nullptr || material == nullptr) continue;
+			if(mesh->canBeCulled() && !mesh->boundingVolume().isVisible(modelMatrix, frustum.plane, 6)) continue; // TODO
 
 			DrawCommand drawCommand;
 			drawCommand.transform = modelMatrix;
-			drawCommand.mesh = meshView.mesh;
-			drawCommand.material = meshView.material;
+			drawCommand.mesh = mesh;
+			drawCommand.material = material;
 
 			drawCommands.push_back(drawCommand);
 			shadowsDrawCommands.push_back(drawCommand);

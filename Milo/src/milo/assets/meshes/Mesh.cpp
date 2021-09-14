@@ -29,6 +29,14 @@ namespace milo {
 		return *m_BoundingVolume;
 	}
 
+	bool Mesh::canBeCulled() const {
+		return m_CanBeCulled;
+	}
+
+	void Mesh::setCanBeCulled(bool value) {
+		m_CanBeCulled = value;
+	}
+
 	// ====
 
 	Mesh::GraphicsBuffers* Mesh::GraphicsBuffers::create(const ArrayList<Vertex>& vertices, const ArrayList<uint32_t>& indices) {
