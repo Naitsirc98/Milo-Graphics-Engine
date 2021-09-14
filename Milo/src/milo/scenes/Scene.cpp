@@ -77,14 +77,6 @@ namespace milo {
 		m_SkyEntity = id;
 	}
 
-	const LightEnvironment& Scene::lightEnvironment() const noexcept {
-		return m_LightEnvironment;
-	}
-
-	LightEnvironment& Scene::lightEnvironment() noexcept {
-		return m_LightEnvironment;
-	}
-
 	const Viewport& Scene::viewport() const noexcept {
 		return m_Viewport;
 	}

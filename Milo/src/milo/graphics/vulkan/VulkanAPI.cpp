@@ -429,7 +429,29 @@ namespace milo {
 
 	namespace mvk::CommandBuffer {
 
+		inline static VulkanFramebuffer* prepareFramebuffer(VkCommandBuffer commandBuffer, const Framebuffer* fb) {
+			VulkanFramebuffer* vulkanFramebuffer = (VulkanFramebuffer*)fb;
+			for(Texture2D* colorAttachment : vulkanFramebuffer->colorAttachments()) {
+				auto* texture = (VulkanTexture2D*)colorAttachment;
+				if(texture->layout() != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+					texture->setLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				}
+			}
+			for(Texture2D* depthAttachment : vulkanFramebuffer->depthAttachments()) {
+				auto* texture = (VulkanTexture2D*)depthAttachment;
+				if(texture->layout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+					texture->setLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+				}
+			}
+			return vulkanFramebuffer;
+		}
+
 		void beginGraphicsRenderPass(VkCommandBuffer commandBuffer, const BeginGraphicsRenderPassInfo& info) {
+
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+			VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
 			const Framebuffer* fb = info.framebuffer;
 
@@ -437,7 +459,8 @@ namespace milo {
 			if(fb == nullptr) {
 				fb = &WorldRenderer::get().getFramebuffer();
 			}
-			vkFramebuffer = ((VulkanFramebuffer*)(fb))->get(info.renderPass);
+			VulkanFramebuffer* vulkanFramebuffer = prepareFramebuffer(commandBuffer, fb);
+			vkFramebuffer = vulkanFramebuffer->get(info.renderPass);
 
 			Viewport sceneViewport{};
 
@@ -446,11 +469,6 @@ namespace milo {
 			} else {
 				sceneViewport = *info.viewport;
 			}
-
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-			VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
 			VkRenderPassBeginInfo renderPassInfo = {};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

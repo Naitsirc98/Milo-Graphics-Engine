@@ -86,7 +86,7 @@ namespace milo {
 		void bindGraphicsPipeline(VkCommandBuffer commandBuffer) const;
 
 		void updateCameraUniformData(uint32_t imageIndex, const Camera* camera, const Transform& cameraTransform);
-		void updateLightsUniformData(uint32_t imageIndex, const LightEnvironment& lights);
+		//void updateLightsUniformData(uint32_t imageIndex, const LightEnvironment& lights);
 		void updateSkyboxUniformData(uint32_t imageIndex, const Skybox* skybox);
 		void bindSceneDescriptorSet(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 

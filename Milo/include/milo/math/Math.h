@@ -189,14 +189,14 @@ namespace milo {
 
 	struct Polyhedron {
 
-		uint8_t vertexCount;
-		uint8_t edgeCount;
-		uint8_t faceCount;
+		uint8_t vertexCount{0};
+		uint8_t edgeCount{0};
+		uint8_t faceCount{0};
 
-		Vector3 vertex[MAX_POLYHEDRON_VERTEX_COUNT];
-		Edge edge[MAX_POLYHEDRON_EDGE_COUNT];
-		Face face[MAX_POLYHEDRON_FACE_COUNT];
-		Plane plane[MAX_POLYHEDRON_FACE_COUNT];
+		Vector3 vertex[MAX_POLYHEDRON_VERTEX_COUNT]{};
+		Edge edge[MAX_POLYHEDRON_EDGE_COUNT]{};
+		Face face[MAX_POLYHEDRON_FACE_COUNT]{};
+		Plane plane[MAX_POLYHEDRON_FACE_COUNT]{};
 	};
 
 	inline float distancePointLine(const Vector3& q, const Vector3& p, const Vector3& v) {

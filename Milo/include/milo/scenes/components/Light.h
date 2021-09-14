@@ -1,6 +1,7 @@
 #pragma once
 
 #include "milo/common/Common.h"
+#include "milo/assets/skybox/Skybox.h"
 
 namespace milo {
 
@@ -13,9 +14,16 @@ namespace milo {
 		bool castShadows = true;
 	};
 
+	struct SkyLight {
+
+		PreethamSky* sky{nullptr};
+		DirectionalLight light;
+	};
+
 	struct PointLight {
 
-		Vector3 position = { 0.0f, 0.0f, 0.0f };
+		// Get position from entity's transform
+		Vector3 position = {0, 0, 0};
 		Vector3 radiance = { 0.0f, 0.0f, 0.0f };
 		float multiplier = 0.0f;
 		float minRadius = 0.001f;

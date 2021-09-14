@@ -3,15 +3,8 @@
 #include "EntityComponentSystem.h"
 #include "milo/scenes/Components.h"
 #include "milo/assets/skybox/Skybox.h"
-#include "milo/lights/Light.h"
 
 namespace milo {
-
-	struct LightEnvironment {
-		DirectionalLight directionalLight;
-		ArrayList<PointLight> pointLights{};
-		Color ambientColor = {0.2f, 0.2f, 0.2f, 1.0f};
-	};
 
 	class Scene {
 		friend class SceneManager;
@@ -22,7 +15,6 @@ namespace milo {
 		ECSRegistry m_Registry;
 		EntityId m_MainCameraEntity = NULL_ENTITY;
 		EntityId m_SkyEntity = NULL_ENTITY;
-		LightEnvironment m_LightEnvironment{};
 		Viewport m_Viewport{};
 		bool m_Focused = false;
 	private:
@@ -41,8 +33,6 @@ namespace milo {
 		void setMainCamera(EntityId id) noexcept;
 		SkyboxView* skyboxView() const;
 		void setSkyEntity(EntityId id);
-		const LightEnvironment& lightEnvironment() const noexcept;
-		LightEnvironment& lightEnvironment() noexcept;
 		const Viewport& viewport() const noexcept;
 		Size viewportSize() const noexcept;
 		bool focused() const;

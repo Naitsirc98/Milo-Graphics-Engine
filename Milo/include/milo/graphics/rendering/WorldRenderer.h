@@ -4,6 +4,7 @@
 #include "milo/scenes/Scene.h"
 #include "milo/graphics/rendering/GraphicsPresenter.h"
 
+
 namespace milo {
 
 	struct DrawCommand {
@@ -24,6 +25,20 @@ namespace milo {
 		}
 	};
 
+	struct LightEnvironment {
+		Skybox* skybox{nullptr};
+		DirectionalLight dirLight{};
+		ArrayList<PointLight> pointLights;
+		Color ambientColor{0.2f, 0.2f, 0.2f, 1.0f};
+	};
+
+	struct CameraInfo {
+		Matrix4 proj = Matrix4(1.0);
+		Matrix4 view = Matrix4(1.0);
+		Matrix4 projView = Matrix4(1.0);
+		Polyhedron frustum{};
+	};
+
 	class WorldRenderer {
 		friend class MiloEngine;
 		friend class MiloSubSystemManager;
@@ -33,8 +48,11 @@ namespace milo {
 		FrameGraph m_FrameGraph;
 		bool m_ShowGrid{false};
 		bool m_ShadowsEnabled{true};
+		bool m_ShowBoundingVolumes{false};
 		ArrayList<DrawCommand> m_DrawCommands;
 		ArrayList<DrawCommand> m_ShadowDrawCommands;
+		CameraInfo m_Camera{};
+		LightEnvironment m_LightEnvironment{};
 	private:
 		WorldRenderer();
 		~WorldRenderer();
@@ -45,9 +63,13 @@ namespace milo {
 		void setShowGrid(bool show);
 		bool shadowsEnabled() const;
 		void setShadowsEnabled(bool shadowsEnabled);
+		bool showBoundingVolumes() const;
+		void setShowBoundingVolumes(bool value);
 		void submit(DrawCommand drawCommand, bool castShadows);
 		const ArrayList<DrawCommand>& drawCommands() const;
 		const ArrayList<DrawCommand>& shadowsDrawCommands() const;
+		const CameraInfo& camera() const;
+		const LightEnvironment& lights() const;
 	private:
 		static WorldRenderer* s_Instance;
 	public:
@@ -58,6 +80,8 @@ namespace milo {
 		static void generateDrawCommands(Scene* scene);
 		static void init();
 		static void shutdown();
+		static void getCameraInfo(Scene* scene);
+		static void generateLightEnvironment(Scene* scene);
 	};
 
 }

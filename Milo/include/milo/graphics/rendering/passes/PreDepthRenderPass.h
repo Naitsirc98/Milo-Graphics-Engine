@@ -4,14 +4,14 @@
 
 namespace milo {
 
-	class DepthRenderPass : public RenderPass {
+	class PreDepthRenderPass : public RenderPass {
 	public:
-		DepthRenderPass() = default;
-		virtual ~DepthRenderPass() override = default;
+		PreDepthRenderPass() = default;
+		virtual ~PreDepthRenderPass() override = default;
 		RenderPassId getId() const override;
 		const String& name() const override;
 	public:
-		static DepthRenderPass* create();
+		static PreDepthRenderPass* create();
 		static size_t id();
 	};
 }

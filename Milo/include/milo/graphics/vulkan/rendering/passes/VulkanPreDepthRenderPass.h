@@ -1,6 +1,6 @@
 #pragma once
 
-#include "milo/graphics/rendering/passes/DepthRenderPass.h"
+#include "milo/graphics/rendering/passes/PreDepthRenderPass.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
@@ -8,16 +8,13 @@
 
 namespace milo {
 
-	class VulkanDepthRenderPass : public DepthRenderPass {
-		friend class DepthRenderPass;
+	class VulkanPreDepthRenderPass : public PreDepthRenderPass {
+		friend class PreDepthRenderPass;
 	private:
-		struct PushConstants {
-			Matrix4 modelMatrix;
-			uint32_t cascadeIndex;
-		};
-
 		struct UniformBuffer {
-			Matrix4 cascadeShadowMapMatrices[4];
+			Matrix4 projMatrix;
+			Matrix4 viewMatrix;
+			Matrix4 projViewMatrix;
 		};
 	private:
 		VulkanDevice* m_Device{nullptr};
@@ -37,15 +34,15 @@ namespace milo {
 		Size m_LastFramebufferSize{};
 
 	private:
-		VulkanDepthRenderPass();
-		~VulkanDepthRenderPass();
+		VulkanPreDepthRenderPass();
+		~VulkanPreDepthRenderPass();
 	public:
 		bool shouldCompile(Scene* scene) const;
 		void compile(Scene* scene, FrameGraphResourcePool* resourcePool);
 		void execute(Scene* scene);
 	private:
 		void buildCommandBuffers(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
-		void renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene, Entity cameraEntity);
+		void renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
 		void createRenderPass();
 		void createDescriptorSetLayout();
 		void createDescriptorPool();

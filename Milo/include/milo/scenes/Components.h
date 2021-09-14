@@ -9,3 +9,4 @@
 #include "milo/scenes/components/EntityBasicInfo.h"
 #include "milo/scenes/components/SkyboxView.h"
 #include "milo/scenes/components/Collider.h"
+#include "milo/scenes/components/Light.h"

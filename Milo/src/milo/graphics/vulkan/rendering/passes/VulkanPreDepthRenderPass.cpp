@@ -1,4 +1,4 @@
-#include "milo/graphics/vulkan/rendering/passes/VulkanDepthRenderPass.h"
+#include "milo/graphics/vulkan/rendering/passes/VulkanPreDepthRenderPass.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/graphics/vulkan/rendering/VulkanFrameGraphResourcePool.h"
 #include "milo/scenes/SceneManager.h"
@@ -7,7 +7,7 @@
 
 namespace milo {
 
-	VulkanDepthRenderPass::VulkanDepthRenderPass() {
+	VulkanPreDepthRenderPass::VulkanPreDepthRenderPass() {
 		m_Device = VulkanContext::get()->device();
 		createRenderPass();
 		createUniformBuffer();
@@ -17,7 +17,7 @@ namespace milo {
 		createSemaphores();
 	}
 
-	VulkanDepthRenderPass::~VulkanDepthRenderPass() {
+	VulkanPreDepthRenderPass::~VulkanPreDepthRenderPass() {
 		m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());
 		DELETE_PTR(m_GraphicsPipeline);
 		DELETE_PTR(m_UniformBuffer);
@@ -29,11 +29,11 @@ namespace milo {
 		}
 	}
 
-	bool VulkanDepthRenderPass::shouldCompile(Scene* scene) const {
+	bool VulkanPreDepthRenderPass::shouldCompile(Scene* scene) const {
 		return WorldRenderer::get().getFramebuffer().size() != m_LastFramebufferSize;
 	}
 
-	void VulkanDepthRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
+	void VulkanPreDepthRenderPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
 
 		m_LastFramebufferSize = WorldRenderer::get().getFramebuffer().size();
 
@@ -48,7 +48,7 @@ namespace milo {
 		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_CommandBuffers.size(), m_CommandBuffers.data());
 	}
 
-	void VulkanDepthRenderPass::execute(Scene* scene) {
+	void VulkanPreDepthRenderPass::execute(Scene* scene) {
 
 		uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
 		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
@@ -71,64 +71,24 @@ namespace milo {
 		queue->submit(submitInfo, VK_NULL_HANDLE);
 	}
 
-	void VulkanDepthRenderPass::buildCommandBuffers(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
+	void VulkanPreDepthRenderPass::buildCommandBuffers(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
 
-		const Viewport& sceneViewport = scene->viewport();
+		mvk::CommandBuffer::BeginGraphicsRenderPassInfo beginInfo{};
+		beginInfo.renderPass = m_RenderPass;
+		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
 
-		Entity cameraEntity = scene->cameraEntity();
-
-		auto& framebuffer = dynamic_cast<VulkanFramebuffer&>(WorldRenderer::get().getFramebuffer());
-		VkFramebuffer vkFramebuffer = framebuffer.get(m_RenderPass);
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-		{
-			VkRenderPassBeginInfo renderPassInfo = {};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = m_RenderPass;
-			renderPassInfo.framebuffer = vkFramebuffer;
-			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent.width = framebuffer.size().width;
-			renderPassInfo.renderArea.extent.height = framebuffer.size().height;
-
-			VkClearValue clearValues[2];
-			clearValues[0].color = {0.01f, 0.01f, 0.01f, 1};
-			clearValues[1].depthStencil = {1.0f, 0};
-
-			renderPassInfo.clearValueCount = 2;
-			renderPassInfo.pClearValues = clearValues;
-
-			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
-			{
-				VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
-
-				VkViewport viewport{};
-				viewport.x = (float)sceneViewport.x;
-				viewport.y = (float)sceneViewport.y;
-				viewport.width = (float)sceneViewport.width;
-				viewport.height = (float)sceneViewport.height;
-				viewport.minDepth = 0;
-				viewport.maxDepth = 1;
-
-				VkRect2D scissor{};
-				scissor.offset = {0, 0};
-				scissor.extent = {(uint32_t)viewport.width, (uint32_t)viewport.height};
-
-				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
-				VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
-
-				if(cameraEntity.valid()) {
-					renderMeshViews(imageIndex, commandBuffer, scene, cameraEntity);
-				}
-			}
-			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
-		}
-		VK_CALLV(vkEndCommandBuffer(commandBuffer));
+		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
+		renderMeshViews(imageIndex, commandBuffer, scene);
+		mvk::CommandBuffer::endGraphicsRenderPass(commandBuffer);
 	}
 
-	void VulkanDepthRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene, Entity cameraEntity) {
+	void VulkanPreDepthRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
+
+		{
+			const auto& camera = WorldRenderer::get().camera();
+			UniformBuffer ubo{camera.proj, camera.view, camera.projView};
+			m_UniformBuffer->update(imageIndex, ubo);
+		}
 
 		Mesh* lastMesh = nullptr;
 
@@ -149,26 +109,19 @@ namespace milo {
 				lastMesh = command.mesh;
 			}
 
-			PushConstants pushConstants;
-			pushConstants.modelMatrix = command.transform;
+			VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(),
+										VK_SHADER_STAGE_VERTEX_BIT,
+										0, sizeof(Matrix4), &command.transform));
 
-			for(uint32_t i = 0;i < 4;++i) {
-
-				pushConstants.cascadeIndex = i;
-
-				VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT,
-											0, sizeof(PushConstants), &pushConstants));
-
-				if(command.mesh->indices().empty()) {
-					VK_CALLV(vkCmdDraw(commandBuffer, command.mesh->vertices().size(), 1, 0, 0));
-				} else {
-					VK_CALLV(vkCmdDrawIndexed(commandBuffer, command.mesh->indices().size(), 1, 0, 0, 0));
-				}
+			if(command.mesh->indices().empty()) {
+				VK_CALLV(vkCmdDraw(commandBuffer, command.mesh->vertices().size(), 1, 0, 0));
+			} else {
+				VK_CALLV(vkCmdDrawIndexed(commandBuffer, command.mesh->indices().size(), 1, 0, 0, 0));
 			}
 		}
 	}
 
-	void VulkanDepthRenderPass::createRenderPass() {
+	void VulkanPreDepthRenderPass::createRenderPass() {
 
 		RenderPass::Description desc;
 		desc.colorAttachments.push_back({PixelFormat::RGBA32F, 1, LoadOp::Load});
@@ -177,7 +130,7 @@ namespace milo {
 		m_RenderPass = mvk::RenderPass::create(desc);
 	}
 
-	void VulkanDepthRenderPass::createDescriptorSetLayout() {
+	void VulkanPreDepthRenderPass::createDescriptorSetLayout() {
 
 		VkDescriptorSetLayoutBinding binding{};
 		// Uniform buffer
@@ -194,7 +147,7 @@ namespace milo {
 		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &createInfo, nullptr, &m_DescriptorSetLayout));
 	}
 
-	void VulkanDepthRenderPass::createDescriptorPool() {
+	void VulkanPreDepthRenderPass::createDescriptorPool() {
 
 		VkDescriptorPoolSize poolSize{};
 		// Uniform buffer
@@ -209,12 +162,12 @@ namespace milo {
 		m_DescriptorPool = new VulkanDescriptorPool(m_Device, createInfo);
 	}
 
-	void VulkanDepthRenderPass::createUniformBuffer() {
+	void VulkanPreDepthRenderPass::createUniformBuffer() {
 		m_UniformBuffer = new VulkanUniformBuffer<UniformBuffer>();
 		m_UniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
-	void VulkanDepthRenderPass::createDescriptorSets() {
+	void VulkanPreDepthRenderPass::createDescriptorSets() {
 
 		m_DescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
 
@@ -229,7 +182,7 @@ namespace milo {
 		});
 	}
 
-	void VulkanDepthRenderPass::createGraphicsPipeline() {
+	void VulkanPreDepthRenderPass::createGraphicsPipeline() {
 
 		VulkanGraphicsPipeline::CreateInfo pipelineInfo{};
 		pipelineInfo.vkRenderPass = m_RenderPass;
@@ -237,25 +190,24 @@ namespace milo {
 		pipelineInfo.setLayouts.push_back(m_DescriptorSetLayout);
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
-		pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
-		pipelineInfo.shaders.push_back({"resources/shaders/shadows/shadow_map.vert", VK_SHADER_STAGE_VERTEX_BIT});
-		pipelineInfo.shaders.push_back({"resources/shaders/shadows/shadow_map.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/pre_depth/pre_depth.vert", VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/pre_depth/pre_depth.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
 
 		VkPushConstantRange pushConstant;
 		pushConstant.offset = 0;
-		pushConstant.size = sizeof(PushConstants);
+		pushConstant.size = sizeof(Matrix4);
 		pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 		pipelineInfo.pushConstantRanges.push_back(pushConstant);
 
-		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanDepthRenderPass", m_Device, pipelineInfo);
+		m_GraphicsPipeline = new VulkanGraphicsPipeline("VulkanPreDepthRenderPass", m_Device, pipelineInfo);
 	}
 
-	void VulkanDepthRenderPass::createSemaphores() {
+	void VulkanPreDepthRenderPass::createSemaphores() {
 
 		VkSemaphoreCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;

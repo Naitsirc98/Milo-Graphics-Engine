@@ -2,6 +2,7 @@
 #include "milo/scenes/SceneManager.h"
 #include "milo/scenes/Entity.h"
 #include "milo/editor/MiloEditor.h"
+#include <algorithm>
 
 namespace milo {
 
@@ -16,6 +17,8 @@ namespace milo {
 
 		m_DrawCommands.reserve(8192);
 		m_ShadowDrawCommands.reserve(8192);
+
+		m_LightEnvironment.pointLights.reserve(1024);
 
 		//m_ShowGrid = getSimulationState() == SimulationState::Editor;
 	}
@@ -48,21 +51,10 @@ namespace milo {
 		drawCommands.clear();
 		shadowsDrawCommands.clear();
 
-		Polyhedron frustum;
+		getCameraInfo(scene);
+		generateLightEnvironment(scene);
 
-		if(getSimulationState() == SimulationState::Editor) {
-			const auto& camera = MiloEditor::camera();
-			float fov, znear, zfar;
-			decomposeProjectionMatrix(camera.projMatrix(), fov, znear, zfar);
-			frustum = buildFrustumPolyhedron(camera.viewMatrix(), fov, camera.aspect(), znear, zfar);
-		} else {
-			const auto* camera = scene->camera();
-			float fov, znear, zfar;
-			decomposeProjectionMatrix(camera->projectionMatrix(), fov, znear, zfar);
-			float aspect = camera->viewport().x / camera->viewport().y;
-			Matrix4 viewMatrix = camera->viewMatrix(scene->cameraEntity().getComponent<Transform>().translation);
-			frustum = buildFrustumPolyhedron(viewMatrix, fov, aspect, znear, zfar);
-		}
+		const CameraInfo& camera = s_Instance->camera();
 
 		auto components = scene->group<Transform, MeshView>();
 		for(EntityId entityId : components) {
@@ -75,7 +67,7 @@ namespace milo {
 			Mesh* mesh = meshView.mesh;
 			Material* material = meshView.material;
 			if(mesh == nullptr || material == nullptr) continue;
-			if(mesh->canBeCulled() && !mesh->boundingVolume().isVisible(modelMatrix, frustum.plane, 6)) continue; // TODO
+			if(mesh->canBeCulled() && !mesh->boundingVolume().isVisible(modelMatrix, camera.frustum.plane, 6)) continue; // TODO
 
 			DrawCommand drawCommand;
 			drawCommand.transform = modelMatrix;
@@ -88,6 +80,60 @@ namespace milo {
 
 		std::sort(drawCommands.begin(), drawCommands.end());
 		std::sort(shadowsDrawCommands.begin(), shadowsDrawCommands.end());
+	}
+
+	void WorldRenderer::getCameraInfo(Scene* scene) {
+		CameraInfo& c = s_Instance->m_Camera;
+		if(getSimulationState() == SimulationState::Editor) {
+			const auto& camera = MiloEditor::camera();
+			float fov, znear, zfar;
+			decomposeProjectionMatrix(camera.projMatrix(), fov, znear, zfar);
+			c.proj = camera.projMatrix();
+			c.view = camera.viewMatrix();
+			c.projView = c.proj * c.view;
+			c.frustum = buildFrustumPolyhedron(camera.viewMatrix(), fov, camera.aspect(), znear, zfar);
+		} else {
+			const auto* camera = scene->camera();
+			float fov, znear, zfar;
+			decomposeProjectionMatrix(camera->projectionMatrix(), fov, znear, zfar);
+			float aspect = camera->viewport().x / camera->viewport().y;
+			Matrix4 viewMatrix = camera->viewMatrix(scene->cameraEntity().getComponent<Transform>().translation);
+			c.proj = camera->projectionMatrix();
+			c.view = viewMatrix;
+			c.projView = c.proj * c.view;
+			c.frustum = buildFrustumPolyhedron(viewMatrix, fov, aspect, znear, zfar);
+		}
+	}
+
+	void WorldRenderer::generateLightEnvironment(Scene* scene) {
+
+		const CameraInfo& camera = s_Instance->camera();
+		LightEnvironment& env = s_Instance->m_LightEnvironment;
+
+		ECSComponentView<SkyLight> skyLight = scene->view<SkyLight>();
+		if(!skyLight.empty()) {
+			EntityId entity = *skyLight.begin();
+			SkyLight sky = skyLight.get<SkyLight>(entity);
+			env.dirLight = sky.light;
+			env.skybox = sky.sky;
+		} else {
+			ECSComponentView<DirectionalLight> dirLight = scene->view<DirectionalLight>();
+			if(!dirLight.empty()) {
+				EntityId entity = *dirLight.begin();
+				env.dirLight = dirLight.get<DirectionalLight>(entity);
+			}
+			if(scene->skyboxView() != nullptr) env.skybox = scene->skyboxView()->skybox;
+		}
+
+		// FIXME
+		//env.pointLights.clear();
+		//auto components = scene->group<Transform, PointLight>();
+		//for(EntityId entityId : components) {
+		//	const auto& transform = components.get<Transform>(entityId);
+		//	PointLight pointLight = components.get<PointLight>(entityId);
+		//	pointLight.position = transform.translation;
+		//	env.pointLights.push_back(pointLight);
+		//}
 	}
 
 	Framebuffer& WorldRenderer::getFramebuffer() const {
@@ -110,6 +156,14 @@ namespace milo {
 		m_ShadowsEnabled = shadowsEnabled;
 	}
 
+	bool WorldRenderer::showBoundingVolumes() const {
+		return m_ShowBoundingVolumes;
+	}
+
+	void WorldRenderer::setShowBoundingVolumes(bool value) {
+		m_ShowBoundingVolumes = value;
+	}
+
 	void WorldRenderer::submit(DrawCommand drawCommand, bool castShadows) {
 		m_DrawCommands.push_back(drawCommand);
 		if(castShadows) m_ShadowDrawCommands.push_back(drawCommand);
@@ -121,6 +175,14 @@ namespace milo {
 
 	const ArrayList<DrawCommand>& WorldRenderer::shadowsDrawCommands() const {
 		return m_ShadowDrawCommands;
+	}
+
+	const CameraInfo& WorldRenderer::camera() const {
+		return m_Camera;
+	}
+
+	const LightEnvironment& WorldRenderer::lights() const {
+		return m_LightEnvironment;
 	}
 
 	WorldRenderer* WorldRenderer::s_Instance = nullptr;

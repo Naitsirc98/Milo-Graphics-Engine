@@ -17,7 +17,7 @@ namespace milo {
 		createRenderPass();
 
 		createCameraUniformBuffer();
-		createLightsUniformBuffer();
+		//createLightsUniformBuffer();
 		createSkyboxUniformBuffer();
 		createSceneDescriptorLayout();
 		createSceneDescriptorPool();
@@ -94,7 +94,7 @@ namespace milo {
 				bindGraphicsPipeline(commandBuffer);
 
 				updateCameraUniformData(imageIndex, camera, cameraTransform);
-				updateLightsUniformData(imageIndex, scene->lightEnvironment());
+				//updateLightsUniformData(imageIndex, scene->lightEnvironment());
 				//updateSkyboxUniformData(imageIndex, scene->skybox());
 
 				bindSceneDescriptorSet(commandBuffer, imageIndex);
@@ -173,6 +173,7 @@ namespace milo {
 		m_CameraUniformBuffer->update(imageIndex, cameraData);
 	}
 
+	/*
 	void VulkanPBRForwardRenderPass::updateLightsUniformData(uint32_t imageIndex, const LightEnvironment& lights) {
 
 		LightsUniformBuffer lightsData{};
@@ -184,6 +185,7 @@ namespace milo {
 
 		m_LightsUniformBuffer->update(imageIndex, lightsData);
 	}
+	 */
 
 	void VulkanPBRForwardRenderPass::updateSkyboxUniformData(uint32_t imageIndex, const Skybox* skybox) {
 

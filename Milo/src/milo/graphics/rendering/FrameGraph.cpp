@@ -22,25 +22,29 @@ namespace milo {
 
 	void FrameGraph::setup(Scene* scene) {
 
-		if(WorldRenderer::get().shadowsEnabled()) {
-			//push<DepthRenderPass>();
+		const WorldRenderer& renderer = WorldRenderer::get();
+
+		if(renderer.shadowsEnabled() && !renderer.lights().pointLights.empty()) {
+			push<PreDepthRenderPass>();
 		}
 
 		push<GeometryRenderPass>();
 		
-		//push<PBRForwardRenderPass>();
-
-		if(scene->skyboxView() != nullptr) {
+		if(renderer.lights().skybox != nullptr) {
 			push<SkyboxRenderPass>();
 		}
 
-		push<BoundingVolumeRenderPass>();
+		if(renderer.showBoundingVolumes()) {
+			push<BoundingVolumeRenderPass>();
+		}
 
-		if(WorldRenderer::get().showGrid()) {
+		if(renderer.showGrid()) {
 			push<GridRenderPass>();
 		}
 
-		//push<FinalRenderPass>();
+		if(getSimulationState() != SimulationState::Editor) {
+			push<FinalRenderPass>();
+		}
 	}
 
 	void FrameGraph::compile(Scene* scene) {

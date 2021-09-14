@@ -150,7 +150,7 @@ namespace milo {
 					rotation[1] = Vector4(obb.yAxis, 0);
 					rotation[2] = Vector4(obb.zAxis, 0);
 
-					modelMatrix = translate(modelMatrix, obb.center) * scale(Matrix4(1.0f), obb.size * 2.0f) * rotation;
+					modelMatrix = translate(modelMatrix, obb.center) * scale(Matrix4(1.0f), obb.size) * rotation;
 				}
 			}
 
