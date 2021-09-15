@@ -6,10 +6,9 @@
 #define TILE_SIZE 16
 
 layout(std140, binding = 0) uniform Camera {
-    mat4 u_ViewProjectionMatrix;
-    mat4 u_InverseViewProjectionMatrix;
     mat4 u_ProjectionMatrix;
     mat4 u_ViewMatrix;
+    mat4 u_ViewProjectionMatrix;
 };
 
 struct PointLight {

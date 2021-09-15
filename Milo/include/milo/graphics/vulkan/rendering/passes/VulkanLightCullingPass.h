@@ -15,10 +15,9 @@ namespace milo {
 		friend class LightCullingPass;
 	private:
 		struct CameraUniformBuffer {
-			Matrix4 viewProjectionMatrix;
-			Matrix4 inverseViewProjectionMatrix;
 			Matrix4 projectionMatrix;
 			Matrix4 viewMatrix;
+			Matrix4 viewProjectionMatrix;
 		};
 		struct PointLightsUniformBuffer {
 			uint32_t pointLightsCount;
@@ -40,7 +39,7 @@ namespace milo {
 		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
 		VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
 
-		mutable Array<Ref<Framebuffer>, MAX_SWAPCHAIN_IMAGE_COUNT> m_LastFramebuffers{};
+		Size m_LastFramebufferSize{};
 	private:
 		VulkanLightCullingPass();
 		~VulkanLightCullingPass();
@@ -49,7 +48,7 @@ namespace milo {
 		void compile(Scene* scene, FrameGraphResourcePool* resourcePool);
 		void execute(Scene* scene);
 	private:
-		void updatePreDepthMap();
+		void updateUniforms(Scene* scene);
 		void createDescriptorSetLayout();
 		void createDescriptorPool();
 		void createCameraUniformBuffer();

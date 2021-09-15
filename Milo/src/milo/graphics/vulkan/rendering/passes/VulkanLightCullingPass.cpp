@@ -31,45 +31,77 @@ namespace milo {
 	}
 
 	bool VulkanLightCullingPass::shouldCompile(Scene* scene) const {
-		Array<Ref<Framebuffer>, MAX_SWAPCHAIN_IMAGE_COUNT> depthFramebuffers = {
-				WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle(0)),
-				WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle(1)),
-				WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle(2))
-		};
-		if(m_LastFramebuffers != depthFramebuffers) {
-			m_LastFramebuffers = depthFramebuffers;
-			return true;
-		}
-		return false;
+		auto framebuffer = WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle());
+		return m_LastFramebufferSize != framebuffer->size();
 	}
 
 	void VulkanLightCullingPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
-		updatePreDepthMap();
+		updateUniforms(scene);
 	}
 
 	void VulkanLightCullingPass::execute(Scene* scene) {
 
+		m_Device->computeCommandPool()->execute([&](VkCommandBuffer commandBuffer) {
 
+			VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
 
+			VkDescriptorSet descriptorSet = m_DescriptorPool->get(0);
+			VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
+											 0, 1, &descriptorSet, 0, nullptr));
 
+			VK_CALLV(vkCmdDispatch(commandBuffer, TILE_SIZE, TILE_SIZE, 1));
+		});
 	}
 
-	void VulkanLightCullingPass::updatePreDepthMap() {
+	void VulkanLightCullingPass::updateUniforms(Scene* scene) {
 
-		for(uint32_t i = 0;i < m_LastFramebuffers.size();++i) {
-
-			auto* depthMap = (VulkanTexture2D*)m_LastFramebuffers[i]->depthAttachments()[0];
-
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = depthMap->vkImageView();
-			imageInfo.sampler = depthMap->vkSampler();
-
-			VkDescriptorSet descriptorSet = m_DescriptorPool->get(i);
-			VkWriteDescriptorSet writeDescriptor = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &imageInfo);
-
-			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptor, 0, nullptr));
+		{
+			const auto& camera = WorldRenderer::get().camera();
+			CameraUniformBuffer cameraData{};
+			cameraData.projectionMatrix = camera.proj;
+			cameraData.viewMatrix = camera.view;
+			cameraData.viewProjectionMatrix = camera.projView;
+			m_CameraUniformBuffer->update(0, cameraData);
 		}
+
+		{
+			const auto& lights = WorldRenderer::get().lights();
+			PointLightsUniformBuffer pointLightsData{};
+			memcpy(pointLightsData.pointLights, lights.pointLights.data(), lights.pointLights.size() * sizeof(PointLight));
+			pointLightsData.pointLightsCount = lights.pointLights.size();
+			m_PointLightsUniformBuffer->update(0, pointLightsData);
+		}
+
+		VkDescriptorBufferInfo cameraBufferInfo = {};
+		cameraBufferInfo.buffer = m_CameraUniformBuffer->vkBuffer();
+		cameraBufferInfo.offset = 0;
+		cameraBufferInfo.range = sizeof(CameraUniformBuffer);
+
+		VkDescriptorBufferInfo pointLightsBufferInfo = {};
+		pointLightsBufferInfo.buffer = m_PointLightsUniformBuffer->vkBuffer();
+		pointLightsBufferInfo.offset = 0;
+		pointLightsBufferInfo.range = sizeof(PointLightsUniformBuffer);
+
+		auto framebuffer = WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle());
+		m_LastFramebufferSize = framebuffer->size();
+
+		auto* depthMap = (VulkanTexture2D*)framebuffer->depthAttachments()[0];
+		depthMap->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = depthMap->vkImageView();
+		imageInfo.sampler = depthMap->vkSampler();
+
+		VkDescriptorSet descriptorSet = m_DescriptorPool->get(0);
+
+		VkWriteDescriptorSet writeDescriptorSets[3] = {
+				mvk::WriteDescriptorSet::createUniformBufferWrite(0, descriptorSet, 1, &cameraBufferInfo),
+				mvk::WriteDescriptorSet::createUniformBufferWrite(1, descriptorSet, 1, &pointLightsBufferInfo),
+				mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &imageInfo)
+		};
+
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptorSets, 0, nullptr));
 	}
 
 	void VulkanLightCullingPass::createDescriptorSetLayout() {
@@ -102,14 +134,14 @@ namespace milo {
 	void VulkanLightCullingPass::createDescriptorPool() {
 
 		VkDescriptorPoolSize poolSizes[] = {
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_SWAPCHAIN_IMAGE_COUNT},
-				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_SWAPCHAIN_IMAGE_COUNT},
-				{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_SWAPCHAIN_IMAGE_COUNT}
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+				{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
 		};
 
 		VulkanDescriptorPool::CreateInfo createInfo{};
 		createInfo.layout = m_DescriptorSetLayout;
-		createInfo.capacity = MAX_SWAPCHAIN_IMAGE_COUNT;
+		createInfo.capacity = 1;
 		createInfo.poolSizes.push_back(poolSizes[0]);
 		createInfo.poolSizes.push_back(poolSizes[1]);
 		createInfo.poolSizes.push_back(poolSizes[2]);
@@ -119,12 +151,12 @@ namespace milo {
 
 	void VulkanLightCullingPass::createCameraUniformBuffer() {
 		m_CameraUniformBuffer = new VulkanUniformBuffer<CameraUniformBuffer>();
-		m_CameraUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
+		m_CameraUniformBuffer->allocate(1);
 	}
 
 	void VulkanLightCullingPass::createPointLightsUniformBuffer() {
 		m_PointLightsUniformBuffer = new VulkanUniformBuffer<PointLightsUniformBuffer>();
-		m_PointLightsUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
+		m_PointLightsUniformBuffer->allocate(1);
 	}
 
 	void VulkanLightCullingPass::createVisibleLightIndicesStorageBuffer() {
@@ -139,7 +171,7 @@ namespace milo {
 
 	void VulkanLightCullingPass::createDescriptorSets() {
 
-		m_DescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [this](uint32_t imageIndex, VkDescriptorSet descriptorSet) {
+		m_DescriptorPool->allocate(1, [this](uint32_t imageIndex, VkDescriptorSet descriptorSet) {
 
 			VkDescriptorBufferInfo cameraBufferInfo = {};
 			cameraBufferInfo.buffer = m_CameraUniformBuffer->vkBuffer();
@@ -158,8 +190,8 @@ namespace milo {
 
 			VkWriteDescriptorSet writeDescriptorSets[3] = {
 					mvk::WriteDescriptorSet::createUniformBufferWrite(0, descriptorSet, 1, &cameraBufferInfo),
-					mvk::WriteDescriptorSet::createUniformBufferWrite(0, descriptorSet, 1, &pointLightsBufferInfo),
-					mvk::WriteDescriptorSet::createStorageBufferWrite(0, descriptorSet, 1, &visibleIndicesBufferInfo)
+					mvk::WriteDescriptorSet::createUniformBufferWrite(1, descriptorSet, 1, &pointLightsBufferInfo),
+					mvk::WriteDescriptorSet::createStorageBufferWrite(2, descriptorSet, 1, &visibleIndicesBufferInfo)
 			};
 
 			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptorSets, 0, nullptr));

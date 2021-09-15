@@ -4,6 +4,8 @@
 
 namespace milo {
 
+	constexpr uint32_t TILE_SIZE = 16;
+
 	class LightCullingPass : public RenderPass {
 	public:
 		LightCullingPass() = default;
