@@ -22,7 +22,11 @@ namespace milo::UI {
 
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 
-			const auto& vkTexture = dynamic_cast<const VulkanTexture2D&>(texture);
+			auto& vkTexture = (VulkanTexture2D&)(texture);
+
+			if(vkTexture.layout() != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+				vkTexture.setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			}
 
 			auto textureId = ImGui_ImplVulkan_AddTexture(vkTexture.id(), vkTexture.vkSampler(), vkTexture.vkImageView(), vkTexture.layout());
 

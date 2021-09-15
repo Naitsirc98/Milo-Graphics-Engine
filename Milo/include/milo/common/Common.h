@@ -22,6 +22,11 @@ namespace milo {
 
 	using TypeInfo = std::type_info;
 
+	template<typename T>
+	inline size_t hashcodeOf(const T& value) {
+		return std::hash<T>{}(value);
+	}
+
 	using TypeHash = size_t;
 
 	template<typename T>

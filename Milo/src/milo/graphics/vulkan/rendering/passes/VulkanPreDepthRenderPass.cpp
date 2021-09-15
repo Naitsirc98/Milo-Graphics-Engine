@@ -37,6 +37,8 @@ namespace milo {
 
 		m_LastFramebufferSize = WorldRenderer::get().getFramebuffer().size();
 
+		createFramebuffers(m_LastFramebufferSize, resourcePool);
+
 		if(m_GraphicsPipeline != nullptr) {
 			DELETE_PTR(m_GraphicsPipeline);
 		}
@@ -76,6 +78,7 @@ namespace milo {
 		mvk::CommandBuffer::BeginGraphicsRenderPassInfo beginInfo{};
 		beginInfo.renderPass = m_RenderPass;
 		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
+		beginInfo.framebuffer = m_Framebuffers[imageIndex].get();
 
 		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
 		renderMeshViews(imageIndex, commandBuffer, scene);
@@ -89,6 +92,11 @@ namespace milo {
 			UniformBuffer ubo{camera.proj, camera.view, camera.projView};
 			m_UniformBuffer->update(imageIndex, ubo);
 		}
+
+		VkDescriptorSet descriptorSet = m_DescriptorPool->get(imageIndex);
+		uint32_t dynamicOffset[1] = {m_UniformBuffer->elementSize() * imageIndex};
+		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout(),
+										 0, 1, &descriptorSet, 1, dynamicOffset));
 
 		Mesh* lastMesh = nullptr;
 
@@ -124,8 +132,8 @@ namespace milo {
 	void VulkanPreDepthRenderPass::createRenderPass() {
 
 		RenderPass::Description desc;
-		desc.colorAttachments.push_back({PixelFormat::RGBA32F, 1, LoadOp::Load});
-		desc.depthAttachment = {PixelFormat::DEPTH, 1, RenderPass::LoadOp::Load};
+		//desc.colorAttachments.push_back({PixelFormat::RGBA32F, 1, RenderPass::LoadOp::Clear});
+		desc.depthAttachment = {PixelFormat::DEPTH32, 1, RenderPass::LoadOp::Clear};
 
 		m_RenderPass = mvk::RenderPass::create(desc);
 	}
@@ -173,7 +181,7 @@ namespace milo {
 
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBuffer->vkBuffer();
-			bufferInfo.offset = index * m_UniformBuffer->elementSize();
+			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBuffer);
 
 			VkWriteDescriptorSet writeDescriptor = mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(0, descriptorSet, 1, &bufferInfo);
@@ -208,12 +216,26 @@ namespace milo {
 	}
 
 	void VulkanPreDepthRenderPass::createSemaphores() {
+		mvk::Semaphore::create(m_SignalSemaphores.size(), m_SignalSemaphores.data());
+	}
 
-		VkSemaphoreCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	void VulkanPreDepthRenderPass::createFramebuffers(const Size& size, FrameGraphResourcePool* resourcePool) {
 
-		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
-			VK_CALL(vkCreateSemaphore(m_Device->logical(), &createInfo, nullptr, &m_SignalSemaphores[i]));
+		VulkanFramebuffer::ApiInfo apiInfo = {m_Device};
+
+		Framebuffer::CreateInfo createInfo{};
+		createInfo.size = size;
+		//createInfo.colorAttachments.push_back(PixelFormat::RGBA32F);
+		createInfo.depthAttachments.push_back(PixelFormat::DEPTH32);
+		createInfo.apiInfo = &apiInfo;
+
+		for(uint32_t i = 0;i < m_Framebuffers.size();++i) {
+			Handle handle = PreDepthRenderPass::createFramebufferHandle(i);
+			if(m_Framebuffers[i] != nullptr) {
+				resourcePool->removeFramebuffer(handle);
+			}
+			m_Framebuffers[i] = std::make_shared<VulkanFramebuffer>(createInfo);
+			resourcePool->putFramebuffer(handle, m_Framebuffers[i]);
 		}
 	}
 }

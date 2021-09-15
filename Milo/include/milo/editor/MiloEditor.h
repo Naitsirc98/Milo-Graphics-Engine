@@ -24,6 +24,7 @@ namespace milo {
 		static void render();
 		static EditorCamera& camera();
 	private:
+		static void renderSceneViewport();
 		static void setupDockSpace();
 		static void init();
 		static void shutdown();

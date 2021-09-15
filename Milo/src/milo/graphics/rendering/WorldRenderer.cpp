@@ -136,6 +136,10 @@ namespace milo {
 		//}
 	}
 
+	const FrameGraphResourcePool& WorldRenderer::resources() const {
+		return *m_ResourcePool;
+	}
+
 	Framebuffer& WorldRenderer::getFramebuffer() const {
 		return *m_ResourcePool->getDefaultFramebuffer();
 	}

@@ -24,4 +24,16 @@ namespace milo {
 		DEFINE_RENDER_PASS_ID(DEPTH_RENDER_PASS_NAME);
 		return id;
 	}
+
+	Handle PreDepthRenderPass::getFramebufferHandle() {
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+			uint32_t index = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
+			return createFramebufferHandle(index);
+		}
+		throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");
+	}
+
+	Handle PreDepthRenderPass::createFramebufferHandle(uint32_t index) {
+		return id() + index;
+	}
 }

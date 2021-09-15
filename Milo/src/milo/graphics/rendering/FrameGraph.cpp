@@ -24,8 +24,10 @@ namespace milo {
 
 		const WorldRenderer& renderer = WorldRenderer::get();
 
+		push<PreDepthRenderPass>();
+
 		if(renderer.shadowsEnabled() && !renderer.lights().pointLights.empty()) {
-			push<PreDepthRenderPass>();
+			//push<PreDepthRenderPass>();
 		}
 
 		push<GeometryRenderPass>();

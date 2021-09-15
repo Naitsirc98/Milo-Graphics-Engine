@@ -1,9 +1,11 @@
 #version 450 core
 
-layout(location = 0) in float in_LinearDepth;
-
-layout(location = 0) out vec4 out_LinearDepth;
+layout(std140, binding = 0) uniform Camera {
+    mat4 u_ProjMatrix;
+    mat4 u_ViewMatrix;
+    mat4 u_ProjViewMatrix;
+};
 
 void main() {
-    out_LinearDepth = vec4(in_LinearDepth, 0.0, 0.0, 1.0);
+
 }

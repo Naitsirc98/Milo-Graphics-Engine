@@ -5,6 +5,7 @@
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 #include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
+#include "milo/graphics/vulkan/buffers/VulkanFramebuffer.h"
 
 namespace milo {
 
@@ -31,6 +32,8 @@ namespace milo {
 
 		Array<VkSemaphore, MAX_SWAPCHAIN_IMAGE_COUNT> m_SignalSemaphores{};
 
+		Array<Ref<VulkanFramebuffer>, MAX_SWAPCHAIN_IMAGE_COUNT> m_Framebuffers{};
+
 		Size m_LastFramebufferSize{};
 
 	private:
@@ -50,5 +53,6 @@ namespace milo {
 		void createDescriptorSets();
 		void createGraphicsPipeline();
 		void createSemaphores();
+		void createFramebuffers(const Size& size, FrameGraphResourcePool* resourcePool);
 	};
 }
