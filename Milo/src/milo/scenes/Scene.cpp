@@ -87,6 +87,9 @@ namespace milo {
 
 	void Scene::update() {
 
+		Size size = Window::get()->size();
+		m_Viewport = {0, 0, (float)size.width, (float)size.height};
+
 		if(m_SkyEntity != NULL_ENTITY) {
 			SkyboxView* skyboxView = this->skyboxView();
 			if(skyboxView->type == SkyType::Dynamic) {

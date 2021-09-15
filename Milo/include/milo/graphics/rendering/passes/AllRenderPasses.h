@@ -7,3 +7,4 @@
 #include "FinalRenderPass.h"
 #include "PreDepthRenderPass.h"
 #include "BoundingVolumeRenderPass.h"
+#include "LightCullingPass.h"

@@ -11,17 +11,17 @@ namespace milo {
 
 	VulkanTexture::VulkanTexture(const VulkanTexture::CreateInfo& createInfo) : m_Device(createInfo.device) {
 		m_CreateInfo = createInfo;
+		m_ImageInfo = mvk::ImageCreateInfo::create(createInfo.usage);
+		m_ViewInfo = mvk::ImageViewCreateInfo::create();
 		create(createInfo);
 	}
 
 	void VulkanTexture::create(const VulkanTexture::CreateInfo& createInfo) {
 
-		m_ImageInfo = mvk::ImageCreateInfo::create(createInfo.usage);
 		m_ImageInfo.arrayLayers = createInfo.arrayLayers;
 		m_ImageInfo.tiling = createInfo.tiling;
 		m_ImageInfo.samples = createInfo.samples;
 
-		m_ViewInfo = mvk::ImageViewCreateInfo::create();
 		m_ViewInfo.subresourceRange.layerCount = createInfo.arrayLayers;
 
 		if((createInfo.usage & TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
@@ -48,7 +48,6 @@ namespace milo {
 		m_Allocation = VK_NULL_HANDLE;
 		m_VkImage = VK_NULL_HANDLE;
 		m_VkImageView = VK_NULL_HANDLE;
-		m_VkSampler = VK_NULL_HANDLE;
 	}
 
 	VulkanDevice* VulkanTexture::device() const {

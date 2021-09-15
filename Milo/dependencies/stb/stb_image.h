@@ -28,7 +28,7 @@
       PSD (composited view only, no extra channels, 8/16 bit-per-channel)
 
       GIF (*comp always reports as 4-channel)
-      HDR (radiance rgbE format)
+      HDR (color rgbE format)
       PIC (Softimage PIC)
       PNM (PPM and PGM binary only)
 

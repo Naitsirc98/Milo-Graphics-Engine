@@ -31,17 +31,17 @@ namespace milo {
 	}
 
 	bool VulkanLightCullingPass::shouldCompile(Scene* scene) const {
-		auto framebuffer = WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle());
-		return m_LastFramebufferSize != framebuffer->size();
+		return false;
 	}
 
 	void VulkanLightCullingPass::compile(Scene* scene, FrameGraphResourcePool* resourcePool) {
-		updateUniforms(scene);
 	}
 
 	void VulkanLightCullingPass::execute(Scene* scene) {
 
 		m_Device->computeCommandPool()->execute([&](VkCommandBuffer commandBuffer) {
+
+			updateUniforms(scene);
 
 			VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
 
@@ -49,7 +49,19 @@ namespace milo {
 			VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 											 0, 1, &descriptorSet, 0, nullptr));
 
-			VK_CALLV(vkCmdDispatch(commandBuffer, TILE_SIZE, TILE_SIZE, 1));
+			PushConstants pushConstants{};
+			pushConstants.screenSize = scene->viewportSize();
+
+			VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout,
+										VK_SHADER_STAGE_COMPUTE_BIT,
+										0, sizeof(PushConstants),
+										&pushConstants));
+
+			const Size viewport = scene->viewportSize();
+			const uint32_t workGroupsX = (viewport.width + viewport.width % TILE_SIZE) / TILE_SIZE;
+			const uint32_t workGroupsY = (viewport.height + viewport.height % TILE_SIZE) / TILE_SIZE;
+
+			VK_CALLV(vkCmdDispatch(commandBuffer, workGroupsX, workGroupsY, 1));
 		});
 	}
 
@@ -83,7 +95,6 @@ namespace milo {
 		pointLightsBufferInfo.range = sizeof(PointLightsUniformBuffer);
 
 		auto framebuffer = WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle());
-		m_LastFramebufferSize = framebuffer->size();
 
 		auto* depthMap = (VulkanTexture2D*)framebuffer->depthAttachments()[0];
 		depthMap->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -106,7 +117,7 @@ namespace milo {
 
 	void VulkanLightCullingPass::createDescriptorSetLayout() {
 
-		Array<VkDescriptorSetLayoutBinding, 3> bindings{};
+		Array<VkDescriptorSetLayoutBinding, 4> bindings{};
 		// Camera uniform buffer
 		bindings[0].binding = 0;
 		bindings[0].descriptorCount = 1;
@@ -122,6 +133,11 @@ namespace milo {
 		bindings[2].descriptorCount = 1;
 		bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		bindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		// Depth map texture
+		bindings[3].binding = 3;
+		bindings[3].descriptorCount = 1;
+		bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		bindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 		VkDescriptorSetLayoutCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -136,7 +152,8 @@ namespace milo {
 		VkDescriptorPoolSize poolSizes[] = {
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
 				{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
-				{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1}
+				{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1},
+				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
 		};
 
 		VulkanDescriptorPool::CreateInfo createInfo{};
@@ -171,7 +188,7 @@ namespace milo {
 
 	void VulkanLightCullingPass::createDescriptorSets() {
 
-		m_DescriptorPool->allocate(1, [this](uint32_t imageIndex, VkDescriptorSet descriptorSet) {
+		m_DescriptorPool->allocate(1, [this](uint32_t index, VkDescriptorSet descriptorSet) {
 
 			VkDescriptorBufferInfo cameraBufferInfo = {};
 			cameraBufferInfo.buffer = m_CameraUniformBuffer->vkBuffer();
@@ -184,9 +201,9 @@ namespace milo {
 			pointLightsBufferInfo.range = sizeof(PointLightsUniformBuffer);
 
 			VkDescriptorBufferInfo visibleIndicesBufferInfo = {};
-			pointLightsBufferInfo.buffer = m_VisibleLightsStorageBuffer->vkBuffer();
-			pointLightsBufferInfo.offset = 0;
-			pointLightsBufferInfo.range = 8192 * sizeof(uint32_t);
+			visibleIndicesBufferInfo.buffer = m_VisibleLightsStorageBuffer->vkBuffer();
+			visibleIndicesBufferInfo.offset = 0;
+			visibleIndicesBufferInfo.range = 8192 * sizeof(uint32_t);
 
 			VkWriteDescriptorSet writeDescriptorSets[3] = {
 					mvk::WriteDescriptorSet::createUniformBufferWrite(0, descriptorSet, 1, &cameraBufferInfo),
@@ -206,7 +223,7 @@ namespace milo {
 		pushConstants.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo{};
-		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		layoutCreateInfo.pPushConstantRanges = &pushConstants;
 		layoutCreateInfo.pushConstantRangeCount = 1;
 		layoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
@@ -214,7 +231,7 @@ namespace milo {
 
 		VK_CALL(vkCreatePipelineLayout(m_Device->logical(), &layoutCreateInfo, nullptr, &m_PipelineLayout));
 
-		const VulkanShader* shader = (const VulkanShader*)Assets::shaders().load("resources/shaders/light_culling/light_culling.comp");
+		const VulkanShader* shader = (const VulkanShader*)Assets::shaders().load("resources/shaders/culling/light_culling.comp");
 
 		VkShaderModule shaderModule = VK_NULL_HANDLE;
 

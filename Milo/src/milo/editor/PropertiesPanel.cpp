@@ -133,6 +133,8 @@ namespace milo {
 			addComponentButton<MeshView>(entity);
 			addComponentButton<SphereCollider>(entity);
 			addComponentButton<BoxCollider>(entity);
+			addComponentButton<DirectionalLight>(entity);
+			addComponentButton<PointLight>(entity);
 			// addComponentButton<NativeScript>(entity);
 			// TODO
 
@@ -249,6 +251,27 @@ namespace milo {
 			drawVector3Control("X Axis", collider.box.xAxis);
 			drawVector3Control("Y Axis", collider.box.yAxis);
 			drawVector3Control("Z Axis", collider.box.zAxis);
+		});
+
+		drawComponent<DirectionalLight>("Directional Light", entity, [](DirectionalLight& light) {
+			drawVector3Control("Direction", light.direction);
+			drawVector3Control("Color", light.color);
+			ImGui::DragFloat("Multiplier", &light.multiplier, 0, FLT_MAX, 0.1f);
+			ImGui::Checkbox("Casts Shadows", &light.castShadows);
+		});
+
+		drawComponent<PointLight>("Point Light", entity, [&](PointLight& light) {
+			Transform& transform = entity.getComponent<Transform>();
+			light.position = transform.translation;
+			drawVector3Control("Position", light.position);
+			drawVector3Control("Color", light.color);
+			ImGui::DragFloat("Multiplier", &light.multiplier, 0, FLT_MAX, 0.1f);
+			ImGui::DragFloat("Radius", &light.radius, 0, FLT_MAX, 0.1f);
+			ImGui::DragFloat("Fall off", &light.falloff, 0, FLT_MAX, 0.1f);
+			ImGui::DragFloat("Min Radius", &light.minRadius, 0, FLT_MAX, 0.1f);
+			ImGui::DragFloat("Source size", &light.sourceSize, 0, FLT_MAX, 0.1f);
+			ImGui::Checkbox("Casts Shadows", &light.castsShadows);
+			transform.translation = light.position;
 		});
 	}
 

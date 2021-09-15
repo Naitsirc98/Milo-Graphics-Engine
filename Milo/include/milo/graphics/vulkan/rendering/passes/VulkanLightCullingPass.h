@@ -24,7 +24,7 @@ namespace milo {
 			PointLight pointLights[MAX_POINT_LIGHTS];
 		};
 		struct PushConstants {
-			Vector2i screenSize;
+			Size screenSize;
 		};
 	private:
 		VulkanDevice* m_Device{nullptr};
@@ -38,8 +38,6 @@ namespace milo {
 
 		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
 		VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
-
-		Size m_LastFramebufferSize{};
 	private:
 		VulkanLightCullingPass();
 		~VulkanLightCullingPass();

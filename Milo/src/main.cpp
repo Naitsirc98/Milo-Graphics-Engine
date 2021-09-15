@@ -21,8 +21,13 @@ public:
 
 		scene->setSkyEntity(skyboxEntity.id());
 
-		Entity s1 = createSphere(scene, {0, 0, -3}, Assets::materials().getDefault());
-		Entity s2 = createSphere(scene, {3, 0, -3}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
+		Entity s1 = createSphere(scene, {0, 2, -3}, Assets::materials().getDefault());
+		Entity s2 = createSphere(scene, {4, 2, -3}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
+
+		Entity light = createSphere(scene, {2, 8, -3}, Assets::materials().getDefault());
+		light.setName("Point Light");
+		light.getComponent<Transform>().scale = {0.5f, 0.5f, 0.5f};
+		PointLight& pointLight = light.addComponent<PointLight>();
 
 		s1.addChild(s2.id());
 
