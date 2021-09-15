@@ -49,7 +49,9 @@ namespace milo {
 		radius = sqrt(diameter) * 0.5f;
 
 		// Make pass through vertices and adjust sphere as necessary
-		for(Vertex vertex : vertices) {
+		for(uint32_t i = 0;i < vertices.size();++i) {
+
+			const Vertex& vertex = vertices[i];
 
 			Vector3 pv = vertex.position - center;
 			float m2 = length2(pv);

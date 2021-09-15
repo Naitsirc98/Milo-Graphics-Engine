@@ -27,7 +27,7 @@ namespace milo {
 
 		DELETE_PTR(m_CameraUniformBuffer);
 		DELETE_PTR(m_PointLightsUniformBuffer);
-		DELETE_PTR(m_VisibleLightsStorageBuffer);
+		m_VisibleLightsStorageBuffer.reset();
 	}
 
 	bool VulkanLightCullingPass::shouldCompile(Scene* scene) const {
@@ -63,6 +63,13 @@ namespace milo {
 
 			VK_CALLV(vkCmdDispatch(commandBuffer, workGroupsX, workGroupsY, 1));
 		});
+
+		int32_t* indices = (int32_t*)m_VisibleLightsStorageBuffer->map();
+
+		ArrayList<int32_t> data(8192);
+		memcpy(data.data(), indices, 8192 * sizeof(int32_t));
+
+		m_VisibleLightsStorageBuffer->unmap();
 	}
 
 	void VulkanLightCullingPass::updateUniforms(Scene* scene) {
@@ -178,12 +185,16 @@ namespace milo {
 
 	void VulkanLightCullingPass::createVisibleLightIndicesStorageBuffer() {
 
-		m_VisibleLightsStorageBuffer = VulkanBuffer::createStorageBuffer(false);
+		// TODO: check sync with other passes
+
+		m_VisibleLightsStorageBuffer = Ref<VulkanBuffer>(VulkanBuffer::createStorageBuffer(false));
 
 		VulkanBuffer::AllocInfo allocInfo{};
 		allocInfo.size = 8192 * sizeof(uint32_t);
 
 		m_VisibleLightsStorageBuffer->allocate(allocInfo);
+
+		WorldRenderer::get().resources().putBuffer(LightCullingPass::getVisibleLightsBufferHandle(), m_VisibleLightsStorageBuffer);
 	}
 
 	void VulkanLightCullingPass::createDescriptorSets() {

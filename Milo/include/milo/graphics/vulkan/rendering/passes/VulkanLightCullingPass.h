@@ -31,7 +31,7 @@ namespace milo {
 
 		VulkanUniformBuffer<CameraUniformBuffer>* m_CameraUniformBuffer{nullptr};
 		VulkanUniformBuffer<PointLightsUniformBuffer>* m_PointLightsUniformBuffer{nullptr};
-		VulkanBuffer* m_VisibleLightsStorageBuffer{nullptr};
+		Ref<VulkanBuffer> m_VisibleLightsStorageBuffer{nullptr};
 
 		VkDescriptorSetLayout m_DescriptorSetLayout{VK_NULL_HANDLE};
 		VulkanDescriptorPool* m_DescriptorPool = nullptr;

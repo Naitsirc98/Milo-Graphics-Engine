@@ -58,7 +58,7 @@ namespace milo {
 		~WorldRenderer();
 		void render(Scene* scene);
 	public:
-		const FrameGraphResourcePool& resources() const;
+		FrameGraphResourcePool& resources() const;
 		Framebuffer& getFramebuffer() const;
 		bool showGrid() const;
 		void setShowGrid(bool show);

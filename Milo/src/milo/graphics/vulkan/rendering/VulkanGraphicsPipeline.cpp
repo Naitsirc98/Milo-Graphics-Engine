@@ -151,7 +151,7 @@ namespace milo {
 
 	VulkanGraphicsPipeline::CreateInfo::CreateInfo() {
 
-		initVulkanVertexInputInfo();
+		initVulkanVertexInputInfo(VERTEX_BASIC_ATTRIBUTES);
 		initInputAssembly();
 		initDepthStencil();
 		initViewportState();
@@ -161,38 +161,63 @@ namespace milo {
 		initColorBlendState();
 	}
 
-	void VulkanGraphicsPipeline::CreateInfo::initVulkanVertexInputInfo() {
+	void VulkanGraphicsPipeline::CreateInfo::setVertexAttributes(Vertex::Attribute attributes) {
+		initVulkanVertexInputInfo(attributes);
+	}
+
+	void VulkanGraphicsPipeline::CreateInfo::initVulkanVertexInputInfo(Vertex::Attribute attributes) {
 
 		VkVertexInputBindingDescription binding = {};
 		binding.binding = 0;
 		binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		binding.stride = sizeof(Vertex3D);
+		binding.stride = sizeof(Vertex);
 
-		VkVertexInputAttributeDescription positionAttribute = {};
-		positionAttribute.binding = 0;
-		positionAttribute.location = 0;
-		positionAttribute.offset = offsetof(Vertex3D, position);
-		positionAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
-
-		VkVertexInputAttributeDescription normalAttribute = {};
-		normalAttribute.binding = 0;
-		normalAttribute.location = 1;
-		normalAttribute.offset = offsetof(Vertex3D, normal);
-		normalAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
-
-		VkVertexInputAttributeDescription texCoordsAttribute = {};
-		texCoordsAttribute.binding = 0;
-		texCoordsAttribute.location = 2;
-		texCoordsAttribute.offset = offsetof(Vertex3D, texCoords);
-		texCoordsAttribute.format = VK_FORMAT_R32G32_SFLOAT;
-
-		vertexInputInfo.bindings.reserve(1);
 		vertexInputInfo.bindings.push_back(binding);
 
-		vertexInputInfo.attributes.reserve(3);
-		vertexInputInfo.attributes.push_back(positionAttribute);
-		vertexInputInfo.attributes.push_back(normalAttribute);
-		vertexInputInfo.attributes.push_back(texCoordsAttribute);
+		if(attributes & Vertex::Attrib_Position) {
+			VkVertexInputAttributeDescription positionAttribute = {};
+			positionAttribute.binding = 0;
+			positionAttribute.location = 0;
+			positionAttribute.offset = offsetof(Vertex, position);
+			positionAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+			vertexInputInfo.attributes.push_back(positionAttribute);
+		}
+
+		if(attributes & Vertex::Attrib_Normal) {
+			VkVertexInputAttributeDescription normalAttribute = {};
+			normalAttribute.binding = 0;
+			normalAttribute.location = 1;
+			normalAttribute.offset = offsetof(Vertex, normal);
+			normalAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+			vertexInputInfo.attributes.push_back(normalAttribute);
+		}
+
+		if(attributes & Vertex::Attrib_TexCoords) {
+			VkVertexInputAttributeDescription texCoordsAttribute = {};
+			texCoordsAttribute.binding = 0;
+			texCoordsAttribute.location = 2;
+			texCoordsAttribute.offset = offsetof(Vertex, texCoords);
+			texCoordsAttribute.format = VK_FORMAT_R32G32_SFLOAT;
+			vertexInputInfo.attributes.push_back(texCoordsAttribute);
+		}
+
+		if(attributes & Vertex::Attrib_Tangent) {
+			VkVertexInputAttributeDescription tangentAttribute = {};
+			tangentAttribute.binding = 0;
+			tangentAttribute.location = 3;
+			tangentAttribute.offset = offsetof(Vertex, tangent);
+			tangentAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+			vertexInputInfo.attributes.push_back(tangentAttribute);
+		}
+
+		if(attributes & Vertex::Attrib_BiTangent) {
+			VkVertexInputAttributeDescription biTangentAttribute = {};
+			biTangentAttribute.binding = 0;
+			biTangentAttribute.location = 4;
+			biTangentAttribute.offset = offsetof(Vertex, biTangent);
+			biTangentAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+			vertexInputInfo.attributes.push_back(biTangentAttribute);
+		}
 	}
 
 	void VulkanGraphicsPipeline::CreateInfo::initInputAssembly() {

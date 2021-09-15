@@ -2,14 +2,9 @@
 
 #include "milo/assets/Asset.h"
 #include "milo/graphics/buffer/Buffer.h"
+#include "milo/graphics/Vertex.h"
 
 namespace milo {
-
-	struct Vertex {
-		Vector3 position = {0, 0, 0};
-		Vector3 normal = {0, 0, 0};
-		Vector2 uv = {0, 0};
-	};
 
 	class Mesh : public Asset {
 		friend class MeshManager;
@@ -33,7 +28,7 @@ namespace milo {
 		bool m_CanBeCulled{true};
 	private:
 		explicit Mesh(String filename);
-		~Mesh();
+		~Mesh() override;
 	public:
 		const ArrayList<Vertex>& vertices() const;
 		const ArrayList<uint32_t>& indices() const;
@@ -56,19 +51,11 @@ namespace milo {
 		~VertexList() = default;
 
 		inline const Vertex& operator[](uint32_t index) const {
-			return m_Vertices[index];
+			return m_Vertices[m_Indices.empty() ? index : m_Indices[index]];
 		}
 
 		inline size_t size() const {
-			return m_Vertices.size();
-		}
-
-		inline ArrayList<Vertex>::const_iterator begin() const {
-			return m_Vertices.cbegin();
-		}
-
-		inline ArrayList<Vertex>::const_iterator end() const {
-			return m_Vertices.cend();
+			return m_Indices.empty() ? m_Vertices.size() : m_Indices.size();
 		}
 	};
 }

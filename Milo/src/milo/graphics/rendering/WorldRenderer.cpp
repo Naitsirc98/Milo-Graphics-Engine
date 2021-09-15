@@ -125,18 +125,17 @@ namespace milo {
 			if(scene->skyboxView() != nullptr) env.skybox = scene->skyboxView()->skybox;
 		}
 
-		// FIXME
-		//env.pointLights.clear();
-		//auto components = scene->group<Transform, PointLight>();
-		//for(EntityId entityId : components) {
-		//	const auto& transform = components.get<Transform>(entityId);
-		//	PointLight pointLight = components.get<PointLight>(entityId);
-		//	pointLight.position = transform.translation;
-		//	env.pointLights.push_back(pointLight);
-		//}
+		env.pointLights.clear();
+		auto components = scene->view<Transform>() | scene->view<PointLight>();
+		for(EntityId entityId : components) {
+			const auto& transform = components.get<Transform>(entityId);
+			PointLight& pointLight = components.get<PointLight>(entityId);
+			pointLight.position = transform.translation;
+			env.pointLights.push_back(pointLight);
+		}
 	}
 
-	const FrameGraphResourcePool& WorldRenderer::resources() const {
+	FrameGraphResourcePool& WorldRenderer::resources() const {
 		return *m_ResourcePool;
 	}
 

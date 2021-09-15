@@ -53,8 +53,8 @@ namespace milo {
 					vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
 					vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
 					// UV
-					vertex.uv.x = attrib.texcoords[2 * idx.texcoord_index + 0];
-					vertex.uv.y = attrib.texcoords[2 * idx.texcoord_index + 1];
+					vertex.texCoords.x = attrib.texcoords[2 * idx.texcoord_index + 0];
+					vertex.texCoords.y = attrib.texcoords[2 * idx.texcoord_index + 1];
 
 					mesh->m_Vertices.push_back(vertex);
 					//mesh->m_Indices.push_back(idx.vertex_index);

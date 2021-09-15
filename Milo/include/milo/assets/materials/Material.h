@@ -38,10 +38,40 @@ namespace milo {
 		Ref<Texture2D> m_NormalMap{nullptr};
 	private:
 		explicit Material(String name, String filename);
-		~Material();
+		~Material() override;
 	public:
 		const Color& albedo() const;
-		Ref<Texture2D> albedoMap() const;
+		Material* albedo(const Color& color);
+		const Color& emissiveColor() const;
+		Material* emissiveColor(const Color& color);
+		float alpha() const;
+		Material* alpha(float value);
+		float metallic() const;
+		Material* metallic(float value);
+		float roughness() const;
+		Material* roughness(float value);
+		float occlusion() const;
+		Material* occlusion(float value);
+		float fresnel0() const;
+		Material* fresnel0(float value);
+		float normalScale() const;
+		Material* normalScale(float value);
+		bool useNormalMap() const;
+		Material* useNormalMap(bool value);
+		bool useCombinedMetallicRoughnessMap() const;
+		Material* useCombinedMetallicRoughnessMap(bool value);
 		const Material::Data& data() const;
+		Ref<Texture2D> albedoMap() const;
+		Material* albedoMap(Ref<Texture2D> texture);
+		Ref<Texture2D> emissiveMap() const;
+		Material* emissiveMap(Ref<Texture2D> texture);
+		Ref<Texture2D> normalMap() const;
+		Material* normalMap(Ref<Texture2D> texture);
+		Ref<Texture2D> metallicMap() const;
+		Material* metallicMap(Ref<Texture2D> texture);
+		Ref<Texture2D> occlusionMap() const;
+		Material* occlusionMap(Ref<Texture2D> texture);
+		Ref<Texture2D> roughnessMap() const;
+		Material* roughnessMap(Ref<Texture2D> texture);
 	};
 }

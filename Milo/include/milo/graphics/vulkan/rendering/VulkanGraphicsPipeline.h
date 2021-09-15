@@ -3,8 +3,6 @@
 #include "milo/graphics/vulkan/VulkanDevice.h"
 #include "milo/graphics/Graphics.h"
 
-// TODO: DYNAMIC STATES!! (VIEWPORT)
-
 namespace milo {
 
 	struct VulkanShaderInfo {
@@ -42,8 +40,9 @@ namespace milo {
 		public:
 			explicit CreateInfo();
 			~CreateInfo() = default;
+			void setVertexAttributes(Vertex::Attribute attributes);
 		private:
-			void initVulkanVertexInputInfo();
+			void initVulkanVertexInputInfo(Vertex::Attribute attributes);
 			void initInputAssembly();
 			void initDepthStencil();
 			void initViewportState();

@@ -109,13 +109,7 @@ namespace milo {
 	}
 
 	Ref<MeshLoader> MeshManager::getMeshLoaderOf(const String& filename) {
-
-		switch(MeshFormats::formatOf(filename)) {
-			case MeshFormat::Obj:
-				return std::make_shared<ObjMeshLoader>();
-			default:
-				return std::make_shared<AssimpLoader>();
-		}
+		return std::make_shared<AssimpLoader>();
 	}
 
 	void MeshManager::createGraphicsBuffers(const String& filename, Mesh* mesh) {

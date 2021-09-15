@@ -24,10 +24,13 @@ public:
 		Entity s1 = createSphere(scene, {0, 2, -3}, Assets::materials().getDefault());
 		Entity s2 = createSphere(scene, {4, 2, -3}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
 
-		Entity light = createSphere(scene, {2, 8, -3}, Assets::materials().getDefault());
-		light.setName("Point Light");
-		light.getComponent<Transform>().scale = {0.5f, 0.5f, 0.5f};
-		PointLight& pointLight = light.addComponent<PointLight>();
+		Entity light1 = createSphere(scene, {2, 8, -3}, Assets::materials().getDefault());
+		light1.setName("Point Light 1");
+		light1.getComponent<Transform>().scale = {0.5f, 0.5f, 0.5f};
+
+		Entity light2 = createSphere(scene, {-5, 10, 1}, Assets::materials().getDefault());
+		light2.setName("Point Light 2");
+		light2.getComponent<Transform>().scale = {0.5f, 0.5f, 0.5f};
 
 		s1.addChild(s2.id());
 

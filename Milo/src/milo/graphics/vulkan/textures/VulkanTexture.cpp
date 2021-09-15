@@ -1,5 +1,4 @@
 #include "milo/graphics/vulkan/textures/VulkanTexture.h"
-#include "milo/graphics/vulkan/VulkanAllocator.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/debug/VulkanDebugMessenger.h"
 

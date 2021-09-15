@@ -8,6 +8,7 @@ namespace milo {
 	static const int ASSIMP_FLAGS = aiProcess_OptimizeMeshes
 			| aiProcess_OptimizeGraph
 			| aiProcess_Triangulate
+			| aiProcess_CalcTangentSpace
 			//| aiProcess_FlipUVs
 			| aiProcess_JoinIdenticalVertices
 			| aiProcess_GenSmoothNormals;
@@ -107,12 +108,16 @@ namespace milo {
 
 			const auto& position = aiMesh->mVertices[i];
 			const auto& normal = aiMesh->mNormals[i];
-			const auto& uv = aiMesh->mTextureCoords[0][i];
+			const auto& tangent = aiMesh->mTangents[i];
+			const auto& biTangent = aiMesh->mBitangents[i];
+			const auto& texCoords = aiMesh->mTextureCoords[0][i];
 
 			Vertex vertex{};
 			vertex.position = {position.x, position.y, position.z};
 			vertex.normal = {normal.x, normal.y, normal.z};
-			vertex.uv = {uv.x, uv.y};
+			vertex.tangent = {tangent.x, tangent.y, tangent.z};
+			vertex.biTangent = {biTangent.x, biTangent.y, biTangent.z};
+			vertex.texCoords = {texCoords.x, texCoords.y};
 
 			outMesh->m_Vertices.push_back(vertex);
 		}

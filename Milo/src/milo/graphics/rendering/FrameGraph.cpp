@@ -24,12 +24,12 @@ namespace milo {
 
 		const WorldRenderer& renderer = WorldRenderer::get();
 
-		push<PreDepthRenderPass>();
-
 		if(renderer.shadowsEnabled() && !renderer.lights().pointLights.empty()) {
 			//push<PreDepthRenderPass>();
+			//push<LightCullingPass>();
 		}
 
+		push<PreDepthRenderPass>();
 		push<LightCullingPass>();
 
 		push<GeometryRenderPass>();
@@ -55,6 +55,7 @@ namespace milo {
 		m_ResourcePool->compile(scene);
 		for(RenderPass* pass : m_RenderPassExecutionList) {
 			if(pass->shouldCompile(scene)) {
+				Log::debug("Compiling {}", pass->name());
 				pass->compile(scene, m_ResourcePool);
 			}
 		}
@@ -69,15 +70,32 @@ namespace milo {
 		m_RenderPassExecutionList.clear();
 	}
 
-	inline void FrameGraph::deleteUnusedRenderPasses() {
-		std::remove_if(m_RenderPasses.begin(), m_RenderPasses.end(), [&](RenderPass* renderPass) {
+	static constexpr uint32_t MAX_RENDER_PASS_UNUSED_COUNT = 600;
 
+	inline void FrameGraph::deleteUnusedRenderPasses() {
+
+		for(auto it = m_RenderPasses.begin();it != m_RenderPasses.end();) {
+
+			const RenderPass* renderPass = *it;
+
+			bool unused = true;
 			for(RenderPass* activeRenderPass : m_RenderPassExecutionList) {
-				if(activeRenderPass->getId() == renderPass->getId()) return false;
+				if(activeRenderPass->getId() == renderPass->getId()) {
+					unused = false;
+					break;
+				}
 			}
 
-			DELETE_PTR(renderPass);
-			return true;
-		});
+			if(unused) {
+				uint32_t& count = m_RenderPassUnusedCount[renderPass->getId()];
+				if(++count >= MAX_RENDER_PASS_UNUSED_COUNT) {
+					DELETE_PTR(renderPass);
+					m_RenderPasses.erase(it);
+					m_RenderPassUnusedCount.erase(renderPass->getId());
+				}
+			} else {
+				++it;
+			}
+		}
 	}
 }

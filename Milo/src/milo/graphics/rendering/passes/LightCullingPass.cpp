@@ -25,4 +25,8 @@ namespace milo {
 		return id;
 	}
 
+	Handle LightCullingPass::getVisibleLightsBufferHandle() {
+		return id();
+	}
+
 }

@@ -13,6 +13,7 @@ namespace milo {
 	private:
 		ArrayList<RenderPass*> m_RenderPasses;
 		ArrayList<RenderPass*> m_RenderPassExecutionList;
+		HashMap<RenderPassId, uint32_t> m_RenderPassUnusedCount;
 		FrameGraphResourcePool* m_ResourcePool = nullptr;
 	private:
 		FrameGraph();
