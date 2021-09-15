@@ -3,7 +3,7 @@
 #include <milo/graphics/vulkan/materials/VulkanMaterialResourcePool.h>
 #include "milo/graphics/rendering/passes/PBRForwardRenderPass.h"
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
-#include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
+#include "milo/graphics/vulkan/buffers/VulkanShaderBuffer.h"
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 
 namespace milo {

@@ -5,19 +5,15 @@
 namespace milo {
 
 	template<typename T>
-	class VulkanUniformBuffer {
-	private:
+	class VulkanShaderBuffer {
+	protected:
 		VulkanBuffer* m_Buffer;
 		uint32_t m_MinAlignment;
 		uint32_t m_ElementSize;
 	public:
-		VulkanUniformBuffer() {
-			m_Buffer = VulkanBuffer::createUniformBuffer();
-			m_MinAlignment = m_Buffer->device()->info().uniformBufferAlignment();
-			m_ElementSize = roundUp2((uint32_t)sizeof(T), m_MinAlignment);
-		}
+		VulkanShaderBuffer() = default;
 
-		~VulkanUniformBuffer() {
+		virtual ~VulkanShaderBuffer() {
 			DELETE_PTR(m_Buffer);
 		}
 
@@ -59,9 +55,32 @@ namespace milo {
 		inline uint32_t numElements() const {
 			return size() / elementSize();
 		}
+	};
 
+	template<typename T>
+	class VulkanUniformBuffer : public VulkanShaderBuffer<T> {
+	public:
+		VulkanUniformBuffer() {
+			m_Buffer = VulkanBuffer::createUniformBuffer();
+			m_MinAlignment = m_Buffer->device()->info().uniformBufferAlignment();
+			m_ElementSize = roundUp2((uint32_t)sizeof(T), m_MinAlignment);
+		}
 	public:
 		static VulkanUniformBuffer<T>* create() {
+			return new VulkanUniformBuffer<T>();
+		}
+	};
+
+	template<typename T>
+	class VulkanStorageBuffer : public VulkanShaderBuffer<T> {
+	public:
+		VulkanStorageBuffer() {
+			m_Buffer = VulkanBuffer::createStorageBuffer(false);
+			m_MinAlignment = m_Buffer->device()->info().storageMinAlignment();
+			m_ElementSize = roundUp2((uint32_t)sizeof(T), m_MinAlignment);
+		}
+	public:
+		static VulkanStorageBuffer<T>* create() {
 			return new VulkanUniformBuffer<T>();
 		}
 	};

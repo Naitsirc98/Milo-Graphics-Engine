@@ -25,9 +25,9 @@ namespace milo {
 		return id;
 	}
 
-	Handle PreDepthRenderPass::getFramebufferHandle() {
+	Handle PreDepthRenderPass::getFramebufferHandle(uint32_t index) {
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
-			uint32_t index = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
+			index = index == UINT32_MAX ? VulkanContext::get()->vulkanPresenter()->currentImageIndex() : index;
 			return createFramebufferHandle(index);
 		}
 		throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");

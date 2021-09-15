@@ -5,7 +5,7 @@
 #include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
 #include "milo/graphics/vulkan/textures/VulkanSamplerMap.h"
 #include "milo/graphics/vulkan/buffers/VulkanBuffer.h"
-#include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
+#include "milo/graphics/vulkan/buffers/VulkanShaderBuffer.h"
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 

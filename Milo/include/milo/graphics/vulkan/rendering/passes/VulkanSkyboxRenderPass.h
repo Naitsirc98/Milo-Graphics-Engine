@@ -6,7 +6,7 @@
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
 #include "milo/graphics/vulkan/rendering/VulkanFrameGraphResourcePool.h"
-#include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
+#include "milo/graphics/vulkan/buffers/VulkanShaderBuffer.h"
 
 namespace milo {
 

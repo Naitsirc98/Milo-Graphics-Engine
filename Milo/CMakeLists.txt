@@ -37,7 +37,7 @@ file(GLOB_RECURSE IMGUI_SOURCE_FILES
 # add_library(${PROJECT_NAME} STATIC ${ENGINE_HEADER_FILES} ${ENGINE_SOURCE_FILES})
 
 # Build this project as an executable
-add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} ${IMGUI_SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${ENGINE_INCLUDE_FILES} ${ENGINE_SOURCE_FILES} ${IMGUI_SOURCE_FILES} include/milo/graphics/rendering/passes/LightCullingPass.h src/milo/graphics/rendering/passes/LightCullingPass.cpp include/milo/graphics/vulkan/rendering/passes/VulkanLightCullingPass.h src/milo/graphics/vulkan/rendering/passes/VulkanLightCullingPass.cpp)
 
 # CMAKE PROJECT DEPENDENCIES
 message("Handling Milo Engine dependencies...")

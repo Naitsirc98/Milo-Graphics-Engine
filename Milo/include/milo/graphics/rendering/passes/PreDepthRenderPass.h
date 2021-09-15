@@ -13,7 +13,7 @@ namespace milo {
 	public:
 		static PreDepthRenderPass* create();
 		static size_t id();
-		static Handle getFramebufferHandle();
+		static Handle getFramebufferHandle(uint32_t index = UINT32_MAX);
 	protected:
 		static Handle createFramebufferHandle(uint32_t index);
 	};

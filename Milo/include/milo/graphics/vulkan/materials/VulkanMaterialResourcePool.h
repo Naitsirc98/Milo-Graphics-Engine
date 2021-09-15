@@ -1,7 +1,7 @@
 #pragma once
 
 #include "milo/assets/materials/MaterialResourcePool.h"
-#include "milo/graphics/vulkan/buffers/VulkanUniformBuffer.h"
+#include "milo/graphics/vulkan/buffers/VulkanShaderBuffer.h"
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 
 namespace milo {
