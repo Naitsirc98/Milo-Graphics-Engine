@@ -98,8 +98,9 @@ namespace milo {
 		void updateRendererDataUniformData(uint32_t imageIndex);
 		void updateSceneDataUniformData(uint32_t imageIndex);
 		void updateSkyboxUniformData(uint32_t imageIndex, const Skybox* skybox);
+		void updateShadowsUniformData(uint32_t imageIndex);
 
-		void bindSceneDescriptorSet(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		void bindDescriptorSets(uint32_t imageIndex, VkCommandBuffer commandBuffer);
 
 		void createRenderPass();
 

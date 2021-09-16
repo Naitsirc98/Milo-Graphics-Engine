@@ -116,7 +116,9 @@ namespace milo {
 
 		updateSkyboxUniformData(imageIndex, scene->skyboxView()->skybox);
 
-		// TODO: Shadows
+		updateShadowsUniformData(imageIndex);
+
+		bindDescriptorSets(imageIndex, commandBuffer);
 
 		for(DrawCommand drawCommand : WorldRenderer::get().drawCommands()) {
 
@@ -228,7 +230,7 @@ namespace milo {
 		auto* defaultCubemap = dynamic_cast<VulkanCubemap*>(Assets::textures().blackCubemap().get());
 		auto* defaultTexture = dynamic_cast<VulkanTexture2D*>(Assets::textures().blackTexture().get());
 
-		VkDescriptorSet descriptorSet = m_SceneDescriptorPool->get(imageIndex);
+		VkDescriptorSet descriptorSet = m_SkyboxDescriptorPool->get(imageIndex);
 
 		VkDescriptorImageInfo irradianceMapInfo{};
 		irradianceMapInfo.imageView = present ? mvk::getImageView(skybox->irradianceMap()) : defaultCubemap->vkImageView();
@@ -247,17 +249,53 @@ namespace milo {
 
 		VkWriteDescriptorSet writeDescriptors[3];
 
-		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &irradianceMapInfo);
-		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(4, descriptorSet, 1, &prefilterMapInfo);
-		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(5, descriptorSet, 1, &brdfInfo);
+		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &irradianceMapInfo);
+		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &prefilterMapInfo);
+		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &brdfInfo);
 
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
 	}
 
-	void VulkanPBRForwardRenderPass::bindSceneDescriptorSet(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-		VkDescriptorSet descriptorSet = m_SceneDescriptorPool->get(imageIndex);
-		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout(),
-										 0, 1, &descriptorSet, 0, nullptr));
+	void VulkanPBRForwardRenderPass::updateShadowsUniformData(uint32_t imageIndex) {
+
+		VkDescriptorSet descriptorSet = m_ShadowsDescriptorPool->get(imageIndex);
+
+		VkDescriptorImageInfo cascades[4] = {
+				// TODO
+		};
+
+		VkWriteDescriptorSet writeDescriptors[] = {
+				mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &cascades[0]),
+				mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &cascades[1]),
+				mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &cascades[2]),
+				mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &cascades[3])
+		};
+
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 4, writeDescriptors, 0, nullptr));
+	}
+
+	void VulkanPBRForwardRenderPass::bindDescriptorSets(uint32_t imageIndex, VkCommandBuffer commandBuffer) {
+
+		VkDescriptorSet sceneDescriptorSet = m_SceneDescriptorPool->get(imageIndex);
+		VkDescriptorSet skyboxDescriptorSet = m_SkyboxDescriptorPool->get(imageIndex);
+		VkDescriptorSet shadowsDescriptorSet = m_ShadowsDescriptorPool->get(imageIndex);
+
+		VkDescriptorSet descriptorSets[] = {
+				sceneDescriptorSet,
+				skyboxDescriptorSet,
+				shadowsDescriptorSet
+		};
+
+		uint32_t dynamicOffsets[4] = {
+				imageIndex * m_CameraUniformBuffer->elementSize(),
+				imageIndex * m_RenderUniformBuffer->elementSize(),
+				imageIndex * m_SceneUniformBuffer->elementSize(),
+				imageIndex * (uint32_t)sizeof(VisibleLightsIndices)
+		};
+
+		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+										 m_GraphicsPipeline->pipelineLayout(),
+										 0, 1, descriptorSets, 4, dynamicOffsets));
 	}
 
 	void VulkanPBRForwardRenderPass::createRenderPass() {

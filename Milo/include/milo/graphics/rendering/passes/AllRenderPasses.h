@@ -8,3 +8,4 @@
 #include "PreDepthRenderPass.h"
 #include "BoundingVolumeRenderPass.h"
 #include "LightCullingPass.h"
+#include "ShadowMapRenderPass.h"
