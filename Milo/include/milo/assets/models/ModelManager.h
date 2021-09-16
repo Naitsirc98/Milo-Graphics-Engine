@@ -13,7 +13,7 @@ namespace milo {
 		virtual ~ModelManager();
 		void init();
 	public:
-	public:
+		Model* getSponza() const;
 		Model* load(const String& name, const String& filename);
 		bool exists(const String& name) const;
 		Model* find(const String& name) const;

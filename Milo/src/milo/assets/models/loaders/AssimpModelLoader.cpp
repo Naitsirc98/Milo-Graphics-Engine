@@ -70,11 +70,12 @@ namespace milo {
 
 			Model::Node* node = outNode->model->createNode();
 			outNode->children.push_back(node->index);
+			node->transform = outNode->transform;
 
 			const aiMesh* aiMesh = aiScene->mMeshes[aiNode->mMeshes[i]];
 			Mesh* mesh = Assets::meshes().find(aiMesh->mName.C_Str());
 
-			node->name = aiMesh->mName.C_Str();
+			node->name = outNode->name + "[" + str(i) + "]";
 
 			if(mesh == nullptr) {
 				mesh = new Mesh(m_File);

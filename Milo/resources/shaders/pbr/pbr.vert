@@ -12,15 +12,9 @@ layout(location = 2) in vec2 in_TexCoords;
 layout(location = 3) in vec3 in_Tangent;
 layout(location = 4) in vec3 in_BiTangent;
 
-layout(std140, binding = 0) uniform Camera {
+layout(std140, binding = 0) uniform CameraData {
     mat4 u_ViewProjectionMatrix;
-    mat4 u_InverseViewProjectionMatrix;
-    mat4 u_ProjectionMatrix;
     mat4 u_ViewMatrix;
-};
-
-layout(std140, binding = 1) uniform ShadowData {
-    mat4 u_LightMatrix[4];
 };
 
 layout(push_constant) uniform PushConstants {

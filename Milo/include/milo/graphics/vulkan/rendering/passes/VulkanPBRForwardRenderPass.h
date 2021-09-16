@@ -11,27 +11,45 @@ namespace milo {
 	class VulkanPBRForwardRenderPass : public PBRForwardRenderPass {
 		friend class PBRForwardRenderPass;
 	private:
-
-		struct CameraUniformBuffer {
-			Matrix4 viewMatrix;
-			Matrix4 projMatrix;
-			Matrix4 projViewMatrix;
-			Vector4 position;
+		// ===================================== SET 0
+		struct CameraData {
+			Matrix4 viewMatrix{};
+			Matrix4 projViewMatrix{};
 		};
 
-		struct LightsUniformBuffer {
-			DirectionalLight directionalLight{};
-			PointLight pointLights[128]{};
-			Vector4 u_AmbientColor{};
-			uint pointLightsCount{0};
+		struct RendererData {
+			Matrix4 u_LightMatrix[4]{};
+			Vector4 u_CascadeSplits{};
+			int u_TilesCountX{};
+			bool u_ShowCascades{};
+			bool u_SoftShadows{};
+			float u_LightSize{};
+			float u_MaxShadowDistance{};
+			float u_ShadowFade{};
+			bool u_CascadeFading{};
+			float u_CascadeTransitionFade{};
+			bool u_ShowLightComplexity{};
 		};
 
-		struct SkyboxUniformBuffer {
-			float maxPrefilterLOD{0};
-			float prefilterLODBias{0};
-			bool present{false};
+		struct SceneData {
+			DirectionalLight u_DirectionalLights{};
+			Vector3 u_CameraPosition{};
+			uint32_t u_PointLightsCount{};
+			PointLight u_pointLights[1024]{};
+			float u_EnvironmentMapIntensity{};
 		};
 
+		struct VisibleLightsIndices {
+			int32_t indices[4096];
+		};
+
+		// ====================================== SET 1 = MATERIAL
+
+		// ====================================== SET 2 = Skybox textures
+
+		// ====================================== SET 3 = Shadow maps
+
+		// ====================================== PUSH CONSTANTS
 		struct PushConstants {
 			Matrix4 modelMatrix;
 		};
@@ -41,16 +59,22 @@ namespace milo {
 
 		VkRenderPass m_RenderPass = VK_NULL_HANDLE;
 
-		VulkanUniformBuffer<CameraUniformBuffer>* m_CameraUniformBuffer = nullptr;
-		VulkanUniformBuffer<LightsUniformBuffer>* m_LightsUniformBuffer = nullptr;
-		VulkanUniformBuffer<SkyboxUniformBuffer>* m_SkyboxUniformBuffer = nullptr;
+		VulkanUniformBuffer<CameraData>* m_CameraUniformBuffer = nullptr;
+		VulkanUniformBuffer<RendererData>* m_RenderUniformBuffer = nullptr;
+		VulkanUniformBuffer<SceneData>* m_SceneUniformBuffer = nullptr;
+
 		VkDescriptorSetLayout m_SceneDescriptorSetLayout = VK_NULL_HANDLE;
 		VulkanDescriptorPool* m_SceneDescriptorPool = nullptr;
 
+		VkDescriptorSetLayout m_SkyboxDescriptorSetLayout = VK_NULL_HANDLE;
+		VulkanDescriptorPool* m_SkyboxDescriptorPool = nullptr;
+
+		VkDescriptorSetLayout m_ShadowsDescriptorSetLayout = VK_NULL_HANDLE;
+		VulkanDescriptorPool* m_ShadowsDescriptorPool = nullptr;
+
 		VulkanGraphicsPipeline* m_GraphicsPipeline = nullptr;
 
-		VulkanCommandPool* m_CommandPool = nullptr;
-		VkCommandBuffer m_CommandBuffers[MAX_SWAPCHAIN_IMAGE_COUNT]{VK_NULL_HANDLE};
+		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_CommandBuffers{};
 
 		Array<VkSemaphore, MAX_SWAPCHAIN_IMAGE_COUNT> m_SignalSemaphores{};
 
@@ -62,34 +86,37 @@ namespace milo {
 		void compile(Scene* scene, FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:
-		void createRenderPass();
-		void createFramebuffers(FrameGraphResourcePool* resourcePool);
-
-		void createCameraUniformBuffer();
-		void createLightsUniformBuffer();
-		void createSkyboxUniformBuffer();
-		void createSceneDescriptorLayout();
-		void createSceneDescriptorPool();
-		void createSceneDescriptorSets();
-
-		void createPipelineLayout();
-		void createGraphicsPipeline();
-
-		void createCommandBuffers();
-
-		void createSemaphores();
-
 		void buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
+		void renderScene(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
 
-		void beginCommandBuffer(VkCommandBuffer commandBuffer) const;
-		void beginRenderPass(uint32_t imageIndex, VkCommandBuffer commandBuffer);
-		void bindGraphicsPipeline(VkCommandBuffer commandBuffer) const;
+		void drawMesh(VkCommandBuffer commandBuffer, const Mesh* mesh) const;
+		void pushConstants(VkCommandBuffer commandBuffer, const Matrix4& transform) const;
+		void bindMesh(VkCommandBuffer commandBuffer, const Mesh* mesh) const;
+		void bindMaterial(VkCommandBuffer commandBuffer, const VulkanMaterialResourcePool& materialResources, Material* material) const;
 
-		void updateCameraUniformData(uint32_t imageIndex, const Camera* camera, const Transform& cameraTransform);
-		//void updateLightsUniformData(uint32_t imageIndex, const LightEnvironment& lights);
+		void updateCameraUniformData(uint32_t imageIndex);
+		void updateRendererDataUniformData(uint32_t imageIndex);
+		void updateSceneDataUniformData(uint32_t imageIndex);
 		void updateSkyboxUniformData(uint32_t imageIndex, const Skybox* skybox);
+
 		void bindSceneDescriptorSet(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-		void renderScene(VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene* scene) const;
+		void createRenderPass();
+
+		void createCameraUniformBuffer();
+		void createRendererDataUniformBuffer();
+		void createSceneDataUniformBuffer();
+
+		void createSceneDescriptorLayoutAndPool();
+		void createSceneDescriptorSets();
+
+		void createSkyboxDescriptorLayoutAndPool();
+		void createSkyboxDescriptorSets();
+
+		void createShadowsDescriptorLayoutAndPool();
+		void createShadowsDescriptorSets();
+
+		void createGraphicsPipeline();
+		void createSemaphores();
 	};
 }

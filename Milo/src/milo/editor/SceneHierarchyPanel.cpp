@@ -6,6 +6,7 @@
 #include "milo/editor/MiloEditor.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include "milo/assets/models/ModelUtils.h"
 
 namespace milo {
 
@@ -105,8 +106,8 @@ namespace milo {
 					}
 					if (ImGui::MenuItem("Sponza"))
 					{
-						Model* model = Assets::models().find("Sponza");
-						createEntityModelTree(scene, model, model->root(), scene->createEntity(model->root()->name));
+						Model* sponza = Assets::models().getSponza();
+						m_SelectedEntity = ModelUtils::createModelEntityTree(scene, sponza);
 					}
 					ImGui::EndMenu();
 				}
@@ -126,26 +127,6 @@ namespace milo {
 		meshView.mesh = mesh;
 		meshView.material = Assets::materials().getDefault();
 		selectEntity(newEntity);
-	}
-
-	void SceneHierarchyPanel::createEntityModelTree(Scene* scene, Model* model, const Model::Node* node, Entity entity) {
-
-		Transform& transform = entity.getComponent<Transform>();
-		transform.setMatrix(node->transform);
-		transform.scale *= 0.1f;
-
-		if(node->mesh != nullptr) {
-			MeshView& meshView = entity.addComponent<MeshView>();
-			meshView.mesh = node->mesh;
-			meshView.material = node->material;
-		}
-
-		for(uint32_t i = 0;i < node->children.size();++i) {
-			const Model::Node* childNode = model->get(node->children[i]);
-			Entity childEntity = scene->createEntity(childNode->name);
-			entity.addChild(childEntity.id());
-			createEntityModelTree(scene, model, childNode, childEntity);
-		}
 	}
 
 	void SceneHierarchyPanel::handleDragDrop(const ImRect& windowRect) {
@@ -180,7 +161,7 @@ namespace milo {
 		}
 
 		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
-			MiloEditor::camera().setPosition(entity.getComponent<Transform>().translation);
+			MiloEditor::camera().setPosition(entity.getComponent<Transform>().translation());
 		}
 
 		bool entityDeleted = false;

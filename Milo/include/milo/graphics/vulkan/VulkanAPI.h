@@ -16,6 +16,8 @@
 
 namespace milo {
 
+	class VulkanDescriptorPool;
+
 	struct VulkanAPICall {
 		StackTrace stacktrace;
 		String function = "UNKNOWN";
@@ -115,6 +117,23 @@ namespace milo {
 			void beginGraphicsRenderPass(VkCommandBuffer commandBuffer, const BeginGraphicsRenderPassInfo& info);
 
 			void endGraphicsRenderPass(VkCommandBuffer commandBuffer);
+		}
+
+		namespace DescriptorSet {
+
+			struct CreateInfo {
+				uint32_t numSets = 0;
+				VkShaderStageFlags stageFlags = VK_SHADER_STAGE_ALL;
+				ArrayList<VkDescriptorType> descriptors{};
+			};
+
+			namespace Layout {
+				VkDescriptorSetLayout create(const CreateInfo& createInfo);
+			}
+
+			namespace Pool {
+				VulkanDescriptorPool* create(VkDescriptorSetLayout layout, const CreateInfo& createInfo);
+			}
 		}
 
 		String getErrorName(VkResult vkResult) noexcept;

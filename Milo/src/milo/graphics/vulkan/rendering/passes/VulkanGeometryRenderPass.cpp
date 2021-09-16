@@ -110,7 +110,7 @@ namespace milo {
 			Entity cameraEntity = scene->cameraEntity();
 			Camera& camera = cameraEntity.getComponent<Camera>();
 			cameraData.proj = camera.projectionMatrix();
-			cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+			cameraData.view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation());
 			cameraData.projView = cameraData.proj * cameraData.view;
 		}
 

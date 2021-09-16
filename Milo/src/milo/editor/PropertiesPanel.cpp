@@ -154,13 +154,19 @@ namespace milo {
 
 		}, false);
 
-		drawComponent<Transform>("Transform", entity, [](Transform& transform){
+		drawComponent<Transform>("Transform", entity, [](Transform& transform) {
 
-			drawVector3Control("Translation", transform.translation);
-			drawVector3Control("Scale", transform.scale, 1.0f);
-			Vector3 rotation = milo::eulerAngles(transform.rotation) * 180.0f / MILO_PI; // To degrees
+			Vector3 translation = transform.translation();
+			Vector3 scale = transform.scale();
+			Vector3 rotation = milo::eulerAngles(transform.rotation()) * 180.0f / MILO_PI; // To degrees
+
+			drawVector3Control("Translation", translation);
+			drawVector3Control("Scale", scale, 1.0f);
 			drawVector3Control("Rotation", rotation);
-			transform.rotation = Quaternion(rotation * MILO_PI / 180.0f); // To radians
+
+			transform.translation(translation);
+			transform.scale(scale);
+			transform.rotation(Quaternion(rotation * MILO_PI / 180.0f)); // To radians
 
 		}, false);
 
@@ -262,7 +268,7 @@ namespace milo {
 
 		drawComponent<PointLight>("Point Light", entity, [&](PointLight& light) {
 			Transform& transform = entity.getComponent<Transform>();
-			light.position = transform.translation;
+			light.position = transform.translation();
 			drawVector3Control("Position", light.position);
 			drawVector3Control("Color", light.color);
 			ImGui::DragFloat("Multiplier", &light.multiplier, 0, FLT_MAX, 0.1f);
@@ -271,7 +277,7 @@ namespace milo {
 			ImGui::DragFloat("Min Radius", &light.minRadius, 0, FLT_MAX, 0.1f);
 			ImGui::DragFloat("Source size", &light.sourceSize, 0, FLT_MAX, 0.1f);
 			ImGui::Checkbox("Casts Shadows", &light.castsShadows);
-			transform.translation = light.position;
+			transform.translation(light.position);
 		});
 	}
 

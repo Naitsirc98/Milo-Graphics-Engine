@@ -100,6 +100,16 @@ namespace milo {
 			}
 		}
 
+		auto entities = view<Transform>();
+		for(EntityId entityId : entities) {
+
+			Entity entity = {entityId, this};
+			Transform& transform = entities.get<Transform>(entityId);
+			if(!transform.m_Dirty) continue;
+
+			transform.update();
+		}
+
 		if(getSimulationState() == SimulationState::Editor) return;
 
 		auto nativeScripts = m_Registry.view<NativeScriptView>();

@@ -97,7 +97,7 @@ namespace milo {
 			float fov, znear, zfar;
 			decomposeProjectionMatrix(camera->projectionMatrix(), fov, znear, zfar);
 			float aspect = camera->viewport().x / camera->viewport().y;
-			Matrix4 viewMatrix = camera->viewMatrix(scene->cameraEntity().getComponent<Transform>().translation);
+			Matrix4 viewMatrix = camera->viewMatrix(scene->cameraEntity().getComponent<Transform>().translation());
 			c.proj = camera->projectionMatrix();
 			c.view = viewMatrix;
 			c.projView = c.proj * c.view;
@@ -128,9 +128,9 @@ namespace milo {
 		env.pointLights.clear();
 		auto components = scene->view<Transform>() | scene->view<PointLight>();
 		for(EntityId entityId : components) {
-			const auto& transform = components.get<Transform>(entityId);
+			const Transform& transform = components.get<Transform>(entityId);
 			PointLight& pointLight = components.get<PointLight>(entityId);
-			pointLight.position = transform.translation;
+			pointLight.position = transform.translation();
 			env.pointLights.push_back(pointLight);
 		}
 	}

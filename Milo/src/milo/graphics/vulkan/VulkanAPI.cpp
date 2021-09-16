@@ -1,6 +1,7 @@
 #include "milo/graphics/vulkan/VulkanAPI.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
 #include "milo/graphics/vulkan/buffers/VulkanFramebuffer.h"
+#include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/scenes/SceneManager.h"
 
@@ -527,6 +528,47 @@ namespace milo {
 		void endGraphicsRenderPass(VkCommandBuffer commandBuffer) {
 			VK_CALLV(vkCmdEndRenderPass(commandBuffer));
 			VK_CALLV(vkEndCommandBuffer(commandBuffer));
+		}
+	}
+
+	namespace mvk::DescriptorSet {
+
+		VkDescriptorSetLayout Layout::create(const CreateInfo& createInfo) {
+
+			VkDevice device = VulkanContext::get()->device()->logical();
+
+			ArrayList<VkDescriptorSetLayoutBinding> bindings(createInfo.descriptors.size());
+
+			for(uint32_t i = 0;i < bindings.size();++i) {
+				VkDescriptorType descriptor = createInfo.descriptors[i];
+				auto& binding = bindings[i];
+				binding.binding = i;
+				binding.descriptorType = descriptor;
+				binding.descriptorCount = createInfo.numSets;
+				binding.stageFlags = createInfo.stageFlags;
+			}
+
+			VkDescriptorSetLayoutCreateInfo layoutInfo{};
+			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			layoutInfo.pBindings = bindings.data();
+			layoutInfo.bindingCount = bindings.size();
+
+			VkDescriptorSetLayout layout;
+			VK_CALL(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout));
+			return layout;
+		}
+
+		VulkanDescriptorPool* Pool::create(VkDescriptorSetLayout layout, const CreateInfo& createInfo) {
+
+			VulkanDescriptorPool::CreateInfo poolInfo{};
+			poolInfo.layout = layout;
+			poolInfo.capacity = createInfo.numSets;
+
+			for(auto descriptor : createInfo.descriptors) {
+				poolInfo.poolSizes.push_back({descriptor, createInfo.numSets});
+			}
+
+			return new VulkanDescriptorPool(VulkanContext::get()->device(), poolInfo);
 		}
 	}
 

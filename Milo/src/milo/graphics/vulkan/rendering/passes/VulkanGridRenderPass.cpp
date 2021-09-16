@@ -75,7 +75,7 @@ namespace milo {
 			Entity cameraEntity = scene->cameraEntity();
 			Camera& camera = cameraEntity.getComponent<Camera>();
 			uniformBufferData.projViewModel = camera.projectionMatrix()
-					* camera.viewMatrix(cameraEntity.getComponent<Transform>().translation)
+					* camera.viewMatrix(cameraEntity.getComponent<Transform>().translation())
 					* TRANSFORM;
 		}
 

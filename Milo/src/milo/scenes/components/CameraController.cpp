@@ -28,7 +28,7 @@ namespace milo {
 		handleDirection(transform, camera);
 
 		if(Time::seconds() - m_LogPosLastTime > 3) {
-			Log::debug("Camera: pos = {}, dir = {}", str(transform.translation), str(camera.forward()));
+			Log::debug("Camera: pos = {}, dir = {}", str(transform.translation()), str(camera.forward()));
 			m_LogPosLastTime = Time::seconds();
 		}
 	}
@@ -39,32 +39,36 @@ namespace milo {
 		if(Input::isKeyActive(Key::Key_Left_Shift)) speed *= 2;
 		if(Input::isKeyActive(Key::Key_Left_Alt)) speed /= 2;
 
+		Vector3 translation = transform.translation();
+
 		// FORWARD
 		if(Input::isKeyActive(Key::Key_W)) {
-			transform.translation += camera.forward() * speed;
+			translation += camera.forward() * speed;
 		}
 		// BACKWARD
 		if(Input::isKeyActive(Key::Key_S)) {
-			transform.translation += -camera.forward() * speed;
+			translation += -camera.forward() * speed;
 		}
 		// LEFT
 		if(Input::isKeyActive(Key::Key_A)) {
-			transform.translation += -camera.right() * speed;
+			translation += -camera.right() * speed;
 		}
 		// RIGHT
 		if(Input::isKeyActive(Key::Key_D)) {
-			transform.translation += camera.right() * speed;
+			translation += camera.right() * speed;
 		}
 		// UP
 		if(Input::isKeyActive(Key::Key_Space)) {
-			transform.translation += camera.up() * speed;
+			translation += camera.up() * speed;
 		}
 		// DOWN
 		if(Input::isKeyActive(Key::Key_Left_Control)) {
-			transform.translation += -camera.up() * speed;
+			translation += -camera.up() * speed;
 		}
 
-		if(Input::isKeyTyped(Key::Key_P)) Log::info("Camera position = " + str(transform.translation));
+		if(Input::isKeyTyped(Key::Key_P)) Log::info("Camera position = " + str(translation));
+
+		transform.translation(translation);
 	}
 
 	void CameraController::handleDirection(Transform& transform, Camera& camera) {

@@ -83,7 +83,7 @@ namespace milo {
 			Entity cameraEntity = scene->cameraEntity();
 			Camera& camera = cameraEntity.getComponent<Camera>();
 			uniformBufferData.projMatrix = camera.projectionMatrix();
-			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation());
 		}
 
 		uniformBufferData.textureLOD = skybox->prefilterLODBias();
@@ -245,7 +245,7 @@ namespace milo {
 
 			Camera& camera = cameraEntity.getComponent<Camera>();
 			uniformBufferData.projMatrix = camera.projectionMatrix();
-			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation());
 		}
 
 		uniformBufferData.textureLOD = skybox->prefilterLODBias();

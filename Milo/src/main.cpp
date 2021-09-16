@@ -1,5 +1,6 @@
 #include "milo/Milo.h"
 #include <iostream>
+#include "milo/assets/models/ModelUtils.h"
 
 using namespace milo;
 
@@ -26,15 +27,17 @@ public:
 
 		Entity light1 = createSphere(scene, {2, 8, -3}, Assets::materials().getDefault());
 		light1.setName("Point Light 1");
-		light1.getComponent<Transform>().scale = {0.5f, 0.5f, 0.5f};
+		light1.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
 		light1.addComponent<PointLight>();
 
 		Entity light2 = createSphere(scene, {-5, 10, 1}, Assets::materials().getDefault());
 		light2.setName("Point Light 2");
-		light2.getComponent<Transform>().scale = {0.5f, 0.5f, 0.5f};
+		light2.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
 		light2.addComponent<PointLight>();
 
 		s1.addChild(s2.id());
+
+		ModelUtils::createModelEntityTree(scene, Assets::models().getSponza());
 
 		Entity camera = scene->createEntity();
 		camera.setName("Main Camera");
@@ -57,7 +60,7 @@ public:
 		meshView.material = material;
 
 		Transform& transform = entity.getComponent<Transform>();
-		transform.translation = position;
+		transform.translation(position);
 
 		return entity;
 	}

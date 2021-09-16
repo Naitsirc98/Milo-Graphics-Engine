@@ -78,7 +78,7 @@ namespace milo {
 			Entity cameraEntity = scene->cameraEntity();
 			const Camera& camera = cameraEntity.getComponent<Camera>();
 			Matrix4 proj = camera.projectionMatrix();
-			Matrix4 view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation);
+			Matrix4 view = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation());
 			projView = proj * view;
 		}
 

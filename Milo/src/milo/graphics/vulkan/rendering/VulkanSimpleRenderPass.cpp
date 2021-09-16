@@ -78,8 +78,8 @@ namespace milo {
 					float scale = sin(Time::now() * (obj + 1) * 0.1f);
 
 					Transform transform;
-					transform.translation = {sin(Time::now() * (obj + 1.0f)), obj, -4 - (obj+1) * 2};
-					transform.scale = {scale, scale, scale};
+					transform.translation({sin(Time::now() * (obj + 1.0f)), obj, -4 - (obj+1) * 2});
+					transform.scale({scale, scale, scale});
 					transform.rotate(Time::now(), Vector3(0, 1, 0));
 					Matrix4 model = transform.modelMatrix();
 

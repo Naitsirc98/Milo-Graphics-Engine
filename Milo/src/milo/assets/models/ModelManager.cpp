@@ -19,6 +19,10 @@ namespace milo {
 		sponza->setCanBeCulled(false);
 	}
 
+	Model* ModelManager::getSponza() const {
+		return m_Models.at("Sponza");
+	}
+
 	Model* ModelManager::load(const String& name, const String& filename) {
 		if(exists(name)) return m_Models[name];
 		Log::debug("Loading model {}...", name);
