@@ -9,14 +9,14 @@ const int LightCount = 1;
 const vec3 Fdielectric = vec3(0.04);
 
 struct PointLight {
-    vec3 Position;
+    vec3 position;
     float Multiplier;
-    vec3 Radiance;
-    float MinRadius;
-    float Radius;
-    float Falloff;
-    float LightSize;
-    bool CastsShadows;
+    vec3 radiance;
+    float minRadius;
+    float radius;
+    float fallOff;
+    float lightSize;
+    bool castsShadows;
 };
 
 layout(std140, binding = 3) uniform RendererData {
@@ -33,9 +33,9 @@ layout(std140, binding = 3) uniform RendererData {
 };
 
 struct DirectionalLight {
-    vec3 Direction;
-    vec3 Radiance;
-    float Multiplier;
+    vec3 direction;
+    vec3 radiance;
+    float multiplier;
 };
 
 layout(std140, binding = 2) uniform SceneData {
@@ -68,14 +68,13 @@ layout(set = 1, binding = 10) uniform samplerCube u_EnvIrradianceTex;
 // BRDF LUT
 layout(set = 1, binding = 11) uniform sampler2D u_BRDFLUTTexture;
 
-// Shadow maps
+// Shadow maps, 4 cascades
 layout(set = 1, binding = 12) uniform sampler2DArray u_ShadowMapTexture;
 
 //HBAO Linear Depth
 layout(set = 1, binding = 16) uniform sampler2D u_LinearDepthTex;
 
-layout(std140, binding = 17) uniform ScreenData
-{
+layout(std140, binding = 17) uniform ScreenData {
     vec2 u_InvFullResolution;
     vec2 u_FullResolution;
 };
@@ -273,22 +272,23 @@ vec3 CalculateDirLights(vec3 F0) {
     return result;
 }
 
-int GetLightBufferIndex(int i) {
-    ivec2 tileID = ivec2(gl_FragCoord) / ivec2(16, 16);
-    uint index = tileID.y * u_TilesCountX + tileID.x;
+#define TILE_SIZE 16
 
+const ivec2 TILE = ivec2(TILE_SIZE, TILE_SIZE);
+
+int GetLightBufferIndex(int i) {
+    ivec2 tileID = ivec2(gl_FragCoord) / TILE;
+    uint index = tileID.y * u_TilesCountX + tileID.x;
     uint offset = index * 1024;
     return visibleLightIndicesBuffer.indices[offset + i];
 }
 
 int GetPointLightCount() {
     int result = 0;
-    for (int i = 0; i < u_PointLightsCount; i++) {
+    for(int i = 0; i < u_PointLightsCount; ++i) {
         uint lightIndex = GetLightBufferIndex(i);
-        if (lightIndex == -1)
-        break;
-
-        result++;
+        if(lightIndex == -1) break;
+        ++result;
     }
 
     return result;
@@ -302,14 +302,14 @@ vec3 CalculatePointLights(in vec3 F0) {
         break;
 
         PointLight light = u_pointLights[lightIndex];
-        vec3 Li = normalize(light.Position - Input.WorldPosition);
-        float lightDistance = length(light.Position - Input.WorldPosition);
+        vec3 Li = normalize(light.position - Input.WorldPosition);
+        float lightDistance = length(light.position - Input.WorldPosition);
         vec3 Lh = normalize(Li + m_Params.View);
 
-        float attenuation = clamp(1.0 - (lightDistance * lightDistance) / (light.Radius * light.Radius), 0.0, 1.0);
-        attenuation *= mix(attenuation, 1.0, light.Falloff);
+        float attenuation = clamp(1.0 - (lightDistance * lightDistance) / (light.radius * light.radius), 0.0, 1.0);
+        attenuation *= mix(attenuation, 1.0, light.fallOff);
 
-        vec3 Lradiance = light.Radiance * light.Multiplier * attenuation;
+        vec3 Lradiance = light.radiance * light.Multiplier * attenuation;
 
         // Calculate angles between surface normal and various light vectors.
         float cosLi = max(0.0, dot(m_Params.Normal, Li));

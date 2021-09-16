@@ -70,20 +70,20 @@ namespace milo {
 		graphicsQueue->waitSemaphores().clear();
 		graphicsQueue->waitSemaphores().push_back(m_SignalSemaphores[imageIndex]);
 
-		Matrix4 m = perspective(radians(45.0f), 1.77f, 0.1f, 1000.0f);
-		float znear = (2.0f*m[3][2])/(2.0f*m[2][2]-2.0f);
-		float zfar = ((m[2][2]-1.0f)*znear)/(m[2][2]+1.0);
-
-		float* indices = (float*)m_VisibleLightsStorageBuffer->map();
-		indices = indices + (m_VisibleLightsStorageBuffer->size() / sizeof(float));
-
-		StringStream ss;
-		for(uint32_t i = 0;i < 20;++i) {
-			ss << str(indices[i]) << ", ";
-		}
-		Log::info(ss.str() + "\n");
-
-		m_VisibleLightsStorageBuffer->unmap();
+		//Matrix4 m = perspective(radians(45.0f), 1.77f, 0.1f, 1000.0f);
+		//float znear = (2.0f*m[3][2])/(2.0f*m[2][2]-2.0f);
+		//float zfar = ((m[2][2]-1.0f)*znear)/(m[2][2]+1.0);
+//
+		//float* indices = (float*)m_VisibleLightsStorageBuffer->map();
+		//indices = indices + (m_VisibleLightsStorageBuffer->size() / sizeof(float));
+//
+		//StringStream ss;
+		//for(uint32_t i = 0;i < 20;++i) {
+		//	ss << str(indices[i]) << ", ";
+		//}
+		//Log::info(ss.str() + "\n");
+//
+		//m_VisibleLightsStorageBuffer->unmap();
 	}
 
 	void VulkanLightCullingPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
