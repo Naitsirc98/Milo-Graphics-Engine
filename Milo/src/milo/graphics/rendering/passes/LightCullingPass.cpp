@@ -25,8 +25,12 @@ namespace milo {
 		return id;
 	}
 
-	Handle LightCullingPass::getVisibleLightsBufferHandle() {
-		return id();
+	Handle LightCullingPass::getVisibleLightsBufferHandle(uint32_t index) {
+		if(index != UINT32_MAX) return id() + index;
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+			return id() + VulkanContext::get()->vulkanPresenter()->currentImageIndex();
+		}
+		throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");
 	}
 
 }

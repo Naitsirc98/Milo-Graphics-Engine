@@ -27,10 +27,12 @@ public:
 		Entity light1 = createSphere(scene, {2, 8, -3}, Assets::materials().getDefault());
 		light1.setName("Point Light 1");
 		light1.getComponent<Transform>().scale = {0.5f, 0.5f, 0.5f};
+		light1.addComponent<PointLight>();
 
 		Entity light2 = createSphere(scene, {-5, 10, 1}, Assets::materials().getDefault());
 		light2.setName("Point Light 2");
 		light2.getComponent<Transform>().scale = {0.5f, 0.5f, 0.5f};
+		light2.addComponent<PointLight>();
 
 		s1.addChild(s2.id());
 

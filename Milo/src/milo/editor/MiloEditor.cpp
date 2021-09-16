@@ -41,7 +41,12 @@ namespace milo {
 
 	void MiloEditor::renderSceneViewport() {
 		ImGui::Begin("SceneViewportPanel", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-		auto* texture = WorldRenderer::get().getFramebuffer().colorAttachments()[0];
+		Texture2D* texture = nullptr;
+		if(false) {
+			texture = WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle())->colorAttachments()[0];
+		} else {
+			texture = WorldRenderer::get().getFramebuffer().colorAttachments()[0];
+		}
 		UI::image(*texture, texture->size());
 		SceneManager::activeScene()->setFocused(ImGui::IsWindowFocused());
 		ImGui::End();
@@ -144,7 +149,7 @@ namespace milo {
 
 		Size size = Window::get()->size();
 
-		s_Camera = EditorCamera(perspectiveFov(radians(45.0f), (float)size.width, (float)size.height, 0.05f, 100000.0f));
+		s_Camera = EditorCamera(perspectiveFov(radians(45.0f), (float)size.width, (float)size.height, 0.1f, 1000.0f));
 	}
 
 	void MiloEditor::shutdown() {

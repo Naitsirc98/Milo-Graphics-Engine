@@ -15,6 +15,6 @@ namespace milo {
 	public:
 		static LightCullingPass* create();
 		static size_t id();
-		static Handle getVisibleLightsBufferHandle();
+		static Handle getVisibleLightsBufferHandle(uint32_t index = UINT32_MAX);
 	};
 }

@@ -23,6 +23,9 @@ namespace milo {
 			uint32_t pointLightsCount;
 			PointLight pointLights[MAX_POINT_LIGHTS];
 		};
+		struct VisibleLightIndicesData {
+			int32_t indices[4096];
+		};
 		struct PushConstants {
 			Size screenSize;
 		};
@@ -38,6 +41,11 @@ namespace milo {
 
 		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
 		VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
+
+		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_CommandBuffers{};
+		Array<VkSemaphore, MAX_SWAPCHAIN_IMAGE_COUNT> m_SignalSemaphores{};
+
+		Size m_LastViewportSize{};
 	private:
 		VulkanLightCullingPass();
 		~VulkanLightCullingPass();
@@ -46,7 +54,8 @@ namespace milo {
 		void compile(Scene* scene, FrameGraphResourcePool* resourcePool);
 		void execute(Scene* scene);
 	private:
-		void updateUniforms(Scene* scene);
+		void buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
+		void updateUniforms(uint32_t imageIndex, Scene* scene);
 		void createDescriptorSetLayout();
 		void createDescriptorPool();
 		void createCameraUniformBuffer();
@@ -54,5 +63,7 @@ namespace milo {
 		void createVisibleLightIndicesStorageBuffer();
 		void createDescriptorSets();
 		void createComputePipeline();
+		void createCommandBuffers();
+		void createSemaphores();
 	};
 }

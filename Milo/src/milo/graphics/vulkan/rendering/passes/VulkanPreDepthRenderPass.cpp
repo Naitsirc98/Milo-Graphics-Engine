@@ -80,6 +80,13 @@ namespace milo {
 		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
 		beginInfo.framebuffer = m_Framebuffers[imageIndex].get();
 
+		VkClearValue clearValues[2];
+		clearValues[0].color = {0, 0, 0, 0};
+		clearValues[1].depthStencil = {1, 0};
+
+		beginInfo.clearValues = clearValues;
+		beginInfo.clearValuesCount = 2;
+
 		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
 		renderMeshViews(imageIndex, commandBuffer, scene);
 		mvk::CommandBuffer::endGraphicsRenderPass(commandBuffer);
@@ -132,7 +139,7 @@ namespace milo {
 	void VulkanPreDepthRenderPass::createRenderPass() {
 
 		RenderPass::Description desc;
-		//desc.colorAttachments.push_back({PixelFormat::RGBA32F, 1, RenderPass::LoadOp::Clear});
+		desc.colorAttachments.push_back({PixelFormat::R32F, 1, RenderPass::LoadOp::Clear});
 		desc.depthAttachment = {PixelFormat::DEPTH32, 1, RenderPass::LoadOp::Clear};
 
 		m_RenderPass = mvk::RenderPass::create(desc);
@@ -225,7 +232,7 @@ namespace milo {
 
 		Framebuffer::CreateInfo createInfo{};
 		createInfo.size = size;
-		//createInfo.colorAttachments.push_back(PixelFormat::RGBA32F);
+		createInfo.colorAttachments.push_back(PixelFormat::R32F);
 		createInfo.depthAttachments.push_back(PixelFormat::DEPTH32);
 		createInfo.apiInfo = &apiInfo;
 

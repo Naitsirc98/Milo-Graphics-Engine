@@ -7,7 +7,7 @@ namespace milo {
 
 	ShaderManager::ShaderManager() {
 		m_Shaders.reserve(64);
-		loadCachedShaders();
+		//loadCachedShaders();
 	}
 
 	ShaderManager::~ShaderManager() {
@@ -23,7 +23,7 @@ namespace milo {
 		{
 			shader = createShader(filename);
 			m_Shaders[filename] = shader;
-			createShaderCache(filename, shader);
+			//createShaderCache(filename, shader);
 		}
 		m_Mutex.unlock();
 		return shader;

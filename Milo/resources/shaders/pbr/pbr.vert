@@ -52,11 +52,11 @@ void main() {
 
     vertex.cameraView = mat3(u_ViewMatrix);
 
-    vertex.ShadowMapCoords[0] = u_LightMatrix[0] * vec4(vertex.worldPosition, 1.0);
-    vertex.ShadowMapCoords[1] = u_LightMatrix[1] * vec4(vertex.worldPosition, 1.0);
-    vertex.ShadowMapCoords[2] = u_LightMatrix[2] * vec4(vertex.worldPosition, 1.0);
-    vertex.ShadowMapCoords[3] = u_LightMatrix[3] * vec4(vertex.worldPosition, 1.0);
-    vertex.ViewPosition = vec3(u_ViewMatrix * vec4(vertex.worldPosition, 1.0));
+    vertex.shadowMapCoords[0] = u_LightMatrix[0] * vec4(vertex.worldPosition, 1.0);
+    vertex.shadowMapCoords[1] = u_LightMatrix[1] * vec4(vertex.worldPosition, 1.0);
+    vertex.shadowMapCoords[2] = u_LightMatrix[2] * vec4(vertex.worldPosition, 1.0);
+    vertex.shadowMapCoords[3] = u_LightMatrix[3] * vec4(vertex.worldPosition, 1.0);
+    vertex.viewPosition = vec3(u_ViewMatrix * vec4(vertex.worldPosition, 1.0));
 
     gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * vec4(in_Position, 1.0);
 }
