@@ -107,6 +107,7 @@ namespace milo {
 				VkRenderPass renderPass = VK_NULL_HANDLE; // Mandatory
 				VkPipeline graphicsPipeline = VK_NULL_HANDLE; // Mandatory
 				const Framebuffer* framebuffer = nullptr;
+				VkFramebuffer vkFramebuffer{VK_NULL_HANDLE};
 				const Viewport* viewport = nullptr;
 				uint32_t clearValuesCount = UINT32_MAX;
 				const VkClearValue* clearValues = nullptr;

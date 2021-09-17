@@ -544,7 +544,7 @@ namespace milo {
 				auto& binding = bindings[i];
 				binding.binding = i;
 				binding.descriptorType = descriptor;
-				binding.descriptorCount = createInfo.numSets;
+				binding.descriptorCount = 1;
 				binding.stageFlags = createInfo.stageFlags;
 			}
 

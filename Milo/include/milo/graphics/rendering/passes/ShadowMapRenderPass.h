@@ -15,7 +15,7 @@ namespace milo {
 	public:
 		static ShadowMapRenderPass* create();
 		static size_t id();
-		static Handle getFramebufferHandle(uint32_t index = UINT32_MAX);
+		static Handle getCascadeShadowMap(uint32_t cascadeIndex, uint32_t index = UINT32_MAX);
 	};
 }
 

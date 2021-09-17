@@ -37,7 +37,9 @@ namespace milo {
 
 		const VkPipelineMultisampleStateCreateInfo& multisampleStateInfo = info.multisampleState;
 
-		const VkPipelineColorBlendStateCreateInfo& colorBlendStateInfo = info.colorBlendState;
+		VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = info.colorBlendState;
+		colorBlendStateInfo.pAttachments = info.colorBlendAttachments.data();
+		colorBlendStateInfo.attachmentCount = info.colorBlendAttachments.size();
 
 		VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
 		dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;

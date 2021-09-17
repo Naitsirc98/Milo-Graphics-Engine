@@ -216,7 +216,7 @@ namespace milo {
 
 		SceneData data{};
 		data.u_CameraPosition = Vector3(camera.view[3]);
-		data.u_DirectionalLights = lights.dirLight;
+		data.u_DirectionalLights = lights.dirLight.value();
 		data.u_PointLightsCount = lights.pointLights.size();
 		memcpy(data.u_pointLights, lights.pointLights.data(), lights.pointLights.size() * sizeof(PointLight));
 		data.u_EnvironmentMapIntensity = 1;

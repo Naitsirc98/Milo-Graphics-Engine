@@ -27,9 +27,15 @@ namespace milo {
 
 	struct LightEnvironment {
 		Skybox* skybox{nullptr};
-		DirectionalLight dirLight{};
+		Optional<DirectionalLight> dirLight{};
 		ArrayList<PointLight> pointLights;
 		Color ambientColor{0.2f, 0.2f, 0.2f, 1.0f};
+	};
+
+	struct ShadowCascade {
+		float splitDepth{0};
+		Matrix4 viewProj = Matrix4(1.0f);
+		Matrix4 view = Matrix4(1.0f);
 	};
 
 	struct CameraInfo {
@@ -53,6 +59,9 @@ namespace milo {
 		ArrayList<DrawCommand> m_ShadowDrawCommands;
 		CameraInfo m_Camera{};
 		LightEnvironment m_LightEnvironment{};
+		float m_ShadowsMaxDistance{10000};
+		Size m_ShadowsMapSize{4096, 4096};
+		Array<ShadowCascade, 4> m_ShadowCascades{};
 	private:
 		WorldRenderer();
 		~WorldRenderer();
@@ -71,6 +80,11 @@ namespace milo {
 		const ArrayList<DrawCommand>& shadowsDrawCommands() const;
 		const CameraInfo& camera() const;
 		const LightEnvironment& lights() const;
+		float shadowsMaxDistance() const;
+		void setShadowsMaxDistance(float distance);
+		const Size& shadowsMapSize() const;
+		void setShadowsMapSize(const Size& size);
+		const Array<ShadowCascade, 4>& shadowCascades() const;
 	private:
 		static WorldRenderer* s_Instance;
 	public:
@@ -83,6 +97,8 @@ namespace milo {
 		static void shutdown();
 		static void getCameraInfo(Scene* scene);
 		static void generateLightEnvironment(Scene* scene);
+		static void calculateShadowCascades(Scene* scene);
+		static void calculateShadowCascadeRanges(float cascadeRanges[5], float zNear, float zFar);
 	};
 
 }

@@ -25,10 +25,10 @@ namespace milo {
 		return id;
 	}
 
-	Handle ShadowMapRenderPass::getFramebufferHandle(uint32_t index) {
-		if(index != UINT32_MAX) return id() + index;
+	Handle ShadowMapRenderPass::getCascadeShadowMap(uint32_t cascadeIndex, uint32_t index) {
+		if(index != UINT32_MAX) return id() + cascadeIndex * 1000 + index;
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
-			return id() + VulkanContext::get()->vulkanPresenter()->currentImageIndex();
+			return id() + (cascadeIndex * 1000) + VulkanContext::get()->vulkanPresenter()->currentImageIndex();
 		}
 		throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");
 	}

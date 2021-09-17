@@ -32,6 +32,10 @@ namespace milo {
 		push<PreDepthRenderPass>();
 		push<LightCullingPass>();
 
+		if(renderer.lights().dirLight.has_value()) {
+			push<ShadowMapRenderPass>();
+		}
+
 		push<GeometryRenderPass>();
 		
 		if(renderer.lights().skybox != nullptr) {

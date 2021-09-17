@@ -35,6 +35,11 @@ public:
 		light2.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
 		light2.addComponent<PointLight>();
 
+		Entity sun = createSphere(scene, {0, 20, 0}, Assets::materials().getDefault());
+		sun.setName("Sun");
+		sun.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
+		sun.addComponent<DirectionalLight>().direction = {0, 1, 0};
+
 		s1.addChild(s2.id());
 
 		ModelUtils::createModelEntityTree(scene, Assets::models().getSponza());
