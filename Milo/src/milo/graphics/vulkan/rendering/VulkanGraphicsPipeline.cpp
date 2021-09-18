@@ -176,6 +176,8 @@ namespace milo {
 
 		vertexInputInfo.bindings.push_back(binding);
 
+		vertexInputInfo.attributes.clear();
+
 		if(attributes & Vertex::Attrib_Position) {
 			VkVertexInputAttributeDescription positionAttribute = {};
 			positionAttribute.binding = 0;

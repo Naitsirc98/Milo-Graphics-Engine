@@ -3,14 +3,14 @@
 
 namespace milo {
 
-	static const String NAME = "LightCullingPass";
+	static const String LightCullingPassName = "LightCullingPass";
 
 	RenderPassId LightCullingPass::getId() const {
 		return id();
 	}
 
 	const String& LightCullingPass::name() const {
-		return NAME;
+		return LightCullingPassName;
 	}
 
 	LightCullingPass* LightCullingPass::create() {
@@ -21,7 +21,7 @@ namespace milo {
 	}
 
 	size_t LightCullingPass::id() {
-		DEFINE_RENDER_PASS_ID(NAME);
+		DEFINE_RENDER_PASS_ID(LightCullingPassName);
 		return id;
 	}
 

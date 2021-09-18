@@ -223,31 +223,13 @@ namespace milo {
 
 		SkyboxView* skyboxView = scene->skyboxView();
 		if(skyboxView == nullptr) return;
-
 		Skybox* skybox = skyboxView->skybox;
 
+		const auto& camera = WorldRenderer::get().camera();
+
 		UniformBuffer uniformBufferData{};
-
-		if(getSimulationState() == SimulationState::Editor) {
-
-			EditorCamera& camera = MiloEditor::camera();
-			uniformBufferData.projMatrix = camera.projMatrix();
-			uniformBufferData.viewMatrix = camera.viewMatrix();
-
-		} else {
-
-			Entity cameraEntity = scene->cameraEntity();
-
-			if(!cameraEntity.valid()) {
-				// TODO
-				throw MILO_RUNTIME_EXCEPTION("Main Camera Entity is not valid");
-			}
-
-			Camera& camera = cameraEntity.getComponent<Camera>();
-			uniformBufferData.projMatrix = camera.projectionMatrix();
-			uniformBufferData.viewMatrix = camera.viewMatrix(cameraEntity.getComponent<Transform>().translation());
-		}
-
+		uniformBufferData.viewMatrix = camera.view;
+		uniformBufferData.projMatrix = camera.proj;
 		uniformBufferData.textureLOD = skybox->prefilterLODBias();
 		uniformBufferData.intensity = 1; // TODO
 

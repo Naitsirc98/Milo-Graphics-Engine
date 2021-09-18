@@ -1,8 +1,15 @@
 #include "milo/assets/materials/Material.h"
+#include "milo/assets/AssetManager.h"
 
 namespace milo {
 
 	Material::Material(String name, String filename) : Asset(name, filename) {
+		m_AlbedoMap = Assets::textures().whiteTexture();
+		m_MetallicMap = Assets::textures().whiteTexture();
+		m_RoughnessMap = Assets::textures().whiteTexture();
+		m_OcclusionMap = Assets::textures().whiteTexture();
+		m_EmissiveMap = Assets::textures().blackTexture();
+		m_NormalMap = Assets::textures().whiteTexture();
 	}
 
 	Material::~Material() = default;
@@ -85,15 +92,6 @@ namespace milo {
 
 	Material* Material::useNormalMap(bool value) {
 		m_Data.useNormalMap = value;
-		return this;
-	}
-
-	bool Material::useCombinedMetallicRoughnessMap() const {
-		return m_Data.useCombinedMetallicRoughnessMap;
-	}
-
-	Material* Material::useCombinedMetallicRoughnessMap(bool value) {
-		m_Data.useCombinedMetallicRoughnessMap = value;
 		return this;
 	}
 

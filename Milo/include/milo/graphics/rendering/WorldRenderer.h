@@ -43,6 +43,7 @@ namespace milo {
 		Matrix4 view = Matrix4(1.0);
 		Matrix4 projView = Matrix4(1.0);
 		Polyhedron frustum{};
+		Vector3 position{};
 	};
 
 	class WorldRenderer {

@@ -1,6 +1,5 @@
 #include "milo/graphics/vulkan/skybox/VulkanSkyboxFactory.h"
 #include "milo/graphics/vulkan/VulkanContext.h"
-#include "milo/assets/AssetManager.h"
 
 namespace milo {
 
@@ -9,7 +8,6 @@ namespace milo {
 		m_EnvironmentPass = new VulkanEnvironmentMapPass(m_Device);
 		m_IrradiancePass = new VulkanIrradianceMapPass(m_Device);
 		m_PrefilterPass = new VulkanPrefilterMapPass(m_Device);
-		//m_BRDFPass = new VulkanBRDFPass(m_Device);
 		m_PreethamSkyPass = new VulkanPreethamSkyEnvironmentPass(m_Device);
 	}
 
@@ -17,7 +15,6 @@ namespace milo {
 		DELETE_PTR(m_EnvironmentPass);
 		DELETE_PTR(m_IrradiancePass);
 		DELETE_PTR(m_PrefilterPass);
-		//DELETE_PTR(m_BRDFPass);
 	}
 
 	Skybox* VulkanSkyboxFactory::create(const String& name, const String& imageFile, const SkyboxLoadInfo& loadInfo) {
@@ -26,14 +23,12 @@ namespace milo {
 		VulkanCubemap* environmentMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 		VulkanCubemap* irradianceMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 		VulkanCubemap* prefilterMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
-		//VulkanTexture2D* brdfMap = VulkanTexture2D::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 
 		VulkanSkyboxPassExecuteInfo execInfo{};
 		execInfo.equirectangularTexture = equirectangularTexture;
 		execInfo.environmentMap = environmentMap;
 		execInfo.irradianceMap = irradianceMap;
 		execInfo.prefilterMap = prefilterMap;
-		//execInfo.brdfMap = brdfMap;
 		execInfo.loadInfo = &loadInfo;
 
 		m_Device->computeCommandPool()->execute([&](VkCommandBuffer commandBuffer) {
@@ -43,13 +38,11 @@ namespace milo {
 			m_PrefilterPass->execute(execInfo);
 		});
 
-
 		Skybox* skybox = new Skybox(name, imageFile);
 		skybox->m_EquirectangularTexture = Ref<VulkanTexture2D>(equirectangularTexture);
 		skybox->m_EnvironmentMap = environmentMap;
 		skybox->m_IrradianceMap = irradianceMap;
 		skybox->m_PrefilterMap = prefilterMap;
-		//skybox->m_BRDFMap = brdfMap;
 		skybox->m_PrefilterLODBias = loadInfo.lodBias;
 		skybox->m_MaxPrefilterLOD = loadInfo.maxLOD;
 
@@ -99,13 +92,12 @@ namespace milo {
 		VulkanCubemap* environmentMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 		VulkanCubemap* irradianceMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 		VulkanCubemap* prefilterMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
-		//VulkanTexture2D* brdfMap = VulkanTexture2D::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
+		VulkanTexture2D* brdfMap = VulkanTexture2D::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 
 		VulkanSkyboxPassExecuteInfo execInfo{};
 		execInfo.environmentMap = environmentMap;
 		execInfo.irradianceMap = irradianceMap;
 		execInfo.prefilterMap = prefilterMap;
-		//execInfo.brdfMap = brdfMap;
 		execInfo.loadInfo = &loadInfo;
 		execInfo.turbidity = turbidity;
 		execInfo.azimuth = azimuth;
@@ -122,7 +114,6 @@ namespace milo {
 		sky->m_EnvironmentMap = environmentMap;
 		sky->m_IrradianceMap = irradianceMap;
 		sky->m_PrefilterMap = prefilterMap;
-		//sky->m_BRDFMap = brdfMap;
 		sky->m_PrefilterLODBias = loadInfo.lodBias;
 		sky->m_MaxPrefilterLOD = loadInfo.maxLOD;
 		sky->turbidity(turbidity)->azimuth(azimuth)->inclination(inclination);
@@ -141,7 +132,6 @@ namespace milo {
 		loadInfo.environmentMapSize = sky->environmentMap()->width();
 		loadInfo.irradianceMapSize = sky->irradianceMap()->width();
 		loadInfo.prefilterMapSize = sky->prefilterMap()->width();
-		//loadInfo.brdfSize = sky->brdfMap()->width();
 		loadInfo.lodBias = sky->m_PrefilterLODBias;
 		loadInfo.maxLOD = sky->m_MaxPrefilterLOD;
 
@@ -149,7 +139,6 @@ namespace milo {
 		execInfo.environmentMap = dynamic_cast<VulkanCubemap*>(sky->environmentMap());
 		execInfo.irradianceMap = dynamic_cast<VulkanCubemap*>(sky->irradianceMap());
 		execInfo.prefilterMap = dynamic_cast<VulkanCubemap*>(sky->prefilterMap());
-		//execInfo.brdfMap = brdfMap;
 		execInfo.loadInfo = &loadInfo;
 		execInfo.turbidity = sky->turbidity();
 		execInfo.azimuth = sky->azimuth();

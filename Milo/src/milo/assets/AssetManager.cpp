@@ -45,6 +45,7 @@ namespace milo {
 		s_MaterialManager->init();
 		s_MeshManager->init();
 		s_ModelManager->init();
+		s_SkyboxManager->init();
 	}
 
 	void AssetManager::shutdown() {

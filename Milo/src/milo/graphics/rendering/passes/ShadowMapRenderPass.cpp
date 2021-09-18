@@ -3,14 +3,14 @@
 
 namespace milo {
 
-	static const String NAME = "ShadowMapRenderPass";
+	static const String ShadowMapRenderPassName = "ShadowMapRenderPass";
 
 	RenderPassId ShadowMapRenderPass::getId() const {
 		return id();
 	}
 
 	const String& ShadowMapRenderPass::name() const {
-		return NAME;
+		return ShadowMapRenderPassName;
 	}
 
 	ShadowMapRenderPass* ShadowMapRenderPass::create() {
@@ -21,14 +21,14 @@ namespace milo {
 	}
 
 	size_t ShadowMapRenderPass::id() {
-		DEFINE_RENDER_PASS_ID(NAME);
+		DEFINE_RENDER_PASS_ID(ShadowMapRenderPassName);
 		return id;
 	}
 
-	Handle ShadowMapRenderPass::getCascadeShadowMap(uint32_t cascadeIndex, uint32_t index) {
-		if(index != UINT32_MAX) return id() + cascadeIndex * 1000 + index;
+	Handle ShadowMapRenderPass::getDepthMap(uint32_t cascadeIndex, uint32_t index) {
+		if(index != UINT32_MAX) return id() + cascadeIndex * 1000;// + index;
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
-			return id() + (cascadeIndex * 1000) + VulkanContext::get()->vulkanPresenter()->currentImageIndex();
+			return id() + cascadeIndex * 1000;// + VulkanContext::get()->vulkanPresenter()->currentImageIndex();
 		}
 		throw MILO_RUNTIME_EXCEPTION("Unsupported Graphics API");
 	}

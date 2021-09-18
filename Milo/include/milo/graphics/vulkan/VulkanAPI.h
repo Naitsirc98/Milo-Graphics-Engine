@@ -113,6 +113,7 @@ namespace milo {
 				const VkClearValue* clearValues = nullptr;
 				bool dynamicViewport = true;
 				bool dynamicScissor = true;
+				VkSubpassContents subpassContents = VK_SUBPASS_CONTENTS_INLINE;
 			};
 
 			void beginGraphicsRenderPass(VkCommandBuffer commandBuffer, const BeginGraphicsRenderPassInfo& info);

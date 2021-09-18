@@ -45,7 +45,11 @@ namespace milo {
 		if(!exists(entityId)) return;
 		Entity entity = {entityId, this};
 		if(entity.hasParent()) entity.parent().removeChild(entityId);
-		entity.removeAllChildren(); // TODO
+
+		for(EntityId childId : entity.children()) {
+			destroyEntity(childId);
+		}
+
 		m_Registry.destroy(entityId);
 	}
 

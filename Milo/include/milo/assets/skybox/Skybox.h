@@ -14,7 +14,7 @@ namespace milo {
 		Cubemap* m_EnvironmentMap{nullptr};
 		Cubemap* m_IrradianceMap{nullptr};
 		Cubemap* m_PrefilterMap{nullptr};
-		Texture2D* m_BRDFMap{nullptr};
+		Ref<Texture2D> m_BRDFMap;
 		float m_MaxPrefilterLOD{4.0f};
 		float m_PrefilterLODBias{-0.25f};
 	protected:
@@ -25,7 +25,7 @@ namespace milo {
 		Cubemap* environmentMap() const;
 		Cubemap* irradianceMap() const;
 		Cubemap* prefilterMap() const;
-		Texture2D* brdfMap() const;
+		Ref<Texture2D> brdfMap() const;
 		float maxPrefilterLOD() const;
 		void maxPrefilterLOD(float value);
 		float prefilterLODBias() const;

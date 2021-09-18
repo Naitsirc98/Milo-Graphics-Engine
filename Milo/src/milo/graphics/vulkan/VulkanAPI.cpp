@@ -345,8 +345,8 @@ namespace milo {
 				attachment.samples = mvk::fromSamples(depthAttachment.samples);
 				attachment.loadOp = mvk::fromLoadOp(depthAttachment.loadOp);
 				attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-				attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-				attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				attachment.stencilLoadOp = mvk::fromLoadOp(depthAttachment.loadOp);
+				attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
 				attachment.initialLayout = depthLayoutFromLoadOp(depthAttachment.loadOp);
 				attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -435,13 +435,13 @@ namespace milo {
 			for(Texture2D* colorAttachment : vulkanFramebuffer->colorAttachments()) {
 				auto* texture = (VulkanTexture2D*)colorAttachment;
 				if(texture->layout() != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
-					texture->setLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+					texture->setLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 				}
 			}
 			for(Texture2D* depthAttachment : vulkanFramebuffer->depthAttachments()) {
 				auto* texture = (VulkanTexture2D*)depthAttachment;
 				if(texture->layout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-					texture->setLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+					texture->setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 				}
 			}
 			return vulkanFramebuffer;
@@ -454,14 +454,18 @@ namespace milo {
 
 			VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
-			const Framebuffer* fb = info.framebuffer;
+			VkFramebuffer vkFramebuffer = VK_NULL_HANDLE;
 
-			VkFramebuffer vkFramebuffer;
-			if(fb == nullptr) {
-				fb = &WorldRenderer::get().getFramebuffer();
+			if(info.vkFramebuffer != VK_NULL_HANDLE) {
+				vkFramebuffer = info.vkFramebuffer;
+			} else {
+				const Framebuffer* fb = info.framebuffer;
+				if(fb == nullptr) {
+					fb = &WorldRenderer::get().getFramebuffer();
+				}
+				VulkanFramebuffer* vulkanFramebuffer = prepareFramebuffer(commandBuffer, fb);
+				vkFramebuffer = vulkanFramebuffer->get(info.renderPass);
 			}
-			VulkanFramebuffer* vulkanFramebuffer = prepareFramebuffer(commandBuffer, fb);
-			vkFramebuffer = vulkanFramebuffer->get(info.renderPass);
 
 			Viewport sceneViewport{};
 
@@ -476,31 +480,17 @@ namespace milo {
 			renderPassInfo.renderPass = info.renderPass;
 			renderPassInfo.framebuffer = vkFramebuffer;
 			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent.width = fb->size().width;
-			renderPassInfo.renderArea.extent.height = fb->size().height;
+			renderPassInfo.renderArea.extent.width = (uint32_t)sceneViewport.width;
+			renderPassInfo.renderArea.extent.height = (uint32_t)sceneViewport.height;
 
-			VkClearValue clearValues[8];
-			uint32_t clearValuesCount = 0;
-
-			if(info.clearValuesCount == UINT32_MAX || info.clearValues == nullptr) {
-
-				for(uint32_t i = 0;i < fb->colorAttachments().size();++i) {
-					clearValues[clearValuesCount++].color = {0, 0, 0, 0};
-				}
-
-				for(uint32_t i = 0;i < fb->depthAttachments().size();++i) {
-					clearValues[clearValuesCount++].depthStencil = {1, 0};
-				}
-
-			} else {
-				memcpy(clearValues, info.clearValues, info.clearValuesCount * sizeof(VkClearValue));
-				clearValuesCount = info.clearValuesCount;
+			if(info.clearValues == nullptr) {
+				throw MILO_RUNTIME_EXCEPTION("VkClearValues is null!!");
 			}
 
-			renderPassInfo.clearValueCount = clearValuesCount;
-			renderPassInfo.pClearValues = clearValues;
+			renderPassInfo.pClearValues = info.clearValues;
+			renderPassInfo.clearValueCount = info.clearValuesCount;
 
-			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
+			VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, info.subpassContents));
 
 			VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, info.graphicsPipeline));
 

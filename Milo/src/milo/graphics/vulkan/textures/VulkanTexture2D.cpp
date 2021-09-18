@@ -201,4 +201,54 @@ namespace milo {
 
 		return new VulkanTexture2D(createInfo);
 	}
+
+	VulkanTexture2D* VulkanTexture2D::create(const VulkanTexture::CreateInfo& createInfo) {
+		return new VulkanTexture2D(createInfo);
+	}
+
+	//========
+
+	VulkanTexture2DArray::VulkanTexture2DArray(const VulkanTexture::CreateInfo& createInfo) : VulkanTexture2D(createInfo) {
+		m_Layers.resize(m_CreateInfo.arrayLayers, VK_NULL_HANDLE);
+
+		m_ViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+	}
+
+	uint32_t VulkanTexture2DArray::numLayers() const {
+		return m_Layers.size();
+	}
+
+	VkImageView VulkanTexture2DArray::getLayer(uint32_t index) const {
+		return m_Layers[index];
+	}
+
+	void VulkanTexture2DArray::allocate(const Texture2D::AllocInfo& allocInfo) {
+
+		VulkanTexture2D::allocate(allocInfo);
+
+		for(uint32_t i = 0;i < m_Layers.size();++i) {
+			VkImageViewCreateInfo layerInfo = m_ViewInfo;
+			layerInfo.subresourceRange.baseArrayLayer = i;
+			layerInfo.subresourceRange.layerCount = 1;
+			VK_CALL(vkCreateImageView(m_Device->logical(), &layerInfo, nullptr, &m_Layers[i]));
+		}
+	}
+
+	void VulkanTexture2DArray::destroy() {
+		for(uint32_t i = 0;i < m_Layers.size();++i) {
+			VK_CALLV(vkDestroyImageView(m_Device->logical(), m_Layers[i], nullptr));
+			m_Layers[i] = VK_NULL_HANDLE;
+		}
+	}
+
+	VulkanTexture2DArray* VulkanTexture2DArray::create(TextureUsageFlags usage, uint32_t numLayers) {
+
+		CreateInfo createInfo{};
+		createInfo.usage = usage;
+		createInfo.arrayLayers = numLayers;
+		createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+		return new VulkanTexture2DArray(createInfo);
+	}
 }

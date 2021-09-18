@@ -7,15 +7,18 @@ namespace milo {
 	static const String INDOOR_SKYBOX_NAME = "SK_Indoor";
 
 	SkyboxManager::SkyboxManager() {
-		m_SkyboxFactory = SkyboxFactory::create();
-		createPreethamSky();
-		load(INDOOR_SKYBOX_NAME, Files::resource("textures/skybox/indoor.hdr"));
 	}
 
 	SkyboxManager::~SkyboxManager() {
 		for(auto& [name, skybox] : m_Skyboxes) {
 			DELETE_PTR(skybox);
 		}
+	}
+
+	void SkyboxManager::init() {
+		m_SkyboxFactory = SkyboxFactory::create();
+		createPreethamSky();
+		load(INDOOR_SKYBOX_NAME, Files::resource("textures/skybox/indoor.hdr"));
 	}
 
 	PreethamSky* SkyboxManager::getPreethamSky() const {

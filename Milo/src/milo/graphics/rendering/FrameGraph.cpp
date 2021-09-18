@@ -24,20 +24,12 @@ namespace milo {
 
 		const WorldRenderer& renderer = WorldRenderer::get();
 
-		if(renderer.shadowsEnabled() && !renderer.lights().pointLights.empty()) {
-			//push<PreDepthRenderPass>();
-			//push<LightCullingPass>();
-		}
-
 		push<PreDepthRenderPass>();
 		push<LightCullingPass>();
+		push<ShadowMapRenderPass>();
+		//push<GeometryRenderPass>();
+		push<PBRForwardRenderPass>();
 
-		if(renderer.lights().dirLight.has_value()) {
-			push<ShadowMapRenderPass>();
-		}
-
-		push<GeometryRenderPass>();
-		
 		if(renderer.lights().skybox != nullptr) {
 			push<SkyboxRenderPass>();
 		}

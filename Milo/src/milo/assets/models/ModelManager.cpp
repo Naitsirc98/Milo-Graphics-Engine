@@ -15,8 +15,9 @@ namespace milo {
 	}
 
 	void ModelManager::init() {
-		Model* sponza = load("Sponza", "resources/models/Sponza/Sponza.gltf");
-		sponza->setCanBeCulled(false);
+		// TODO
+		//Model* sponza = load("Sponza", "resources/models/Sponza/Sponza.gltf");
+		//sponza->setCanBeCulled(false);
 	}
 
 	Model* ModelManager::getSponza() const {

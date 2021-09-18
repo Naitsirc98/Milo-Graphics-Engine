@@ -69,7 +69,7 @@ namespace milo {
 		void allocate(uint32_t width, uint32_t height, PixelFormat format, uint32_t mipLevels);
 		void copyFromBuffer(VkCommandBuffer commandBuffer, VulkanBuffer& buffer);
 
-		void destroy();
+		virtual void destroy();
 
 		void create(const CreateInfo& createInfo);
 	};

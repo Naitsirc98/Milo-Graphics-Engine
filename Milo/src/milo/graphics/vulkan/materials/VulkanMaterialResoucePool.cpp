@@ -6,8 +6,7 @@ namespace milo {
 	VulkanMaterialResourcePool::VulkanMaterialResourcePool() {
 		m_Device = VulkanContext::get()->device();
 		createUniformBuffer();
-		createDescriptorSetLayout();
-		createDescriptorPool();
+		createDescriptorSetLayoutAndPool();
 		createDescriptorSets();
 		m_MaterialIndices.reserve(m_MaxMaterialCount);
 	}
@@ -50,21 +49,49 @@ namespace milo {
 		bufferInfo.offset = 0;
 		bufferInfo.range = sizeof(Material::Data);
 
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = getImageView(material->albedoMap());
-		imageInfo.sampler = getSampler(material->albedoMap());
+		VkDescriptorImageInfo albedoInfo{};
+		albedoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		albedoInfo.imageView = getImageView(material->albedoMap());
+		albedoInfo.sampler = getSampler(material->albedoMap());
 
-		// TODO: more textures
+		VkDescriptorImageInfo emissiveInfo{};
+		emissiveInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		emissiveInfo.imageView = getImageView(material->emissiveMap());
+		emissiveInfo.sampler = getSampler(material->emissiveMap());
 
-		VkWriteDescriptorSet writeDescriptors[2]{};
+		VkDescriptorImageInfo normalInfo{};
+		normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		normalInfo.imageView = getImageView(material->normalMap());
+		normalInfo.sampler = getSampler(material->normalMap());
+
+		VkDescriptorImageInfo metallicInfo{};
+		metallicInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		metallicInfo.imageView = getImageView(material->metallicMap());
+		metallicInfo.sampler = getSampler(material->metallicMap());
+
+		VkDescriptorImageInfo roughnessInfo{};
+		roughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		roughnessInfo.imageView = getImageView(material->roughnessMap());
+		roughnessInfo.sampler = getSampler(material->roughnessMap());
+
+		VkDescriptorImageInfo occlusionInfo{};
+		occlusionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		occlusionInfo.imageView = getImageView(material->occlusionMap());
+		occlusionInfo.sampler = getSampler(material->occlusionMap());
 
 		using namespace mvk::WriteDescriptorSet;
 
-		writeDescriptors[0] = createDynamicUniformBufferWrite(0, descriptorSet, 1, &bufferInfo);
-		writeDescriptors[1] = createCombineImageSamplerWrite(1, descriptorSet, Material::TEXTURE_COUNT, &imageInfo);
+		VkWriteDescriptorSet writeDescriptors[] = {
+				createDynamicUniformBufferWrite(0, descriptorSet, 1, &bufferInfo),
+				createCombineImageSamplerWrite(1, descriptorSet, 1, &albedoInfo),
+				createCombineImageSamplerWrite(2, descriptorSet, 1, &emissiveInfo),
+				createCombineImageSamplerWrite(3, descriptorSet, 1, &normalInfo),
+				createCombineImageSamplerWrite(4, descriptorSet, 1, &metallicInfo),
+				createCombineImageSamplerWrite(5, descriptorSet, 1, &roughnessInfo),
+				createCombineImageSamplerWrite(6, descriptorSet, 1, &occlusionInfo),
+		};
 
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 2, writeDescriptors, 0, nullptr));
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1 + Material::TEXTURE_COUNT, writeDescriptors, 0, nullptr));
 	}
 
 	void VulkanMaterialResourcePool::freeMaterialResources(Material* material) {
@@ -90,46 +117,21 @@ namespace milo {
 		Log::debug("Supporting {} different materials", m_MaxMaterialCount);
 	}
 
-	void VulkanMaterialResourcePool::createDescriptorSetLayout() {
+	void VulkanMaterialResourcePool::createDescriptorSetLayoutAndPool() {
 
-		Array<VkDescriptorSetLayoutBinding, 2> bindings{};
-		// Material Data
-		bindings[0].binding = 0;
-		bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		bindings[0].descriptorCount = 1;
-		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		// Material textures
-		bindings[1].binding = 1;
-		bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		bindings[1].descriptorCount = Material::TEXTURE_COUNT;
-		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		mvk::DescriptorSet::CreateInfo createInfo{};
+		createInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		createInfo.numSets = m_MaxMaterialCount;
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-		VkDescriptorSetLayoutCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		createInfo.pBindings = bindings.data();
-		createInfo.bindingCount = bindings.size();
-
-		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &createInfo, nullptr, &m_DescriptorSetLayout));
-	}
-
-	void VulkanMaterialResourcePool::createDescriptorPool() {
-
-		VulkanDescriptorPool::CreateInfo createInfo{};
-		createInfo.capacity = m_MaxMaterialCount;
-		createInfo.layout = m_DescriptorSetLayout;
-
-		Array<VkDescriptorPoolSize, 2> poolSizes{};
-
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		poolSizes[0].descriptorCount = m_MaxMaterialCount;
-
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = m_MaxMaterialCount * Material::TEXTURE_COUNT;
-
-		createInfo.poolSizes.push_back(poolSizes[0]);
-		createInfo.poolSizes.push_back(poolSizes[1]);
-
-		m_DescriptorPool = new VulkanDescriptorPool(m_Device, createInfo);
+		m_DescriptorSetLayout = mvk::DescriptorSet::Layout::create(createInfo);
+		m_DescriptorPool = mvk::DescriptorSet::Pool::create(m_DescriptorSetLayout, createInfo);
 	}
 
 	void VulkanMaterialResourcePool::createDescriptorSets() {

@@ -11,7 +11,12 @@
 
 namespace milo {
 
-	using VulkanShadowCascade = Array<Ref<VulkanFramebuffer>, MAX_SWAPCHAIN_IMAGE_COUNT>;
+	struct VulkanShadowCascade {
+		VkImageView imageView;
+		VkFramebuffer framebuffer;
+
+		~VulkanShadowCascade();
+	};
 
 	class VulkanShadowMapRenderPass : public ShadowMapRenderPass {
 		friend class ShadowMapRenderPass;
@@ -35,11 +40,14 @@ namespace milo {
 
 		VulkanGraphicsPipeline* m_GraphicsPipeline = nullptr;
 
-		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> m_CommandBuffers{};
+		Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT * MAX_SHADOW_CASCADES> m_PrimaryCommandBuffers{};
 
 		Array<VkSemaphore, MAX_SWAPCHAIN_IMAGE_COUNT> m_SignalSemaphores{};
 
+		Ref<VulkanTexture2DArray> m_DepthTexture;
+
 		Array<VulkanShadowCascade, MAX_SHADOW_CASCADES> m_ShadowCascades{};
+
 	private:
 		VulkanShadowMapRenderPass();
 		~VulkanShadowMapRenderPass();
@@ -49,6 +57,7 @@ namespace milo {
 		void execute(Scene* scene);
 	private:
 		void buildCommandBuffers(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
+		void renderShadowCascade(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex);
 		void renderScene(VkCommandBuffer commandBuffer, uint32_t index);
 		void renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex);
 		void bindMesh(VkCommandBuffer commandBuffer, const milo::DrawCommand& command) const;

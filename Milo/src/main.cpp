@@ -42,7 +42,7 @@ public:
 
 		s1.addChild(s2.id());
 
-		ModelUtils::createModelEntityTree(scene, Assets::models().getSponza());
+		//ModelUtils::createModelEntityTree(scene, Assets::models().getSponza());
 
 		Entity camera = scene->createEntity();
 		camera.setName("Main Camera");

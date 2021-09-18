@@ -50,9 +50,12 @@ namespace milo {
 		T* get() {
 			const RenderPassId id = T::id();
 			for(RenderPass* renderPass : m_RenderPasses) {
-				if(renderPass->getId() == id) return dynamic_cast<T*>(renderPass);
+				RenderPassId otherId = renderPass->getId();
+				if(otherId == id) {
+					return dynamic_cast<T*>(renderPass);
+				}
 			}
-			return false;
+			return nullptr;
 		}
 
 		template<typename T>

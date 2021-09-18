@@ -12,6 +12,7 @@ namespace milo {
 	private:
 		SkyboxManager();
 		~SkyboxManager();
+		void init();
 	public:
 		PreethamSky* getPreethamSky() const;
 		Skybox* getIndoorSkybox() const;

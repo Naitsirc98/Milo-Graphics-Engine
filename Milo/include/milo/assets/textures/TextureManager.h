@@ -27,6 +27,7 @@ namespace milo {
 		Ref<Texture2D> m_BlackTexture;
 		Ref<Cubemap> m_WhiteCubemap;
 		Ref<Cubemap> m_BlackCubemap;
+		Ref<Texture2D> m_BRDF;
 		IconFactory* m_IconFactory{nullptr};
 		HashMap<String, Ref<Texture2D>> m_Cache;
 		HashMap<String, Ref<Texture2D>> m_Icons;
@@ -39,6 +40,7 @@ namespace milo {
 		Ref<Texture2D> blackTexture() const;
 		Ref<Cubemap> whiteCubemap() const;
 		Ref<Cubemap> blackCubemap() const;
+		Ref<Texture2D> getBRDF() const;
 		Ref<Texture2D> createTexture2D();
 		Ref<Cubemap> createCubemap();
 		Ref<Texture2D> load(const String& filename, PixelFormat format = PixelFormat::RGBA8, bool flipY = false);

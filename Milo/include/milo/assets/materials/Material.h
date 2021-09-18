@@ -12,7 +12,7 @@ namespace milo {
 	public:
 		struct Data {
 			Color albedo{Colors::WHITE};
-			Color emissiveColor{Colors::BLACK};
+			Color emissiveColor{Colors::WHITE};
 			// Values
 			float alpha{1.0f};
 			float metallic{1.0f};
@@ -22,17 +22,15 @@ namespace milo {
 			float normalScale{1.0f};
 			// Flags
 			bool useNormalMap{false};
-			bool useCombinedMetallicRoughnessMap{true};
 		};
 	public:
-		inline static const uint32_t TEXTURE_COUNT = 1;
+		inline static const uint32_t TEXTURE_COUNT = 6;
 	private:
 		Material::Data m_Data{};
 		// Textures
 		Ref<Texture2D> m_AlbedoMap{nullptr};
 		Ref<Texture2D> m_MetallicMap{nullptr};
 		Ref<Texture2D> m_RoughnessMap{nullptr};
-		Ref<Texture2D> m_MetallicRoughnessMap{nullptr};
 		Ref<Texture2D> m_OcclusionMap{nullptr};
 		Ref<Texture2D> m_EmissiveMap{nullptr};
 		Ref<Texture2D> m_NormalMap{nullptr};
@@ -58,8 +56,6 @@ namespace milo {
 		Material* normalScale(float value);
 		bool useNormalMap() const;
 		Material* useNormalMap(bool value);
-		bool useCombinedMetallicRoughnessMap() const;
-		Material* useCombinedMetallicRoughnessMap(bool value);
 		const Material::Data& data() const;
 		Ref<Texture2D> albedoMap() const;
 		Material* albedoMap(Ref<Texture2D> texture);

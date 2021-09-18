@@ -96,6 +96,13 @@ namespace milo {
 		beginInfo.renderPass = m_RenderPass;
 		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
 
+		VkClearValue clearValues[2];
+		clearValues[0].color = {0, 0, 0, 0};
+		clearValues[1].depthStencil = {1.0f, 0};
+
+		beginInfo.clearValues = clearValues;
+		beginInfo.clearValuesCount = 2;
+
 		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
 		{
 			renderScene(imageIndex, commandBuffer, scene);
@@ -107,18 +114,16 @@ namespace milo {
 
 		auto& materialResources = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
 
-		Mesh* lastMesh = nullptr;
-		Material* lastMaterial = nullptr;
-
 		updateCameraUniformData(imageIndex);
 		updateRendererDataUniformData(imageIndex);
 		updateSceneDataUniformData(imageIndex);
-
 		updateSkyboxUniformData(imageIndex, scene->skyboxView()->skybox);
-
 		updateShadowsUniformData(imageIndex);
 
 		bindDescriptorSets(imageIndex, commandBuffer);
+
+		Mesh* lastMesh = nullptr;
+		Material* lastMaterial = nullptr;
 
 		for(DrawCommand drawCommand : WorldRenderer::get().drawCommands()) {
 
@@ -178,7 +183,7 @@ namespace milo {
 
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 										 m_GraphicsPipeline->pipelineLayout(),
-										 0, 1, descriptorSets, 1, &dynamicOffset));
+										 3, 1, descriptorSets, 1, &dynamicOffset));
 	}
 
 	inline void VulkanPBRForwardRenderPass::updateCameraUniformData(uint32_t imageIndex) {
@@ -186,25 +191,31 @@ namespace milo {
 		const auto& camera = WorldRenderer::get().camera();
 
 		CameraData cameraData{};
-		cameraData.viewMatrix = camera.view;
-		cameraData.projViewMatrix = camera.projView;
+		cameraData.viewProjection = camera.projView;
+		cameraData.view = camera.view;
+		cameraData.position = camera.position;
 
 		m_CameraUniformBuffer->update(imageIndex, cameraData);
 	}
 
 	void VulkanPBRForwardRenderPass::updateRendererDataUniformData(uint32_t imageIndex) {
 
+		auto& shadowCascades = WorldRenderer::get().shadowCascades();
+
 		RendererData data{};
 		data.u_CascadeFading = true;
-		data.u_CascadeSplits = Vector4(0); // TODO
+		data.u_CascadeSplits = Vector4(0.75f); // TODO
 		data.u_CascadeTransitionFade = 0.1f; // TODO
-		//data.u_LightMatrix = {}; // TODO
-		data.u_LightSize = 0; // TODO
-		data.u_MaxShadowDistance = 0; // TODO
+		data.u_LightMatrix[0] = shadowCascades[0].viewProj;
+		data.u_LightMatrix[1] = shadowCascades[1].viewProj;
+		data.u_LightMatrix[2] = shadowCascades[2].viewProj;
+		data.u_LightMatrix[3] = shadowCascades[3].viewProj;
+		data.u_LightSize = 0.2f; // TODO
+		data.u_MaxShadowDistance = 100.0f; // TODO
 		data.u_ShadowFade = 0.1f; // TODO
 		data.u_SoftShadows = true;
 		data.u_ShowLightComplexity = false;
-		data.u_TilesCountX = 0; // TODO
+		data.u_TilesCountX = 1920 / 16; // TODO
 
 		m_RenderUniformBuffer->update(imageIndex, data);
 	}
@@ -216,7 +227,11 @@ namespace milo {
 
 		SceneData data{};
 		data.u_CameraPosition = Vector3(camera.view[3]);
-		data.u_DirectionalLights = lights.dirLight.value();
+
+		if(lights.dirLight.has_value()) {
+			data.u_DirectionalLights = lights.dirLight.value();
+		}
+
 		data.u_PointLightsCount = lights.pointLights.size();
 		memcpy(data.u_pointLights, lights.pointLights.data(), lights.pointLights.size() * sizeof(PointLight));
 		data.u_EnvironmentMapIntensity = 1;
@@ -226,31 +241,65 @@ namespace milo {
 
 	void VulkanPBRForwardRenderPass::updateSkyboxUniformData(uint32_t imageIndex, const Skybox* skybox) {
 
-		bool present = skybox != nullptr;
-		auto* defaultCubemap = dynamic_cast<VulkanCubemap*>(Assets::textures().blackCubemap().get());
-		auto* defaultTexture = dynamic_cast<VulkanTexture2D*>(Assets::textures().blackTexture().get());
+		if(skybox == nullptr) {
+			setNullSkyboxUniformData(imageIndex);
+			return;
+		}
 
 		VkDescriptorSet descriptorSet = m_SkyboxDescriptorPool->get(imageIndex);
 
+		VulkanCubemap* environmentMap = (VulkanCubemap*)skybox->environmentMap();
+		VulkanCubemap* irradianceMap = (VulkanCubemap*)skybox->irradianceMap();
+		VulkanCubemap* prefilterMap = (VulkanCubemap*)skybox->prefilterMap();
+		VulkanTexture2D* brdfMap = (VulkanTexture2D*)skybox->brdfMap().get();
+
+		VkDescriptorImageInfo envMapInfo{};
+		envMapInfo.imageView = environmentMap->vkImageView();
+		envMapInfo.sampler = environmentMap->vkSampler();
+		envMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
 		VkDescriptorImageInfo irradianceMapInfo{};
-		irradianceMapInfo.imageView = present ? mvk::getImageView(skybox->irradianceMap()) : defaultCubemap->vkImageView();
-		irradianceMapInfo.sampler = present ? mvk::getSampler(skybox->irradianceMap()) : defaultCubemap->vkSampler();
+		irradianceMapInfo.imageView = irradianceMap->vkImageView();
+		irradianceMapInfo.sampler = irradianceMap->vkSampler();
 		irradianceMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		VkDescriptorImageInfo prefilterMapInfo{};
-		prefilterMapInfo.imageView = present ? mvk::getImageView(skybox->prefilterMap()) : defaultCubemap->vkImageView();
-		prefilterMapInfo.sampler = present ? mvk::getSampler(skybox->prefilterMap()) : defaultCubemap->vkSampler();
-		prefilterMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
 		VkDescriptorImageInfo brdfInfo{};
-		brdfInfo.imageView = present ? mvk::getImageView(skybox->brdfMap()) : defaultTexture->vkImageView();
-		brdfInfo.sampler = present ? mvk::getSampler(skybox->brdfMap()) : defaultTexture->vkSampler();
+		brdfInfo.imageView = brdfMap->vkImageView();
+		brdfInfo.sampler = brdfMap->vkSampler();
 		brdfInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkWriteDescriptorSet writeDescriptors[3];
 
-		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &irradianceMapInfo);
-		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &prefilterMapInfo);
+		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &envMapInfo);
+		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &irradianceMapInfo);
+		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &brdfInfo);
+
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
+	}
+
+	void VulkanPBRForwardRenderPass::setNullSkyboxUniformData(uint32_t imageIndex) {
+
+		VkDescriptorSet descriptorSet = m_SkyboxDescriptorPool->get(imageIndex);
+
+		auto* defaultCubemap = dynamic_cast<VulkanCubemap*>(Assets::textures().blackCubemap().get());
+		auto* defaultTexture = dynamic_cast<VulkanTexture2D*>(Assets::textures().blackTexture().get());
+
+		VkDescriptorImageInfo envMapInfo{};
+		envMapInfo.imageView = defaultCubemap->vkImageView();
+		envMapInfo.sampler = defaultCubemap->vkSampler();
+		envMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkDescriptorImageInfo irradianceMapInfo = envMapInfo;
+
+		VkDescriptorImageInfo brdfInfo{};
+		brdfInfo.imageView = defaultTexture->vkImageView();
+		brdfInfo.sampler = defaultTexture->vkSampler();
+		brdfInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkWriteDescriptorSet writeDescriptors[3];
+
+		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &envMapInfo);
+		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &irradianceMapInfo);
 		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &brdfInfo);
 
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
@@ -258,20 +307,22 @@ namespace milo {
 
 	void VulkanPBRForwardRenderPass::updateShadowsUniformData(uint32_t imageIndex) {
 
+		auto& resources = WorldRenderer::get().resources();
+
+		VulkanTexture2DArray* shadowMap = (VulkanTexture2DArray*)resources.getTexture2D(ShadowMapRenderPass::getDepthMap(0)).get();
+
+		shadowMap->setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+
 		VkDescriptorSet descriptorSet = m_ShadowsDescriptorPool->get(imageIndex);
 
-		VkDescriptorImageInfo cascades[4] = {
-				// TODO
-		};
+		VkDescriptorImageInfo shadowMapInfo{};
+		shadowMapInfo.imageView = shadowMap->vkImageView();
+		shadowMapInfo.sampler = shadowMap->vkSampler();
+		shadowMapInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
-		VkWriteDescriptorSet writeDescriptors[] = {
-				mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &cascades[0]),
-				mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &cascades[1]),
-				mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &cascades[2]),
-				mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &cascades[3])
-		};
+		VkWriteDescriptorSet writeDescriptor = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &shadowMapInfo);
 
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 4, writeDescriptors, 0, nullptr));
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptor, 0, nullptr));
 	}
 
 	void VulkanPBRForwardRenderPass::bindDescriptorSets(uint32_t imageIndex, VkCommandBuffer commandBuffer) {
@@ -295,7 +346,7 @@ namespace milo {
 
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 										 m_GraphicsPipeline->pipelineLayout(),
-										 0, 1, descriptorSets, 4, dynamicOffsets));
+										 0, 3, descriptorSets, 4, dynamicOffsets));
 	}
 
 	void VulkanPBRForwardRenderPass::createRenderPass() {
@@ -325,7 +376,7 @@ namespace milo {
 	void VulkanPBRForwardRenderPass::createSceneDescriptorLayoutAndPool() {
 
 		mvk::DescriptorSet::CreateInfo createInfo{};
-		createInfo.stageFlags = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		createInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT;
 
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
@@ -357,7 +408,7 @@ namespace milo {
 			sceneBufferInfo.buffer = m_SceneUniformBuffer->vkBuffer();
 
 			const VulkanBuffer* visibleLightsBuffer = (const VulkanBuffer*)WorldRenderer::get().resources()
-					.getBuffer(LightCullingPass::getVisibleLightsBufferHandle(index)).get();
+					.getBuffer(LightCullingPass::getVisibleLightsBufferHandle()).get();
 
 			VkDescriptorBufferInfo visibleLightsBufferInfo{};
 			visibleLightsBufferInfo.offset = 0;
@@ -378,7 +429,7 @@ namespace milo {
 	void VulkanPBRForwardRenderPass::createSkyboxDescriptorLayoutAndPool() {
 
 		mvk::DescriptorSet::CreateInfo createInfo{};
-		createInfo.stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		createInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT;
 
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -396,7 +447,8 @@ namespace milo {
 	void VulkanPBRForwardRenderPass::createShadowsDescriptorLayoutAndPool() {
 
 		mvk::DescriptorSet::CreateInfo createInfo{};
-		createInfo.stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		createInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		createInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT;
 
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -417,6 +469,8 @@ namespace milo {
 		VulkanGraphicsPipeline::CreateInfo pipelineInfo{};
 		pipelineInfo.vkRenderPass = m_RenderPass;
 
+		pipelineInfo.setVertexAttributes(VERTEX_ALL_ATTRIBUTES);
+
 		VkPushConstantRange pushConstants{};
 		pushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pushConstants.offset = 0;
@@ -427,9 +481,9 @@ namespace milo {
 		pipelineInfo.pushConstantRanges.push_back(pushConstants);
 
 		pipelineInfo.setLayouts.push_back(m_SceneDescriptorSetLayout);
-		pipelineInfo.setLayouts.push_back(materialResourcePool.materialDescriptorSetLayout());
 		pipelineInfo.setLayouts.push_back(m_SkyboxDescriptorSetLayout);
 		pipelineInfo.setLayouts.push_back(m_ShadowsDescriptorSetLayout);
+		pipelineInfo.setLayouts.push_back(materialResourcePool.materialDescriptorSetLayout());
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 

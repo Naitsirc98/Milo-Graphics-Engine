@@ -79,25 +79,6 @@ namespace milo {
 		void createComputePipeline();
 	};
 
-	class VulkanBRDFPass {
-	private:
-		VulkanDevice* m_Device;
-		VkDescriptorSetLayout m_DescriptorSetLayout{VK_NULL_HANDLE};
-		VulkanDescriptorPool* m_DescriptorPool{nullptr};
-		VkPipelineLayout m_PipelineLayout{VK_NULL_HANDLE};
-		VkPipeline m_ComputePipeline{VK_NULL_HANDLE};
-	public:
-		explicit VulkanBRDFPass(VulkanDevice* device);
-		~VulkanBRDFPass();
-		void execute(const VulkanSkyboxPassExecuteInfo& execInfo);
-	private:
-		void updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo);
-		void createDescriptorSetLayout();
-		void createDescriptorPool();
-		void createPipelineLayout();
-		void createComputePipeline();
-	};
-
 	class VulkanPreethamSkyEnvironmentPass {
 	private:
 		VulkanDevice* m_Device;
@@ -125,7 +106,6 @@ namespace milo {
 		VulkanEnvironmentMapPass* m_EnvironmentPass{nullptr};
 		VulkanIrradianceMapPass* m_IrradiancePass{nullptr};
 		VulkanPrefilterMapPass* m_PrefilterPass{nullptr};
-		VulkanBRDFPass* m_BRDFPass{nullptr};
 		VulkanPreethamSkyEnvironmentPass* m_PreethamSkyPass{nullptr};
 	private:
 		VulkanSkyboxFactory();

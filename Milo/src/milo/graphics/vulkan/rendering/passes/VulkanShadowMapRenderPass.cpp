@@ -19,11 +19,11 @@ namespace milo {
 		createSemaphores();
 		createShadowCascades();
 		createGraphicsPipeline();
-		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_CommandBuffers.size(), m_CommandBuffers.data());
+		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_PrimaryCommandBuffers.size(), m_PrimaryCommandBuffers.data());
 	}
 
 	VulkanShadowMapRenderPass::~VulkanShadowMapRenderPass() {
-		m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());
+		m_Device->graphicsCommandPool()->free(m_PrimaryCommandBuffers.size(), m_PrimaryCommandBuffers.data());
 		DELETE_PTR(m_GraphicsPipeline);
 		DELETE_PTR(m_UniformBuffer);
 		DELETE_PTR(m_DescriptorPool);
@@ -44,7 +44,7 @@ namespace milo {
 	void VulkanShadowMapRenderPass::execute(Scene* scene) {
 
 		uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
-		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
+		VkCommandBuffer commandBuffer = m_PrimaryCommandBuffers[imageIndex];
 		VulkanQueue* queue = m_Device->graphicsQueue();
 
 		buildCommandBuffers(imageIndex, commandBuffer, scene);
@@ -66,37 +66,56 @@ namespace milo {
 
 	void VulkanShadowMapRenderPass::buildCommandBuffers(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
 
-		for(uint32_t cascadeIndex = 0;cascadeIndex < MAX_SHADOW_CASCADES;++cascadeIndex) {
-
-			mvk::CommandBuffer::BeginGraphicsRenderPassInfo beginInfo{};
-			beginInfo.renderPass = m_RenderPass;
-			beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
-			beginInfo.framebuffer = m_ShadowCascades[cascadeIndex][imageIndex].get();
-			beginInfo.dynamicViewport = false;
-			beginInfo.dynamicScissor = false;
-
-			mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
-			renderMeshViews(imageIndex, commandBuffer, cascadeIndex);
-			mvk::CommandBuffer::endGraphicsRenderPass(commandBuffer);
-		}
+		renderShadowCascade(imageIndex, commandBuffer, 0);
+		renderShadowCascade(imageIndex, commandBuffer, 1);
+		renderShadowCascade(imageIndex, commandBuffer, 2);
+		renderShadowCascade(imageIndex, commandBuffer, 3);
 	}
 
-	void VulkanShadowMapRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex) {
+	inline void VulkanShadowMapRenderPass::renderShadowCascade(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex) {
+
+		mvk::CommandBuffer::BeginGraphicsRenderPassInfo beginInfo{};
+		beginInfo.renderPass = m_RenderPass;
+		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
+		beginInfo.vkFramebuffer = m_ShadowCascades[cascadeIndex].framebuffer;
+		beginInfo.dynamicViewport = false;
+		beginInfo.dynamicScissor = false;
+		beginInfo.subpassContents = VK_SUBPASS_CONTENTS_INLINE;
+
+		Viewport viewport = {0, 0, 4096, 4096};
+		beginInfo.viewport = &viewport;
+
+		VkClearValue clearValues;
+		clearValues.depthStencil = {1, 0};
+		beginInfo.clearValues = &clearValues;
+		beginInfo.clearValuesCount = 1;
+
+		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
+		renderMeshViews(imageIndex, commandBuffer, cascadeIndex);
+		mvk::CommandBuffer::endGraphicsRenderPass(commandBuffer);
+	}
+
+	inline void VulkanShadowMapRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex) {
 		bindDescriptorSets(imageIndex, commandBuffer);
 		renderScene(commandBuffer, cascadeIndex);
 	}
 
-	void VulkanShadowMapRenderPass::bindDescriptorSets(uint32_t imageIndex, VkCommandBuffer commandBuffer) {
+	inline void VulkanShadowMapRenderPass::bindDescriptorSets(uint32_t index, VkCommandBuffer commandBuffer) {
 
 		{
-			const auto& camera = WorldRenderer::get().camera();
-			ShadowData shadows{camera.proj, camera.view, camera.projView};
-			m_UniformBuffer->update(imageIndex, shadows);
+			const auto& cascades = WorldRenderer::get().shadowCascades();
+			ShadowData shadows = {
+					cascades[0].viewProj,
+					cascades[1].viewProj,
+					cascades[2].viewProj,
+					cascades[3].viewProj
+			};
+			m_UniformBuffer->update(index, shadows);
 		}
 
-		VkDescriptorSet descriptorSet = m_DescriptorPool->get(imageIndex);
+		VkDescriptorSet descriptorSet = m_DescriptorPool->get(index);
 
-		uint32_t dynamicOffset[1] = {m_UniformBuffer->elementSize() * imageIndex};
+		uint32_t dynamicOffset[1] = {m_UniformBuffer->elementSize() * index};
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 										 m_GraphicsPipeline->pipelineLayout(),
 										 0, 1, &descriptorSet, 1, dynamicOffset));
@@ -151,11 +170,54 @@ namespace milo {
 	}
 
 	void VulkanShadowMapRenderPass::createRenderPass() {
+		VkAttachmentDescription attachmentDescription{};
+		attachmentDescription.format = VK_FORMAT_D32_SFLOAT;
+		attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+		attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
-		RenderPass::Description desc;
-		desc.depthAttachment = {PixelFormat::DEPTH32, 1, RenderPass::LoadOp::Clear};
+		VkAttachmentReference depthReference = {};
+		depthReference.attachment = 0;
+		depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		m_RenderPass = mvk::RenderPass::create(desc);
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 0;
+		subpass.pDepthStencilAttachment = &depthReference;
+
+		// Use subpass dependencies for layout transitions
+		std::array<VkSubpassDependency, 2> dependencies;
+
+		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[0].dstSubpass = 0;
+		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		dependencies[1].srcSubpass = 0;
+		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		VkRenderPassCreateInfo renderPassCreateInfo{};
+		renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassCreateInfo.attachmentCount = 1;
+		renderPassCreateInfo.pAttachments = &attachmentDescription;
+		renderPassCreateInfo.subpassCount = 1;
+		renderPassCreateInfo.pSubpasses = &subpass;
+		renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		renderPassCreateInfo.pDependencies = dependencies.data();
+
+		VK_CALL(vkCreateRenderPass(m_Device->logical(), &renderPassCreateInfo, nullptr, &m_RenderPass));
 	}
 
 	void VulkanShadowMapRenderPass::createDescriptorSetLayoutAndPool() {
@@ -198,8 +260,13 @@ namespace milo {
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 
-		pipelineInfo.shaders.push_back({"resources/shaders/pre_depth/pre_depth.vert", VK_SHADER_STAGE_VERTEX_BIT});
-		pipelineInfo.shaders.push_back({"resources/shaders/pre_depth/pre_depth.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+		pipelineInfo.colorBlendAttachments.clear();
+
+		pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		pipelineInfo.rasterizationState.depthClampEnable = VK_TRUE; // TODO: check for support
+
+		pipelineInfo.shaders.push_back({"resources/shaders/shadows/shadow_map.vert", VK_SHADER_STAGE_VERTEX_BIT});
+		pipelineInfo.shaders.push_back({"resources/shaders/shadows/shadow_map.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
 		const Size& size = WorldRenderer::get().shadowsMapSize();
 
@@ -224,22 +291,54 @@ namespace milo {
 
 		FrameGraphResourcePool& resourcePool = WorldRenderer::get().resources();
 
-		VulkanFramebuffer::ApiInfo apiInfo = {};
-		apiInfo.device = m_Device;
+		m_DepthTexture = Ref<VulkanTexture2DArray>(VulkanTexture2DArray::create(
+				TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, MAX_SHADOW_CASCADES));
 
-		VulkanFramebuffer::CreateInfo createInfo{};
-		createInfo.size = WorldRenderer::get().shadowsMapSize();
-		createInfo.depthAttachments.push_back(PixelFormat::DEPTH32);
-		createInfo.apiInfo = &apiInfo;
+		VulkanTexture2DArray::AllocInfo allocInfo{};
+		allocInfo.format = PixelFormat::DEPTH32;
+		allocInfo.width = 4096;
+		allocInfo.height = 4096;
+		allocInfo.mipLevels = 1;
 
+		m_DepthTexture->allocate(allocInfo);
+
+		VkSamplerCreateInfo sampler = mvk::SamplerCreateInfo::create();
+		sampler.magFilter = VK_FILTER_LINEAR;
+		sampler.minFilter = VK_FILTER_LINEAR;
+		sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.addressModeV = sampler.addressModeU;
+		sampler.addressModeW = sampler.addressModeU;
+		sampler.mipLodBias = 0.0f;
+		sampler.maxAnisotropy = 1.0f;
+		sampler.minLod = 0.0f;
+		sampler.maxLod = 1.0f;
+		sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+		m_DepthTexture->vkSampler(VulkanContext::get()->samplerMap()->get(sampler));
+
+		resourcePool.putTexture2D(ShadowMapRenderPass::getDepthMap(0), m_DepthTexture); // TODO
+
+		VkFormat depthFormat = mvk::fromPixelFormat(allocInfo.format);
 		for(uint32_t i = 0;i < m_ShadowCascades.size();++i) {
-			auto& cascade = m_ShadowCascades[i];
-			for(uint32_t j = 0;j < cascade.size();++j) {
-				Handle handle = ShadowMapRenderPass::getCascadeShadowMap(i, j);
-				auto framebuffer = std::make_shared<VulkanFramebuffer>(createInfo);
-				resourcePool.putFramebuffer(handle, framebuffer);
-				cascade[j] = framebuffer;
-			}
+
+			VulkanShadowCascade& cascade = m_ShadowCascades[i];
+
+			cascade.imageView = m_DepthTexture->getLayer(i);
+
+			VkFramebufferCreateInfo framebufferInfo = mvk::FramebufferCreateInfo::create(m_RenderPass);
+			framebufferInfo.pAttachments = &cascade.imageView;
+			framebufferInfo.attachmentCount = 1;
+			framebufferInfo.width = 4096;
+			framebufferInfo.height = 4096;
+			framebufferInfo.layers = 1;
+
+			VK_CALLV(vkCreateFramebuffer(m_Device->logical(), &framebufferInfo, nullptr, &cascade.framebuffer));
 		}
+	}
+
+	VulkanShadowCascade::~VulkanShadowCascade() {
+		VkDevice device = VulkanContext::get()->device()->logical();
+		VK_CALLV(vkDestroyFramebuffer(device, framebuffer, nullptr));
 	}
 }

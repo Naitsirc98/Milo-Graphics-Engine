@@ -87,6 +87,13 @@ namespace milo {
 		beginInfo.renderPass = m_RenderPass;
 		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
 
+		VkClearValue clearValues[2];
+		clearValues[0].color = {0, 0, 0, 0};
+		clearValues[1].depthStencil = {1, 0};
+
+		beginInfo.clearValues = clearValues;
+		beginInfo.clearValuesCount = 2;
+
 		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
 		{
 			renderMeshViews(imageIndex, commandBuffer, scene);

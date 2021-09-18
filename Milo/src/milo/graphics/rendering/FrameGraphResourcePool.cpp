@@ -36,7 +36,7 @@ namespace milo {
 	}
 
 	Ref<Framebuffer> FrameGraphResourcePool::getFramebuffer(Handle handle) const {
-		return m_Framebuffers.find(handle) != m_Framebuffers.end() ? m_Framebuffers.at(handle) : nullptr;
+		return m_Framebuffers.at(handle);
 	}
 
 	void FrameGraphResourcePool::putFramebuffer(Handle handle, Ref<Framebuffer> framebuffer) {
@@ -48,7 +48,7 @@ namespace milo {
 	}
 
 	Ref<Buffer> FrameGraphResourcePool::getBuffer(Handle handle) const {
-		return m_Buffers.find(handle) != m_Buffers.end() ? m_Buffers.at(handle) : nullptr;
+		return m_Buffers.at(handle);
 	}
 
 	void FrameGraphResourcePool::putBuffer(Handle handle, Ref<Buffer> buffer) {
@@ -60,7 +60,7 @@ namespace milo {
 	}
 
 	Ref<Texture2D> FrameGraphResourcePool::getTexture2D(Handle handle) const {
-		return m_Textures.find(handle) != m_Textures.end() ? m_Textures.at(handle) : nullptr;
+		return m_Textures.at(handle);
 	}
 
 	void FrameGraphResourcePool::putTexture2D(Handle handle, Ref<Texture2D> texture) {
@@ -72,7 +72,7 @@ namespace milo {
 	}
 
 	Ref<Cubemap> FrameGraphResourcePool::getCubemap(Handle handle) const {
-		return m_Cubemaps.find(handle) != m_Cubemaps.end() ? m_Cubemaps.at(handle) : nullptr;
+		return m_Cubemaps.at(handle);
 	}
 
 	void FrameGraphResourcePool::putCubemap(Handle handle, Ref<Cubemap> cubemap) {

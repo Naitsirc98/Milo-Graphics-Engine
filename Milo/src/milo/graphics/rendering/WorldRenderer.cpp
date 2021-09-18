@@ -29,6 +29,7 @@ namespace milo {
 	}
 
 	void WorldRenderer::render(Scene* scene) {
+		generateDrawCommands(scene);
 		m_FrameGraph.setup(scene);
 		m_FrameGraph.compile(scene);
 		m_FrameGraph.execute(scene);
@@ -92,16 +93,19 @@ namespace milo {
 			c.view = camera.viewMatrix();
 			c.projView = c.proj * c.view;
 			c.frustum = buildFrustumPolyhedron(camera.viewMatrix(), fov, camera.aspect(), znear, zfar);
+			c.position = camera.position();
 		} else {
 			const auto* camera = scene->camera();
 			float fov, znear, zfar;
 			decomposeProjectionMatrix(camera->projectionMatrix(), fov, znear, zfar);
 			float aspect = camera->viewport().x / camera->viewport().y;
-			Matrix4 viewMatrix = camera->viewMatrix(scene->cameraEntity().getComponent<Transform>().translation());
+			Vector3 position = scene->cameraEntity().getComponent<Transform>().translation();
+			Matrix4 viewMatrix = camera->viewMatrix(position);
 			c.proj = camera->projectionMatrix();
 			c.view = viewMatrix;
 			c.projView = c.proj * c.view;
 			c.frustum = buildFrustumPolyhedron(viewMatrix, fov, aspect, znear, zfar);
+			c.position = position;
 		}
 	}
 

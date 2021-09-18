@@ -13,8 +13,9 @@ namespace milo {
 	private:
 		// ===================================== SET 0
 		struct CameraData {
-			Matrix4 viewMatrix{};
-			Matrix4 projViewMatrix{};
+			Matrix4 viewProjection{};
+			Matrix4 view{};
+			Vector3 position{};
 		};
 
 		struct RendererData {
@@ -98,6 +99,7 @@ namespace milo {
 		void updateRendererDataUniformData(uint32_t imageIndex);
 		void updateSceneDataUniformData(uint32_t imageIndex);
 		void updateSkyboxUniformData(uint32_t imageIndex, const Skybox* skybox);
+		void setNullSkyboxUniformData(uint32_t imageIndex);
 		void updateShadowsUniformData(uint32_t imageIndex);
 
 		void bindDescriptorSets(uint32_t imageIndex, VkCommandBuffer commandBuffer);

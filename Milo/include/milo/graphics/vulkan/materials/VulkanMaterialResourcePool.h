@@ -30,8 +30,7 @@ namespace milo {
 		VkDescriptorSetLayout materialDescriptorSetLayout() const;
 	private:
 		void createUniformBuffer();
-		void createDescriptorSetLayout();
-		void createDescriptorPool();
+		void createDescriptorSetLayoutAndPool();
 		void createDescriptorSets();
 	};
 
