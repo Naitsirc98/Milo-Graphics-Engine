@@ -40,10 +40,9 @@ namespace milo {
 		Ref<Texture2D> blackTexture() const;
 		Ref<Cubemap> whiteCubemap() const;
 		Ref<Cubemap> blackCubemap() const;
-		Ref<Texture2D> getBRDF() const;
 		Ref<Texture2D> createTexture2D();
 		Ref<Cubemap> createCubemap();
-		Ref<Texture2D> load(const String& filename, PixelFormat format = PixelFormat::RGBA8, bool flipY = false);
+		Ref<Texture2D> load(const String& filename, PixelFormat format = PixelFormat::RGBA8, bool flipY = false, uint32_t mipLevels = AUTO_MIP_LEVELS);
 		Ref<Texture2D> getIcon(const String& name) const;
 		void addIcon(const String& name, Ref<Texture2D> texture);
 		void removeIcon(const String& name);

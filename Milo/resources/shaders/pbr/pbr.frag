@@ -113,10 +113,13 @@ struct PBRParameters {
     vec3 albedo;
     float roughness;
     float metalness;
+    float occlusion;
 
     vec3 normal;
     vec3 view;
     float NdotV;
+    vec3 reflectDir;
+    vec3 F0;
 };
 
 PBRParameters m_Params;
@@ -331,249 +334,79 @@ vec3 getSpecularIBL(vec3 F) {
     return prefilteredColor * (F * brdf.x + brdf.y);
 }
 
-vec3 IBL(vec3 F0, vec3 Lr) {
+float TotalWeight = 0.0;
 
-    vec3 irradiance = texture(u_EnvIrradianceTex, m_Params.normal).rgb;
-    vec3 F = fresnelSchlickRoughness(F0, m_Params.NdotV, m_Params.roughness);
-    vec3 kd = (1.0 - F) * (1.0 - m_Params.metalness);
-    vec3 diffuseIBL = m_Params.albedo * irradiance;
-
-    int envRadianceTexLevels = textureQueryLevels(u_EnvRadianceTex);
-    float NoV = clamp(m_Params.NdotV, 0.0, 1.0);
-    vec3 R = 2.0 * dot(m_Params.view, m_Params.normal) * m_Params.normal - m_Params.view;
-    float r = 0;//u_Material.envMapRotation;
-    vec3 specularIrradiance = textureLod(u_EnvRadianceTex, RotateVectorAboutY(r, Lr), (m_Params.roughness) * envRadianceTexLevels).rgb;
-    //specularIrradiance = vec3(Convert_sRGB_FromLinear(specularIrradiance.r), Convert_sRGB_FromLinear(specularIrradiance.g), Convert_sRGB_FromLinear(specularIrradiance.b));
-
-    // Sample BRDF Lut, 1.0 - roughness for y-coord because texture was generated (in Sparky) for gloss model
-    vec2 specularBRDF = texture(u_BRDFLUTTexture, vec2(m_Params.NdotV, 1.0 - m_Params.roughness)).rg;
-    vec3 specularIBL = getSpecularIBL(F);
-
-    return kd * diffuseIBL + specularIBL;
-}
-
-/////////////////////////////////////////////
-// PCSS
-/////////////////////////////////////////////
-
-float ShadowFade = 1.0;
-
-float GetShadowBias() {
-    const float MINIMUM_SHADOW_BIAS = 0.002;
-    float bias = max(MINIMUM_SHADOW_BIAS * (1.0 - dot(m_Params.normal, u_DirLight.direction.xyz)), MINIMUM_SHADOW_BIAS);
-    return bias;
-}
-
-float HardShadows_DirectionalLight(sampler2DArray shadowMap, uint cascade, vec3 shadowCoords) {
-    float bias = GetShadowBias();
-    float shadowMapDepth = texture(shadowMap, vec3(shadowCoords.xy * 0.5 + 0.5, cascade)).x;
-    return step(shadowCoords.z, shadowMapDepth + bias) * ShadowFade;
-}
-
-// Penumbra
-
-// this search area estimation comes from the following article:
-// http://developer.download.nvidia.com/whitepapers/2008/PCSS_Integration.pdf
-float SearchWidth(float uvLightSize, float receiverDistance) {
-    const float NEAR = 0.1;
-    return uvLightSize * (receiverDistance - NEAR) / u_Camera.position.z;
-}
-
-float SearchRegionRadiusUV(float zWorld) {
-    const float light_zNear = 0.0; // 0.01 gives artifacts? maybe because of ortho proj?
-    const float lightRadiusUV = 0.05;
-    return lightRadiusUV * (zWorld - light_zNear) / zWorld;
-}
-
-const vec2 PoissonDistribution[64] = vec2[](
-vec2(-0.884081, 0.124488),
-vec2(-0.714377, 0.027940),
-vec2(-0.747945, 0.227922),
-vec2(-0.939609, 0.243634),
-vec2(-0.985465, 0.045534),
-vec2(-0.861367, -0.136222),
-vec2(-0.881934, 0.396908),
-vec2(-0.466938, 0.014526),
-vec2(-0.558207, 0.212662),
-vec2(-0.578447, -0.095822),
-vec2(-0.740266, -0.095631),
-vec2(-0.751681, 0.472604),
-vec2(-0.553147, -0.243177),
-vec2(-0.674762, -0.330730),
-vec2(-0.402765, -0.122087),
-vec2(-0.319776, -0.312166),
-vec2(-0.413923, -0.439757),
-vec2(-0.979153, -0.201245),
-vec2(-0.865579, -0.288695),
-vec2(-0.243704, -0.186378),
-vec2(-0.294920, -0.055748),
-vec2(-0.604452, -0.544251),
-vec2(-0.418056, -0.587679),
-vec2(-0.549156, -0.415877),
-vec2(-0.238080, -0.611761),
-vec2(-0.267004, -0.459702),
-vec2(-0.100006, -0.229116),
-vec2(-0.101928, -0.380382),
-vec2(-0.681467, -0.700773),
-vec2(-0.763488, -0.543386),
-vec2(-0.549030, -0.750749),
-vec2(-0.809045, -0.408738),
-vec2(-0.388134, -0.773448),
-vec2(-0.429392, -0.894892),
-vec2(-0.131597, 0.065058),
-vec2(-0.275002, 0.102922),
-vec2(-0.106117, -0.068327),
-vec2(-0.294586, -0.891515),
-vec2(-0.629418, 0.379387),
-vec2(-0.407257, 0.339748),
-vec2(0.071650, -0.384284),
-vec2(0.022018, -0.263793),
-vec2(0.003879, -0.136073),
-vec2(-0.137533, -0.767844),
-vec2(-0.050874, -0.906068),
-vec2(0.114133, -0.070053),
-vec2(0.163314, -0.217231),
-vec2(-0.100262, -0.587992),
-vec2(-0.004942, 0.125368),
-vec2(0.035302, -0.619310),
-vec2(0.195646, -0.459022),
-vec2(0.303969, -0.346362),
-vec2(-0.678118, 0.685099),
-vec2(-0.628418, 0.507978),
-vec2(-0.508473, 0.458753),
-vec2(0.032134, -0.782030),
-vec2(0.122595, 0.280353),
-vec2(-0.043643, 0.312119),
-vec2(0.132993, 0.085170),
-vec2(-0.192106, 0.285848),
-vec2(0.183621, -0.713242),
-vec2(0.265220, -0.596716),
-vec2(-0.009628, -0.483058),
-vec2(-0.018516, 0.435703)
-);
-
-const vec2 poissonDisk[16] = vec2[](
-vec2(-0.94201624, -0.39906216),
-vec2(0.94558609, -0.76890725),
-vec2(-0.094184101, -0.92938870),
-vec2(0.34495938, 0.29387760),
-vec2(-0.91588581, 0.45771432),
-vec2(-0.81544232, -0.87912464),
-vec2(-0.38277543, 0.27676845),
-vec2(0.97484398, 0.75648379),
-vec2(0.44323325, -0.97511554),
-vec2(0.53742981, -0.47373420),
-vec2(-0.26496911, -0.41893023),
-vec2(0.79197514, 0.19090188),
-vec2(-0.24188840, 0.99706507),
-vec2(-0.81409955, 0.91437590),
-vec2(0.19984126, 0.78641367),
-vec2(0.14383161, -0.14100790)
-);
-
-vec2 SamplePoisson(int index) {
-    return PoissonDistribution[index % 64];
-}
-
-float FindBlockerDistance_DirectionalLight(sampler2DArray shadowMap, uint cascade, vec3 shadowCoords, float uvLightSize) {
-    float bias = GetShadowBias();
-
-    int numBlockerSearchSamples = 64;
-    int blockers = 0;
-    float avgBlockerDistance = 0;
-
-    float searchWidth = SearchRegionRadiusUV(shadowCoords.z);
-    for (int i = 0; i < numBlockerSearchSamples; i++) {
-        float z = textureLod(shadowMap, vec3((shadowCoords.xy * 0.5 + 0.5) + SamplePoisson(i) * searchWidth, cascade), 0).r;
-        if (z < (shadowCoords.z - bias)) {
-            blockers++;
-            avgBlockerDistance += z;
+vec3 PrefilterEnvMap(float Roughness, vec3 R) {
+    vec3 N = R;
+    vec3 V = R;
+    vec3 PrefilteredColor = vec3(0.0);
+    int NumSamples = 1024;
+    for (int i = 0; i < NumSamples; i++) {
+        vec2 Xi = Hammersley(i, NumSamples);
+        vec3 H = ImportanceSampleGGX(Xi, Roughness, N);
+        vec3 L = 2 * dot(V, H) * H - V;
+        float NoL = clamp(dot(N, L), 0.0, 1.0);
+        if (NoL > 0) {
+            //PrefilteredColor += texture(u_EnvRadianceTex, L).rgb * NoL;
+            TotalWeight += NoL;
         }
     }
-
-    if (blockers > 0) return avgBlockerDistance / float(blockers);
-
-    return -1;
+    return PrefilteredColor / TotalWeight;
 }
 
-float PCF_DirectionalLight(sampler2DArray shadowMap, uint cascade, vec3 shadowCoords, float uvRadius) {
-    float bias = GetShadowBias();
-    int numPCFSamples = 64;
+vec3 IBL(vec3 F0, vec3 Lr) {
 
-    float sum = 0;
-    for (int i = 0; i < numPCFSamples; i++) {
-        vec2 offset = SamplePoisson(i) * uvRadius;
-        float z = textureLod(shadowMap, vec3((shadowCoords.xy * 0.5 + 0.5) + offset, cascade), 0).r;
-        sum += step(shadowCoords.z - bias, z);
-    }
-    return sum / numPCFSamples;
+    vec3 F = fresnelSchlickRoughness(m_Params.F0, m_Params.NdotV, m_Params.roughness);
+
+    vec3 kS = F;
+    vec3 kD = 1.0 - kS;
+    kD = kD * (1.0 - m_Params.metalness);
+
+    return PrefilterEnvMap(m_Params.roughness, m_Params.reflectDir);
+
+    //return (kD * getDiffuseIBL() + getSpecularIBL(F)) * m_Params.occlusion;
 }
 
-float NV_PCF_DirectionalLight(sampler2DArray shadowMap, uint cascade, vec3 shadowCoords, float uvRadius) {
-    float bias = GetShadowBias();
-
-    float sum = 0;
-    for (int i = 0; i < 16; i++) {
-        vec2 offset = poissonDisk[i] * uvRadius;
-        float z = textureLod(shadowMap, vec3((shadowCoords.xy * 0.5 + 0.5) + offset, cascade), 0).r;
-        sum += step(shadowCoords.z - bias, z);
-    }
-    return sum / 16.0f;
+vec4 getAlbedo(vec2 uv) {
+    return u_Material.albedo * pow(texture(u_AlbedoTexture, uv), vec4(2.2));
 }
 
-float PCSS_DirectionalLight(sampler2DArray shadowMap, uint cascade, vec3 shadowCoords, float uvLightSize) {
-    float blockerDistance = FindBlockerDistance_DirectionalLight(shadowMap, cascade, shadowCoords, uvLightSize);
-    if (blockerDistance == -1) // No occlusion
-    return 1.0f;
-
-    float penumbraWidth = (shadowCoords.z - blockerDistance) / blockerDistance;
-
-    float NEAR = 0.01; // Should this value be tweakable?
-    float uvRadius = penumbraWidth * uvLightSize * NEAR / shadowCoords.z; // Do we need to divide by shadowCoords.z?
-    uvRadius = min(uvRadius, 0.002f);
-    return PCF_DirectionalLight(shadowMap, cascade, shadowCoords, uvRadius) * ShadowFade;
+float getMetalness(vec2 uv) {
+    return texture(u_MetalnessTexture, uv).r * u_Material.metalness;
 }
 
-/////////////////////////////////////////////
+float getRoughness(vec2 uv) {
+    return texture(u_RoughnessTexture, uv).r * u_Material.roughness;
+}
 
-vec3 GetGradient(float value) {
-    vec3 zero = vec3(0.0, 0.0, 0.0);
-    vec3 white = vec3(0.0, 0.1, 0.9);
-    vec3 red = vec3(0.2, 0.9, 0.4);
-    vec3 blue = vec3(0.8, 0.8, 0.3);
-    vec3 green = vec3(0.9, 0.2, 0.3);
+float getOcclusion(vec2 uv) {
+    return texture(u_OcclussionTexture, uv).r * u_Material.occlusion;
+}
 
-    float step0 = 0.0f;
-    float step1 = 2.0f;
-    float step2 = 4.0f;
-    float step3 = 8.0f;
-    float step4 = 16.0f;
-
-    vec3 color = mix(zero, white, smoothstep(step0, step1, value));
-    color = mix(color, white, smoothstep(step1, step2, value));
-    color = mix(color, red, smoothstep(step1, step2, value));
-    color = mix(color, blue, smoothstep(step2, step3, value));
-    color = mix(color, green, smoothstep(step3, step4, value));
-
-    return color;
+vec3 getF0(vec3 albedo, float metalness) {
+    return mix(vec3(u_Material.fresnel0), albedo, metalness);
 }
 
 void main() {
     // Standard PBR inputs
-    m_Params.albedo = texture(u_AlbedoTexture, fragment.texCoord).rgb * u_Material.albedo.rgb;
-    float alpha = texture(u_AlbedoTexture, fragment.texCoord).a;
-    m_Params.metalness = texture(u_MetalnessTexture, fragment.texCoord).r * u_Material.metalness;
-    m_Params.roughness = texture(u_RoughnessTexture, fragment.texCoord).r * u_Material.roughness;
-    m_Params.roughness = max(m_Params.roughness, 0.05); // Minimum roughness of 0.05 to keep specular highlight
+    vec2 texCoord = fragment.texCoord;
+
+    m_Params.albedo = getAlbedo(texCoord).rgb;
+    m_Params.metalness = getMetalness(texCoord);
+    m_Params.roughness = max(getRoughness(texCoord), 0.05);
+    m_Params.occlusion = getOcclusion(texCoord);
+    m_Params.F0 = getF0(m_Params.albedo, m_Params.metalness);
 
     // Normals (either from vertex or map)
     m_Params.normal = normalize(fragment.normal);
-    if (u_Material.useNormalMap) {
+    if (u_Material.useNormalMap)
+    {
         m_Params.normal = normalize(texture(u_NormalTexture, fragment.texCoord).rgb * 2.0f - 1.0f);
         m_Params.normal = normalize(fragment.worldNormals * m_Params.normal);
     }
 
     m_Params.view = normalize(u_Camera.position - fragment.worldPosition);
+    m_Params.reflectDir = reflect(-m_Params.view, m_Params.normal);
     m_Params.NdotV = max(dot(m_Params.normal, m_Params.view), 0.0);
 
     // Specular reflection vector
@@ -582,10 +415,10 @@ void main() {
     // Fresnel reflectance, metals use albedo
     vec3 F0 = mix(Fdielectric, m_Params.albedo, m_Params.metalness);
 
-    vec3 lightContribution = CalculateDirLights(F0);
+    vec3 lightContribution = vec3(0);//CalculateDirLights(F0);
     //lightContribution += CalculatePointLights(F0);
     lightContribution += m_Params.albedo * u_Material.emissive.rgb;
-    vec3 iblContribution = IBL(F0, Lr) * u_EnvironmentMapIntensity;
+    vec3 iblContribution = IBL(F0, m_Params.reflectDir);
 
     out_FragColor = vec4(lightContribution + iblContribution, 1.0);
 
@@ -652,7 +485,7 @@ void main() {
 
     vec3 lightContribution = CalculateDirLights(F0) * shadowAmount;
     lightContribution += CalculatePointLights(F0);
-    lightContribution += m_Params.albedo * u_Material.emissive.rgb;
+    lightContribution += m_Params.albedo * u_u_Material.emissive.rgb;
     vec3 iblContribution = IBL(F0, Lr) * u_EnvironmentMapIntensity;
 
     out_FragColor = vec4(iblContribution + lightContribution, 1.0);

@@ -2,6 +2,7 @@
 #include "milo/graphics/Graphics.h"
 #include "milo/graphics/vulkan/textures/VulkanTexture2D.h"
 #include "milo/graphics/vulkan/textures/VulkanIconFactory.h"
+#include "milo/graphics/vulkan/VulkanContext.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
 
@@ -20,7 +21,6 @@ namespace milo {
 		m_BlackTexture = Ref<Texture2D>(createBlackTexture());
 		m_WhiteCubemap = Ref<Cubemap>(createWhiteCubemap());
 		m_BlackCubemap = Ref<Cubemap>(createBlackCubemap());
-		m_BRDF = Ref<Texture2D>(load("resources/textures/skybox/BRDF.tga", PixelFormat::RGBA32F));
 
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 			m_IconFactory = new VulkanIconFactory();
@@ -47,10 +47,6 @@ namespace milo {
 		return m_BlackCubemap;
 	}
 
-	Ref<Texture2D> TextureManager::getBRDF() const {
-		return m_BRDF;
-	}
-
 	Ref<Texture2D> TextureManager::createTexture2D() {
 		return Ref<Texture2D>(Texture2D::create());
 	}
@@ -59,7 +55,7 @@ namespace milo {
 		return Ref<Cubemap>(Cubemap::create());
 	}
 
-	Ref<Texture2D> TextureManager::load(const String& filename, PixelFormat format, bool flipY) {
+	Ref<Texture2D> TextureManager::load(const String& filename, PixelFormat format, bool flipY, uint32_t mipLevels) {
 
 		if(m_Cache.find(filename) != m_Cache.end()) return m_Cache.at(filename);
 
@@ -72,6 +68,7 @@ namespace milo {
 		allocInfo.height = image->height();
 		allocInfo.format = image->format();
 		allocInfo.pixels = image->pixels();
+		allocInfo.mipLevels = mipLevels;
 
 		texture->allocate(allocInfo);
 		texture->generateMipmaps();

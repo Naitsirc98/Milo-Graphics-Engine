@@ -5,7 +5,7 @@
 
 namespace milo {
 
-	VulkanIrradianceMapPass::VulkanIrradianceMapPass(VulkanDevice* device) : m_Device(device) {
+	VulkanBRDFMapPass::VulkanBRDFMapPass(VulkanDevice* device) : m_Device(device) {
 
 		createDescriptorSetLayout();
 		createDescriptorPool();
@@ -13,7 +13,7 @@ namespace milo {
 		createComputePipeline();
 	}
 
-	VulkanIrradianceMapPass::~VulkanIrradianceMapPass() {
+	VulkanBRDFMapPass::~VulkanBRDFMapPass() {
 
 		VK_CALLV(vkDestroyPipeline(m_Device->logical(), m_ComputePipeline, nullptr));
 		VK_CALLV(vkDestroyPipelineLayout(m_Device->logical(), m_PipelineLayout, nullptr));
@@ -22,41 +22,43 @@ namespace milo {
 		VK_CALLV(vkDestroyDescriptorSetLayout(m_Device->logical(), m_DescriptorSetLayout, nullptr));
 	}
 
-	void VulkanIrradianceMapPass::execute(const VulkanSkyboxPassExecuteInfo& execInfo) {
+	void VulkanBRDFMapPass::execute(const VulkanSkyboxPassExecuteInfo& execInfo) {
 
 		VkCommandBuffer commandBuffer = execInfo.commandBuffer;
-		VulkanCubemap* irradianceMap = execInfo.irradianceMap;
+		VulkanTexture2D* brdfMap = execInfo.brdfMap;
 
-		uint32_t mapSize = execInfo.loadInfo->irradianceMapSize;
+		uint32_t mapSize = execInfo.loadInfo->brdfSize;
 
-		if(irradianceMap->vkImageView() == VK_NULL_HANDLE) {
-			Cubemap::AllocInfo allocInfo{};
+		if(brdfMap->vkImageView() == VK_NULL_HANDLE) {
+
+			Texture2D::AllocInfo allocInfo{};
 			allocInfo.width = mapSize;
 			allocInfo.height = mapSize;
-			allocInfo.format = PixelFormat::RGBA32F;
-			allocInfo.mipLevels = 4;
+			allocInfo.format = PixelFormat::RG16F;
+			allocInfo.mipLevels = 1;
 
-			irradianceMap->allocate(allocInfo);
-			irradianceMap->generateMipmaps();
+			brdfMap->allocate(allocInfo);
 
-			VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
-			samplerInfo.magFilter = VK_FILTER_LINEAR;
-			samplerInfo.minFilter = VK_FILTER_LINEAR;
-			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-			samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+			VkSamplerCreateInfo sampler{};
+			sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			sampler.magFilter = VK_FILTER_LINEAR;
+			sampler.minFilter = VK_FILTER_LINEAR;
+			sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			sampler.minLod = 0.0f;
+			sampler.maxLod = 1.0f;
+			sampler.maxAnisotropy = 1.0f;
+			sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-			VkSampler sampler = VulkanContext::get()->samplerMap()->get(samplerInfo);
-
-			irradianceMap->vkSampler(sampler);
+			brdfMap->vkSampler(VulkanContext::get()->samplerMap()->get(sampler));
 		}
 
 		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
 
-		irradianceMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_GENERAL,
-								 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+		brdfMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_GENERAL,
+						   VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 		updateDescriptorSet(execInfo);
 
@@ -64,40 +66,37 @@ namespace milo {
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 										 0, 1, &descriptorSet, 0, nullptr));
 
-		uint32_t samples = 1024;
-		VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(samples), &samples));
+		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 1));
 
-		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 6));
-
-		irradianceMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-								 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+		brdfMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						   VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	}
 
-	void VulkanIrradianceMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo) {
+	void VulkanBRDFMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo) {
 
 		using namespace mvk::WriteDescriptorSet;
 
 		VkDescriptorSet descriptorSet = m_DescriptorPool->get(0);
 
-		VkDescriptorImageInfo equirectangularTextureInfo{};
-		equirectangularTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		equirectangularTextureInfo.imageView = execInfo.environmentMap->vkImageView();
-		equirectangularTextureInfo.sampler = execInfo.environmentMap->vkSampler();
+		VkDescriptorImageInfo envMapInfo{};
+		envMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		envMapInfo.imageView = execInfo.environmentMap->vkImageView();
+		envMapInfo.sampler = execInfo.environmentMap->vkSampler();
 
-		VkDescriptorImageInfo irradianceMapInfo{};
-		irradianceMapInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		irradianceMapInfo.imageView = execInfo.irradianceMap->vkImageView();
-		irradianceMapInfo.sampler = execInfo.irradianceMap->vkSampler();
+		VkDescriptorImageInfo brdfMapInfo{};
+		brdfMapInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		brdfMapInfo.imageView = execInfo.brdfMap->vkImageView();
+		brdfMapInfo.sampler = execInfo.brdfMap->vkSampler();
 
-		VkWriteDescriptorSet equirectangularTextureWrite = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &equirectangularTextureInfo);
-		VkWriteDescriptorSet irradianceMapWrite = mvk::WriteDescriptorSet::createStorageImageWrite(1, descriptorSet, 1, &irradianceMapInfo);
+		VkWriteDescriptorSet equirectangularTextureWrite = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &envMapInfo);
+		VkWriteDescriptorSet environmentMapWrite = mvk::WriteDescriptorSet::createStorageImageWrite(1, descriptorSet, 1, &brdfMapInfo);
 
-		VkWriteDescriptorSet writeDescriptors[] = {equirectangularTextureWrite, irradianceMapWrite};
+		VkWriteDescriptorSet writeDescriptors[] = {equirectangularTextureWrite, environmentMapWrite};
 
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 2, writeDescriptors, 0, nullptr));
 	}
 
-	void VulkanIrradianceMapPass::createDescriptorSetLayout() {
+	void VulkanBRDFMapPass::createDescriptorSetLayout() {
 
 		Array<VkDescriptorSetLayoutBinding, 2> bindings{};
 
@@ -120,7 +119,7 @@ namespace milo {
 		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &createInfo, nullptr, &m_DescriptorSetLayout));
 	}
 
-	void VulkanIrradianceMapPass::createDescriptorPool() {
+	void VulkanBRDFMapPass::createDescriptorPool() {
 
 		Array<VkDescriptorPoolSize, 2> poolSizes{};
 		// Equirectangular texture
@@ -141,7 +140,7 @@ namespace milo {
 		m_DescriptorPool->allocate(1);
 	}
 
-	void VulkanIrradianceMapPass::createPipelineLayout() {
+	void VulkanBRDFMapPass::createPipelineLayout() {
 
 		VkPushConstantRange pushConstants{};
 		pushConstants.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -158,9 +157,9 @@ namespace milo {
 		VK_CALL(vkCreatePipelineLayout(m_Device->logical(), &createInfo, nullptr, &m_PipelineLayout));
 	}
 
-	void VulkanIrradianceMapPass::createComputePipeline() {
+	void VulkanBRDFMapPass::createComputePipeline() {
 
-		Shader* shader = Assets::shaders().load(Files::resource("shaders/skybox/irradiance.comp"));
+		Shader* shader = Assets::shaders().load(Files::resource("shaders/skybox/brdf.comp"));
 		auto* vulkanShader = dynamic_cast<VulkanShader*>(shader);
 
 		VkShaderModuleCreateInfo shaderModuleCreateInfo{};

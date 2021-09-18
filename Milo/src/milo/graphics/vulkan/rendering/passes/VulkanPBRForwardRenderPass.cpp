@@ -251,7 +251,7 @@ namespace milo {
 		VulkanCubemap* environmentMap = (VulkanCubemap*)skybox->environmentMap();
 		VulkanCubemap* irradianceMap = (VulkanCubemap*)skybox->irradianceMap();
 		VulkanCubemap* prefilterMap = (VulkanCubemap*)skybox->prefilterMap();
-		VulkanTexture2D* brdfMap = (VulkanTexture2D*)skybox->brdfMap().get();
+		VulkanTexture2D* brdfMap = (VulkanTexture2D*)skybox->brdfMap();
 
 		VkDescriptorImageInfo envMapInfo{};
 		envMapInfo.imageView = environmentMap->vkImageView();

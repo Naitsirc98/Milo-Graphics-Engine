@@ -4,7 +4,7 @@
 namespace milo {
 
 	Skybox::Skybox(String name, String filename) : Asset((std::move(name)), std::move(filename)) {
-		m_BRDFMap = Assets::textures().getBRDF();
+
 	}
 
 	Skybox::~Skybox() {
@@ -12,6 +12,7 @@ namespace milo {
 		DELETE_PTR(m_EnvironmentMap);
 		DELETE_PTR(m_PrefilterMap);
 		DELETE_PTR(m_IrradianceMap);
+		DELETE_PTR(m_BRDFMap);
 	}
 
 	Ref<Texture2D> Skybox::equirectangularTexture() const {
@@ -30,7 +31,7 @@ namespace milo {
 		return m_PrefilterMap;
 	}
 
-	Ref<Texture2D> Skybox::brdfMap() const {
+	Texture2D* Skybox::brdfMap() const {
 		return m_BRDFMap;
 	}
 

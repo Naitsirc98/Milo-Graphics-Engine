@@ -7,8 +7,7 @@ namespace milo {
 
 	VulkanPrefilterMapPass::VulkanPrefilterMapPass(VulkanDevice* device) : m_Device(device) {
 
-		createDescriptorSetLayout();
-		createDescriptorPool();
+		createDescriptorSetLayoutAndPool();
 		createPipelineLayout();
 		createComputePipeline();
 	}
@@ -39,18 +38,20 @@ namespace milo {
 			prefilterMap->allocate(allocInfo);
 			prefilterMap->generateMipmaps();
 
-			VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
-			samplerInfo.magFilter = VK_FILTER_LINEAR;
-			samplerInfo.minFilter = VK_FILTER_LINEAR;
-			samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-			samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-			samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-			samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-			samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+			VkSamplerCreateInfo sampler{};
+			sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			sampler.magFilter = VK_FILTER_LINEAR;
+			sampler.minFilter = VK_FILTER_LINEAR;
+			sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			sampler.minLod = 0.0f;
+			sampler.maxLod = static_cast<float>(allocInfo.mipLevels);
+			sampler.maxAnisotropy = 1.0f;
+			sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-			VkSampler sampler = VulkanContext::get()->samplerMap()->get(samplerInfo);
-
-			prefilterMap->vkSampler(sampler);
+			prefilterMap->vkSampler(VulkanContext::get()->samplerMap()->get(sampler));
 		}
 
 		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
@@ -64,8 +65,11 @@ namespace milo {
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 										 0, 1, &descriptorSet, 0, nullptr));
 
-		uint32_t samples = 32;
-		VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(samples), &samples));
+		PushConstants pushConstants{};
+		pushConstants.roughness = 0.5f;
+		pushConstants.level = 0;
+
+		VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstants), &pushConstants));
 
 		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 6));
 
@@ -97,56 +101,27 @@ namespace milo {
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 2, writeDescriptors, 0, nullptr));
 	}
 
-	void VulkanPrefilterMapPass::createDescriptorSetLayout() {
+	void VulkanPrefilterMapPass::createDescriptorSetLayoutAndPool() {
 
-		Array<VkDescriptorSetLayoutBinding, 2> bindings{};
+		mvk::DescriptorSet::CreateInfo createInfo{};
+		createInfo.numSets = 1;
+		createInfo.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		// Equirectangular image
-		bindings[0].binding = 0;
-		bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		bindings[0].descriptorCount = 1;
-		// Environment map
-		bindings[1].binding = 1;
-		bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		bindings[1].descriptorCount = 1;
-
-		VkDescriptorSetLayoutCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		createInfo.pBindings = bindings.data();
-		createInfo.bindingCount = bindings.size();
-
-		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &createInfo, nullptr, &m_DescriptorSetLayout));
-	}
-
-	void VulkanPrefilterMapPass::createDescriptorPool() {
-
-		Array<VkDescriptorPoolSize, 2> poolSizes{};
-		// Equirectangular texture
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[0].descriptorCount = 1;
-
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		poolSizes[1].descriptorCount = 1;
-
-		VulkanDescriptorPool::CreateInfo createInfo{};
-		createInfo.layout = m_DescriptorSetLayout;
-		createInfo.capacity = 1;
-		createInfo.poolSizes.push_back(poolSizes[0]);
-		createInfo.poolSizes.push_back(poolSizes[1]);
-
-		m_DescriptorPool = new VulkanDescriptorPool(m_Device, createInfo);
+		m_DescriptorSetLayout = mvk::DescriptorSet::Layout::create(createInfo);
+		m_DescriptorPool = mvk::DescriptorSet::Pool::create(m_DescriptorSetLayout, createInfo);
 
 		m_DescriptorPool->allocate(1);
 	}
+
 
 	void VulkanPrefilterMapPass::createPipelineLayout() {
 
 		VkPushConstantRange pushConstants{};
 		pushConstants.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 		pushConstants.offset = 0;
-		pushConstants.size = sizeof(uint32_t);
+		pushConstants.size = sizeof(PushConstants);
 
 		VkPipelineLayoutCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

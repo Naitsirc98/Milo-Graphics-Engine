@@ -6,8 +6,8 @@ namespace milo {
 
 	struct SkyboxLoadInfo {
 		uint32_t environmentMapSize{2048};
-		uint32_t irradianceMapSize{32};
-		uint32_t prefilterMapSize{128};
+		uint32_t irradianceMapSize{64};
+		uint32_t prefilterMapSize{512};
 		uint32_t brdfSize{512};
 		float maxLOD{4.0f};
 		float lodBias{-0.5f};
