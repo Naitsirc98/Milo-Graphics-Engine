@@ -20,7 +20,7 @@ namespace milo {
 		m_BlackTexture = Ref<Texture2D>(createBlackTexture());
 		m_WhiteCubemap = Ref<Cubemap>(createWhiteCubemap());
 		m_BlackCubemap = Ref<Cubemap>(createBlackCubemap());
-		m_BRDF = Ref<Texture2D>(load("resources/textures/skybox/BRDF.tga", PixelFormat::RG16F));
+		m_BRDF = Ref<Texture2D>(load("resources/textures/skybox/BRDF.tga", PixelFormat::RGBA32F));
 
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 			m_IconFactory = new VulkanIconFactory();

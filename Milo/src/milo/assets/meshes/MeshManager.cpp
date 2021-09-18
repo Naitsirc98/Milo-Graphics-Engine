@@ -26,7 +26,7 @@ namespace milo {
 
 	void MeshManager::init() {
 		load(CUBE_MESH_NAME, "resources/meshes/Cube.obj");
-		load(SPHERE_MESH_NAME, "resources/meshes/Sphere.obj");
+		load(SPHERE_MESH_NAME, "resources/meshes/Sphere.fbx");
 		load(PLANE_MESH_NAME, "resources/meshes/Plane.obj");
 		load(QUAD_MESH_NAME, "resources/meshes/Quad.obj");
 		load(CYLINDER_MESH_NAME, "resources/meshes/Cylinder.obj");

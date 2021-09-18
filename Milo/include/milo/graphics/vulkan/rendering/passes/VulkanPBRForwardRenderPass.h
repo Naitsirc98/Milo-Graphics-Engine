@@ -34,10 +34,9 @@ namespace milo {
 
 		struct SceneData {
 			DirectionalLight u_DirectionalLights{};
-			Vector3 u_CameraPosition{};
+			float u_EnvironmentMapIntensity{};
 			uint32_t u_PointLightsCount{};
 			PointLight u_pointLights[1024]{};
-			float u_EnvironmentMapIntensity{};
 		};
 
 		struct VisibleLightsIndices {

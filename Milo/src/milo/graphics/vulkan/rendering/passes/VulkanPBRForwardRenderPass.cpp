@@ -226,15 +226,15 @@ namespace milo {
 		const auto& lights = WorldRenderer::get().lights();
 
 		SceneData data{};
-		data.u_CameraPosition = Vector3(camera.view[3]);
 
 		if(lights.dirLight.has_value()) {
 			data.u_DirectionalLights = lights.dirLight.value();
 		}
 
+		data.u_EnvironmentMapIntensity = 1;
+
 		data.u_PointLightsCount = lights.pointLights.size();
 		memcpy(data.u_pointLights, lights.pointLights.data(), lights.pointLights.size() * sizeof(PointLight));
-		data.u_EnvironmentMapIntensity = 1;
 
 		m_SceneUniformBuffer->update(imageIndex, data);
 	}
@@ -263,18 +263,24 @@ namespace milo {
 		irradianceMapInfo.sampler = irradianceMap->vkSampler();
 		irradianceMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+		VkDescriptorImageInfo prefilterMapInfo{};
+		prefilterMapInfo.imageView = prefilterMap->vkImageView();
+		prefilterMapInfo.sampler = prefilterMap->vkSampler();
+		prefilterMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
 		VkDescriptorImageInfo brdfInfo{};
 		brdfInfo.imageView = brdfMap->vkImageView();
 		brdfInfo.sampler = brdfMap->vkSampler();
 		brdfInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		VkWriteDescriptorSet writeDescriptors[3];
+		VkWriteDescriptorSet writeDescriptors[4];
 
 		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &envMapInfo);
 		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &irradianceMapInfo);
-		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &brdfInfo);
+		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &prefilterMapInfo);
+		writeDescriptors[3] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &brdfInfo);
 
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 4, writeDescriptors, 0, nullptr));
 	}
 
 	void VulkanPBRForwardRenderPass::setNullSkyboxUniformData(uint32_t imageIndex) {
@@ -290,19 +296,21 @@ namespace milo {
 		envMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkDescriptorImageInfo irradianceMapInfo = envMapInfo;
+		VkDescriptorImageInfo prefilterMapInfo = envMapInfo;
 
 		VkDescriptorImageInfo brdfInfo{};
 		brdfInfo.imageView = defaultTexture->vkImageView();
 		brdfInfo.sampler = defaultTexture->vkSampler();
 		brdfInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		VkWriteDescriptorSet writeDescriptors[3];
+		VkWriteDescriptorSet writeDescriptors[4];
 
 		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &envMapInfo);
 		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &irradianceMapInfo);
-		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &brdfInfo);
+		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &prefilterMapInfo);
+		writeDescriptors[3] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &brdfInfo);
 
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 4, writeDescriptors, 0, nullptr));
 	}
 
 	void VulkanPBRForwardRenderPass::updateShadowsUniformData(uint32_t imageIndex) {
@@ -432,9 +440,10 @@ namespace milo {
 		createInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT;
 
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Environment map
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Irradiance map
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Prefilter map
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Environment map
 
 		m_SkyboxDescriptorSetLayout = mvk::DescriptorSet::Layout::create(createInfo);
 		m_SkyboxDescriptorPool = mvk::DescriptorSet::Pool::create(m_SkyboxDescriptorSetLayout, createInfo);

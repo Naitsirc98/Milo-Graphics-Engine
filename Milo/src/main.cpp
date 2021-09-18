@@ -13,17 +13,17 @@ public:
 
 		Scene* scene = SceneManager::activeScene();
 
-		Skybox* skybox = Assets::skybox().getPreethamSky();
+		Skybox* skybox = Assets::skybox().getIndoorSkybox();
 
 		Entity skyboxEntity = scene->createEntity("Skybox");
 		SkyboxView& skyboxView = skyboxEntity.addComponent<SkyboxView>();
 		skyboxView.skybox = skybox;
-		skyboxView.type = SkyType::Dynamic;
+		skyboxView.type = SkyType::Static;
 
 		scene->setSkyEntity(skyboxEntity.id());
 
 		Entity s1 = createSphere(scene, {0, 2, -3}, Assets::materials().getDefault());
-		Entity s2 = createSphere(scene, {4, 2, -3}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
+		Entity s2 = createSphere(scene, {4, 2, -3}, Assets::materials().load("Gold", "resources/materials/Gold/M_Gold.mat"));
 
 		Entity light1 = createSphere(scene, {2, 8, -3}, Assets::materials().getDefault());
 		light1.setName("Point Light 1");

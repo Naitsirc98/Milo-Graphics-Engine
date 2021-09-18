@@ -18,10 +18,16 @@ namespace milo {
 		// TODO
 		//Model* sponza = load("Sponza", "resources/models/Sponza/Sponza.gltf");
 		//sponza->setCanBeCulled(false);
+		Model* damagedHelment = load("DamagedHelmet", "resources/models/DamagedHelmet/DamagedHelmet.gltf");
+		damagedHelment->setCanBeCulled(false);
 	}
 
 	Model* ModelManager::getSponza() const {
 		return m_Models.at("Sponza");
+	}
+
+	Model* ModelManager::getDamagedHelmet() const {
+		return m_Models.at("DamagedHelmet");
 	}
 
 	Model* ModelManager::load(const String& name, const String& filename) {

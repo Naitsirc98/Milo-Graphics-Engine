@@ -105,6 +105,12 @@ namespace milo {
 		}
 
 		material->m_AlbedoMap = loadTexture2D(&json, "albedoMap", filename);
+		material->m_NormalMap = loadTexture2D(&json, "normalMap", filename);
+		material->m_MetallicMap = loadTexture2D(&json, "metallicMap", filename);
+		material->m_RoughnessMap = loadTexture2D(&json, "roughnessMap", filename);
+		material->m_OcclusionMap = loadTexture2D(&json, "occlusionMap", filename);
+
+		material->useNormalMap(material->m_NormalMap != nullptr);
 
 		// TODO
 

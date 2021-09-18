@@ -14,6 +14,7 @@ namespace milo {
 		void init();
 	public:
 		Model* getSponza() const;
+		Model* getDamagedHelmet() const;
 		Model* load(const String& name, const String& filename);
 		bool exists(const String& name) const;
 		Model* find(const String& name) const;

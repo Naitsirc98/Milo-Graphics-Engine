@@ -33,7 +33,7 @@ namespace milo {
 			allocInfo.width = mapSize;
 			allocInfo.height = mapSize;
 			allocInfo.format = PixelFormat::RGBA32F;
-			allocInfo.mipLevels = 4;
+			allocInfo.mipLevels = 8;
 
 			environmentMap->allocate(allocInfo);
 			environmentMap->generateMipmaps();

@@ -109,6 +109,11 @@ namespace milo {
 						Model* sponza = Assets::models().getSponza();
 						m_SelectedEntity = ModelUtils::createModelEntityTree(scene, sponza);
 					}
+					if (ImGui::MenuItem("DamagedHelmet"))
+					{
+						Model* helmet = Assets::models().getDamagedHelmet();
+						m_SelectedEntity = ModelUtils::createModelEntityTree(scene, helmet);
+					}
 					ImGui::EndMenu();
 				}
 

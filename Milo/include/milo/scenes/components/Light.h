@@ -7,13 +7,13 @@ namespace milo {
 
 	struct DirectionalLight {
 
-		Vector3 direction = { 0.0f, 0.0f, 0.0f };
-		float _padding0;
+		Vector3 direction = { 0, 0, 0 };
+		float _padding0{0};
 		Vector3 color = { 1, 1, 1 };
-		float multiplier = 1.0f;
+		float multiplier = 1;
 
 		bool castShadows = true;
-		Vector3 _padding1;
+		Vector3 _padding1 = {0, 0, 0};
 	};
 
 	struct SkyLight {

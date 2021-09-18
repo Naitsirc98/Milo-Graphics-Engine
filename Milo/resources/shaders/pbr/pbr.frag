@@ -8,23 +8,6 @@ const int DirLightsCount = 1;
 // Constant normal incidence Fresnel factor for all dielectrics.
 const vec3 Fdielectric = vec3(0.04);
 
-struct DirectionalLight {
-    vec3 direction;
-    vec3 radiance;
-    float multiplier;
-};
-
-struct PointLight {
-    vec3 position;
-    float multiplier;
-    vec3 radiance;
-    float minRadius;
-    float radius;
-    float fallOff;
-    float lightSize;
-    bool castsShadows;
-};
-
 layout(std140, set = 0, binding = 0) uniform CameraData {
     mat4 viewProjection;
     mat4 view;
@@ -47,11 +30,29 @@ layout(std140, set = 0, binding = 1) uniform RendererData {
     bool u_ShowLightComplexity;
 };
 
+struct DirectionalLight {
+    vec4 direction;
+    vec3 radiance;
+    float multiplier;
+    vec4 _unused;
+};
+
+struct PointLight {
+    vec3 position;
+    float multiplier;
+    vec3 radiance;
+    float minRadius;
+    float radius;
+    float fallOff;
+    float lightSize;
+    bool castsShadows;
+};
+
 layout(std140, set = 0, binding = 2) uniform SceneData {
-    DirectionalLight u_DirectionalLights;
+    DirectionalLight u_DirLight;
+    float u_EnvironmentMapIntensity;
     uint u_PointLightsCount;
     PointLight u_pointLights[1024];
-    float u_EnvironmentMapIntensity;
 };
 
 layout(std430, set = 0, binding = 3) readonly buffer VisibleLightIndicesBuffer {
@@ -62,7 +63,8 @@ layout(std430, set = 0, binding = 3) readonly buffer VisibleLightIndicesBuffer {
 
 layout(set = 1, binding = 0) uniform samplerCube u_EnvRadianceTex;
 layout(set = 1, binding = 1) uniform samplerCube u_EnvIrradianceTex;
-layout(set = 1, binding = 2) uniform sampler2D u_BRDFLUTTexture;
+layout(set = 1, binding = 2) uniform samplerCube u_PrefilterMap;
+layout(set = 1, binding = 3) uniform sampler2D u_BRDFLUTTexture;
 
 // ====================================================================== Shadows
 
@@ -234,29 +236,25 @@ vec3 RotateVectorAboutY(float angle, vec3 vec) {
 }
 
 vec3 CalculateDirLights(vec3 F0) {
-    vec3 result = vec3(0.0);
-    for (int i = 0; i < DirLightsCount; i++) {
-        vec3 Li = u_DirectionalLights.direction;
-        vec3 Lradiance = u_DirectionalLights.radiance * u_DirectionalLights.multiplier;
-        vec3 Lh = normalize(Li + m_Params.view);
+    vec3 Li = u_DirLight.direction.xyz;
+    vec3 Lradiance = u_DirLight.radiance * u_DirLight.multiplier;
+    vec3 Lh = normalize(Li + m_Params.view);
 
-        // Calculate angles between surface normal and various light vectors.
-        float cosLi = max(0.0, dot(m_Params.normal, Li));
-        float cosLh = max(0.0, dot(m_Params.normal, Lh));
+    // Calculate angles between surface normal and various light vectors.
+    float cosLi = max(0.0, dot(m_Params.normal, Li));
+    float cosLh = max(0.0, dot(m_Params.normal, Lh));
 
-        vec3 F = fresnelSchlickRoughness(F0, max(0.0, dot(Lh, m_Params.view)), m_Params.roughness);
-        float D = ndfGGX(cosLh, m_Params.roughness);
-        float G = gaSchlickGGX(cosLi, m_Params.NdotV, m_Params.roughness);
+    vec3 F = fresnelSchlickRoughness(F0, max(0.0, dot(Lh, m_Params.view)), m_Params.roughness);
+    float D = ndfGGX(cosLh, m_Params.roughness);
+    float G = gaSchlickGGX(cosLi, m_Params.NdotV, m_Params.roughness);
 
-        vec3 kd = (1.0 - F) * (1.0 - m_Params.metalness);
-        vec3 diffuseBRDF = kd * m_Params.albedo;
+    vec3 kd = (1.0 - F) * (1.0 - m_Params.metalness);
+    vec3 diffuseBRDF = kd * m_Params.albedo;
 
-        // Cook-Torrance
-        vec3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * m_Params.NdotV);
-        specularBRDF = clamp(specularBRDF, vec3(0.0f), vec3(10.0f));
-        result += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
-    }
-    return result;
+    // Cook-Torrance
+    vec3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * m_Params.NdotV);
+    specularBRDF = clamp(specularBRDF, vec3(0.0f), vec3(10.0f));
+    return (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
 }
 
 const int TILE_SIZE = 16;
@@ -322,7 +320,19 @@ float Convert_sRGB_FromLinear(float theLinearValue) {
     : pow(theLinearValue, 1.0f / 2.4f) * 1.055f - 0.055f;
 }
 
+vec3 getDiffuseIBL() {
+    return m_Params.albedo * texture(u_EnvIrradianceTex, m_Params.normal).rgb;
+}
+
+vec3 getSpecularIBL(vec3 F) {
+    float prefilterLOD = m_Params.roughness * 4 + -0.25;
+    vec3 prefilteredColor = textureLod(u_PrefilterMap, reflect(-m_Params.view, m_Params.normal), prefilterLOD).rgb;
+    vec2 brdf = texture(u_BRDFLUTTexture, vec2(m_Params.NdotV, m_Params.roughness)).rg;
+    return prefilteredColor * (F * brdf.x + brdf.y);
+}
+
 vec3 IBL(vec3 F0, vec3 Lr) {
+
     vec3 irradiance = texture(u_EnvIrradianceTex, m_Params.normal).rgb;
     vec3 F = fresnelSchlickRoughness(F0, m_Params.NdotV, m_Params.roughness);
     vec3 kd = (1.0 - F) * (1.0 - m_Params.metalness);
@@ -337,7 +347,7 @@ vec3 IBL(vec3 F0, vec3 Lr) {
 
     // Sample BRDF Lut, 1.0 - roughness for y-coord because texture was generated (in Sparky) for gloss model
     vec2 specularBRDF = texture(u_BRDFLUTTexture, vec2(m_Params.NdotV, 1.0 - m_Params.roughness)).rg;
-    vec3 specularIBL = specularIrradiance * (F0 * specularBRDF.x + specularBRDF.y);
+    vec3 specularIBL = getSpecularIBL(F);
 
     return kd * diffuseIBL + specularIBL;
 }
@@ -350,7 +360,7 @@ float ShadowFade = 1.0;
 
 float GetShadowBias() {
     const float MINIMUM_SHADOW_BIAS = 0.002;
-    float bias = max(MINIMUM_SHADOW_BIAS * (1.0 - dot(m_Params.normal, u_DirectionalLights.direction)), MINIMUM_SHADOW_BIAS);
+    float bias = max(MINIMUM_SHADOW_BIAS * (1.0 - dot(m_Params.normal, u_DirLight.direction.xyz)), MINIMUM_SHADOW_BIAS);
     return bias;
 }
 
@@ -572,6 +582,15 @@ void main() {
     // Fresnel reflectance, metals use albedo
     vec3 F0 = mix(Fdielectric, m_Params.albedo, m_Params.metalness);
 
+    vec3 lightContribution = CalculateDirLights(F0);
+    //lightContribution += CalculatePointLights(F0);
+    lightContribution += m_Params.albedo * u_Material.emissive.rgb;
+    vec3 iblContribution = IBL(F0, Lr) * u_EnvironmentMapIntensity;
+
+    out_FragColor = vec4(lightContribution + iblContribution, 1.0);
+
+    /*
+
     uint cascadeIndex = 0;
 
     const uint SHADOW_MAP_CASCADE_COUNT = 4;
@@ -631,8 +650,6 @@ void main() {
         shadowAmount = u_SoftShadows ? PCSS_DirectionalLight(u_ShadowMapTexture, cascadeIndex, shadowMapCoords, u_LightSize) : HardShadows_DirectionalLight(u_ShadowMapTexture, cascadeIndex, shadowMapCoords);
     }
 
-    shadowAmount = 1;
-
     vec3 lightContribution = CalculateDirLights(F0) * shadowAmount;
     lightContribution += CalculatePointLights(F0);
     lightContribution += m_Params.albedo * u_Material.emissive.rgb;
@@ -667,4 +684,6 @@ void main() {
             break;
         }
     }
+
+    */
 }
