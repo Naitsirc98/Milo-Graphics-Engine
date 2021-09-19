@@ -176,6 +176,9 @@ namespace milo {
 		if(mipLevels == AUTO_MIP_LEVELS) {
 			m_ImageInfo.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 			m_ViewInfo.subresourceRange.levelCount = m_ImageInfo.mipLevels;
+		} else {
+			m_ImageInfo.mipLevels = mipLevels;
+			m_ViewInfo.subresourceRange.levelCount = mipLevels;
 		}
 
 		m_ImageInfo.format = mvk::fromPixelFormat(format);

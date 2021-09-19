@@ -63,8 +63,9 @@ namespace milo {
 	class VulkanPrefilterMapPass {
 	private:
 		struct PushConstants {
-			float roughness;
-			uint32_t level;
+			float roughness{0};
+			int32_t envMapResolution{0};
+			int32_t mipLevel{0};
 		};
 	private:
 		VulkanDevice* m_Device;
@@ -77,7 +78,7 @@ namespace milo {
 		~VulkanPrefilterMapPass();
 		void execute(const VulkanSkyboxPassExecuteInfo& execInfo);
 	private:
-		void updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo);
+		void updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo, const VulkanMipView& mipLevels);
 		void createDescriptorSetLayoutAndPool();
 		void createPipelineLayout();
 		void createComputePipeline();

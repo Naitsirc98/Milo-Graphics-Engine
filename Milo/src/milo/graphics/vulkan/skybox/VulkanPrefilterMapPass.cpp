@@ -28,15 +28,16 @@ namespace milo {
 
 		uint32_t mapSize = execInfo.loadInfo->prefilterMapSize;
 
+		uint32_t mipLevels = static_cast<uint32_t>(roundf(execInfo.loadInfo->maxLOD) + 1);
+
 		if(prefilterMap->vkImageView() == VK_NULL_HANDLE) {
 			Cubemap::AllocInfo allocInfo{};
 			allocInfo.width = mapSize;
 			allocInfo.height = mapSize;
-			allocInfo.format = PixelFormat::RGBA32F;
-			allocInfo.mipLevels = 4;
+			allocInfo.format = PixelFormat::RGBA16F;
+			allocInfo.mipLevels = mipLevels;
 
 			prefilterMap->allocate(allocInfo);
-			prefilterMap->generateMipmaps();
 
 			VkSamplerCreateInfo sampler{};
 			sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -52,6 +53,8 @@ namespace milo {
 			sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
 			prefilterMap->vkSampler(VulkanContext::get()->samplerMap()->get(sampler));
+
+			prefilterMap->generateMipmaps();
 		}
 
 		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
@@ -59,60 +62,95 @@ namespace milo {
 		prefilterMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_GENERAL,
 								VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-		updateDescriptorSet(execInfo);
+		VulkanMipView mipViews(prefilterMap);
+
+		updateDescriptorSet(execInfo, mipViews);
 
 		VkDescriptorSet descriptorSet = m_DescriptorPool->get(0);
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 										 0, 1, &descriptorSet, 0, nullptr));
 
-		PushConstants pushConstants{};
-		pushConstants.roughness = 0.5f;
-		pushConstants.level = 0;
+		for(uint32_t i = 0;i < mipLevels;++i) {
 
-		VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(PushConstants), &pushConstants));
+			uint32_t mipLevelSize = static_cast<uint32_t>(mapSize * powf(0.5f, i));
 
-		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 6));
+			PushConstants pushConstants{};
+			pushConstants.roughness = 0;
+			pushConstants.envMapResolution = execInfo.environmentMap->width();
+			pushConstants.mipLevel = i;
+			VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
+										0, sizeof(PushConstants), &pushConstants));
+
+			VK_CALLV(vkCmdDispatch(commandBuffer, mipLevelSize / 32, mipLevelSize / 32, 6));
+		}
 
 		prefilterMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 								VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	}
 
-	void VulkanPrefilterMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo) {
+	void VulkanPrefilterMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo, const VulkanMipView& mipLevels) {
 
 		using namespace mvk::WriteDescriptorSet;
 
 		VkDescriptorSet descriptorSet = m_DescriptorPool->get(0);
 
-		VkDescriptorImageInfo equirectangularTextureInfo{};
-		equirectangularTextureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		equirectangularTextureInfo.imageView = execInfo.environmentMap->vkImageView();
-		equirectangularTextureInfo.sampler = execInfo.environmentMap->vkSampler();
+		VkWriteDescriptorSet writeDescriptors[6]{};
 
-		VkDescriptorImageInfo environmentMapInfo{};
-		environmentMapInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		environmentMapInfo.imageView = execInfo.prefilterMap->vkImageView();
-		environmentMapInfo.sampler = execInfo.prefilterMap->vkSampler();
+		VkDescriptorImageInfo envMapInfo{};
+		envMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		envMapInfo.imageView = execInfo.environmentMap->vkImageView();
+		envMapInfo.sampler = execInfo.environmentMap->vkSampler();
 
-		VkWriteDescriptorSet equirectangularTextureWrite = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &equirectangularTextureInfo);
-		VkWriteDescriptorSet environmentMapWrite = mvk::WriteDescriptorSet::createStorageImageWrite(1, descriptorSet, 1, &environmentMapInfo);
+		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &envMapInfo);
 
-		VkWriteDescriptorSet writeDescriptors[] = {equirectangularTextureWrite, environmentMapWrite};
+		VkDescriptorImageInfo prefilterInfo[5]{};
 
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 2, writeDescriptors, 0, nullptr));
+		for(uint32_t i = 0;i < 5;++i) {
+			prefilterInfo[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+			prefilterInfo[i].imageView = mipLevels[i];
+			prefilterInfo[i].sampler = execInfo.prefilterMap->vkSampler();
+
+			writeDescriptors[i + 1] = mvk::WriteDescriptorSet::createStorageImageWrite(1, descriptorSet, 1, &prefilterInfo[i]);
+			writeDescriptors[i + 1].dstArrayElement = i;
+		}
+
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 6, writeDescriptors, 0, nullptr));
 	}
 
 	void VulkanPrefilterMapPass::createDescriptorSetLayoutAndPool() {
 
-		mvk::DescriptorSet::CreateInfo createInfo{};
-		createInfo.numSets = 1;
-		createInfo.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		Array<VkDescriptorSetLayoutBinding, 2> bindings{};
+		// Environment map
+		bindings[0].binding = 0;
+		bindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		bindings[0].descriptorCount = 1;
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		// Prefilter map
+		bindings[1].binding = 1;
+		bindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		bindings[1].descriptorCount = 5;
+		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 
-		m_DescriptorSetLayout = mvk::DescriptorSet::Layout::create(createInfo);
-		m_DescriptorPool = mvk::DescriptorSet::Pool::create(m_DescriptorSetLayout, createInfo);
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.pBindings = bindings.data();
+		layoutInfo.bindingCount = bindings.size();
 
-		m_DescriptorPool->allocate(1);
+		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &layoutInfo, nullptr, &m_DescriptorSetLayout));
+
+		VkDescriptorPoolSize poolSizes[2] = {
+				{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+				{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 5}
+		};
+
+		VulkanDescriptorPool::CreateInfo poolInfo{};
+		poolInfo.layout = m_DescriptorSetLayout;
+		poolInfo.capacity = 1;
+		poolInfo.initialSize = 1;
+		poolInfo.poolSizes.push_back(poolSizes[0]);
+		poolInfo.poolSizes.push_back(poolSizes[1]);
+
+		m_DescriptorPool = new VulkanDescriptorPool(m_Device, poolInfo);
 	}
 
 

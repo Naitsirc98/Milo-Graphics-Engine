@@ -22,18 +22,22 @@ public:
 
 		scene->setSkyEntity(skyboxEntity.id());
 
-		Entity s1 = createSphere(scene, {0, 2, -3}, Assets::materials().getDefault());
-		Entity s2 = createSphere(scene, {4, 2, -3}, Assets::materials().load("Gold", "resources/materials/Gold/M_Gold.mat"));
+		Entity s1 = createSphere(scene, {-2.5f, 0, 0}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
+		Entity s2 = createSphere(scene, {2.5f, 0, 0}, Assets::materials().load("Gold", "resources/materials/Gold/M_Gold.mat"));
 
-		Entity light1 = createSphere(scene, {2, 8, -3}, Assets::materials().getDefault());
-		light1.setName("Point Light 1");
-		light1.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
-		light1.addComponent<PointLight>();
+		Entity h = scene->find(ModelUtils::createModelEntityTree(scene, Assets::models().getDamagedHelmet()).children()[0]);
+		h.getComponent<Transform>().translation({0, 5, -2});
+		h.getComponent<Transform>().rotate(radians(45.0f), {1, 0, 0});
 
-		Entity light2 = createSphere(scene, {-5, 10, 1}, Assets::materials().getDefault());
-		light2.setName("Point Light 2");
-		light2.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
-		light2.addComponent<PointLight>();
+		//Entity light1 = createSphere(scene, {0, 0, 0}, Assets::materials().getDefault());
+		//light1.setName("Point Light 1");
+		//light1.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
+		//light1.addComponent<PointLight>();
+//
+		//Entity light2 = createSphere(scene, {-2.5f, 0, 0}, Assets::materials().getDefault());
+		//light2.setName("Point Light 2");
+		//light2.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
+		//light2.addComponent<PointLight>();
 
 		Entity sun = createSphere(scene, {0, 20, 0}, Assets::materials().getDefault());
 		sun.setName("Sun");

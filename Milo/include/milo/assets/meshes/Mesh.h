@@ -6,6 +6,8 @@
 
 namespace milo {
 
+	extern const int ASSIMP_FLAGS;
+
 	class Mesh : public Asset {
 		friend class MeshManager;
 		friend class ObjMeshLoader;

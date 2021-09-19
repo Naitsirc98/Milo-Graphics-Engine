@@ -13,12 +13,6 @@ namespace milo {
 
 	Mesh* AssimpLoader::load(const String& filename) {
 
-		static const int ASSIMP_FLAGS = aiProcess_OptimizeMeshes
-										| aiProcess_OptimizeGraph
-										| aiProcess_Triangulate
-										| aiProcess_CalcTangentSpace
-										| aiProcess_JoinIdenticalVertices;
-
 		Assimp::Importer importer;
 
 		const aiScene* scene = importer.ReadFile(filename.c_str(), ASSIMP_FLAGS);

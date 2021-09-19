@@ -18,20 +18,11 @@ namespace milo {
 		createRenderPass();
 
 		createCameraUniformBuffer();
-		createRendererDataUniformBuffer();
-		createSceneDataUniformBuffer();
+		createEnvironmentDataUniformBuffer();
 
-		createSceneDescriptorLayoutAndPool();
-		createSceneDescriptorSets();
-
-		createSkyboxDescriptorLayoutAndPool();
-		createSkyboxDescriptorSets();
-
-		createShadowsDescriptorLayoutAndPool();
-		createShadowsDescriptorSets();
+		createSceneDescriptorSetLayoutAndPool();
 
 		createGraphicsPipeline();
-
 		createSemaphores();
 
 		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_CommandBuffers.size(), m_CommandBuffers.data());
@@ -44,8 +35,7 @@ namespace milo {
 		VK_CALLV(vkDestroyRenderPass(device, m_RenderPass, nullptr));
 
 		DELETE_PTR(m_CameraUniformBuffer);
-		DELETE_PTR(m_RenderUniformBuffer);
-		DELETE_PTR(m_SceneUniformBuffer);
+		DELETE_PTR(m_EnvironmentUniformBuffer);
 		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_SceneDescriptorSetLayout, nullptr));
 		DELETE_PTR(m_SceneDescriptorPool);
 
@@ -114,12 +104,7 @@ namespace milo {
 
 		auto& materialResources = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
 
-		updateCameraUniformData(imageIndex);
-		updateRendererDataUniformData(imageIndex);
-		updateSceneDataUniformData(imageIndex);
-		updateSkyboxUniformData(imageIndex, scene->skyboxView()->skybox);
-		updateShadowsUniformData(imageIndex);
-
+		updateSceneUniformData(imageIndex, scene);
 		bindDescriptorSets(imageIndex, commandBuffer);
 
 		Mesh* lastMesh = nullptr;
@@ -183,80 +168,61 @@ namespace milo {
 
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 										 m_GraphicsPipeline->pipelineLayout(),
-										 3, 1, descriptorSets, 1, &dynamicOffset));
+										 1, 1, descriptorSets, 1, &dynamicOffset));
 	}
 
-	inline void VulkanPBRForwardRenderPass::updateCameraUniformData(uint32_t imageIndex) {
+	inline void VulkanPBRForwardRenderPass::updateSceneUniformData(uint32_t imageIndex, Scene* scene) {
 
+		// ==== CAMERA
 		const auto& camera = WorldRenderer::get().camera();
+		{
+			CameraData cameraData;
+			cameraData.viewProjection = camera.projView;
+			cameraData.view = camera.view;
+			cameraData.position = Vector4(camera.position, 1.0f);
 
-		CameraData cameraData{};
-		cameraData.viewProjection = camera.projView;
-		cameraData.view = camera.view;
-		cameraData.position = camera.position;
-
-		m_CameraUniformBuffer->update(imageIndex, cameraData);
-	}
-
-	void VulkanPBRForwardRenderPass::updateRendererDataUniformData(uint32_t imageIndex) {
-
-		auto& shadowCascades = WorldRenderer::get().shadowCascades();
-
-		RendererData data{};
-		data.u_CascadeFading = true;
-		data.u_CascadeSplits = Vector4(0.75f); // TODO
-		data.u_CascadeTransitionFade = 0.1f; // TODO
-		data.u_LightMatrix[0] = shadowCascades[0].viewProj;
-		data.u_LightMatrix[1] = shadowCascades[1].viewProj;
-		data.u_LightMatrix[2] = shadowCascades[2].viewProj;
-		data.u_LightMatrix[3] = shadowCascades[3].viewProj;
-		data.u_LightSize = 0.2f; // TODO
-		data.u_MaxShadowDistance = 100.0f; // TODO
-		data.u_ShadowFade = 0.1f; // TODO
-		data.u_SoftShadows = true;
-		data.u_ShowLightComplexity = false;
-		data.u_TilesCountX = 1920 / 16; // TODO
-
-		m_RenderUniformBuffer->update(imageIndex, data);
-	}
-
-	void VulkanPBRForwardRenderPass::updateSceneDataUniformData(uint32_t imageIndex) {
-
-		const auto& camera = WorldRenderer::get().camera();
-		const auto& lights = WorldRenderer::get().lights();
-
-		SceneData data{};
-
-		if(lights.dirLight.has_value()) {
-			data.u_DirectionalLights = lights.dirLight.value();
+			m_CameraUniformBuffer->update(imageIndex, cameraData);
 		}
 
-		data.u_EnvironmentMapIntensity = 1;
+		// ======== ENVIRONMENT
 
-		data.u_PointLightsCount = lights.pointLights.size();
-		memcpy(data.u_pointLights, lights.pointLights.data(), lights.pointLights.size() * sizeof(PointLight));
+		const auto& lights = WorldRenderer::get().lights();
+		Skybox* skybox = lights.skybox;
 
-		m_SceneUniformBuffer->update(imageIndex, data);
-	}
+		{
+			EnvironmentData env{};
 
-	void VulkanPBRForwardRenderPass::updateSkyboxUniformData(uint32_t imageIndex, const Skybox* skybox) {
+			if(lights.dirLight.has_value()) {
+				env.dirLight = lights.dirLight.value();
+				env.dirLightPresent = true;
+			}
+
+			if(skybox != nullptr) {
+				env.maxPrefilterLod = skybox->maxPrefilterLOD();
+				env.prefilterLodBias = skybox->prefilterLODBias();
+				env.skyboxPresent = true;
+			}
+
+			m_EnvironmentUniformBuffer->update(imageIndex, env);
+		}
+
+		// ==== SKYBOX TEXTURES
 
 		if(skybox == nullptr) {
 			setNullSkyboxUniformData(imageIndex);
-			return;
+			m_LastSkyboxModificationCount[imageIndex] = 0;
+		} else if(skybox->modifications() != m_LastSkyboxModificationCount[imageIndex]) {
+			setSkyboxUniformData(imageIndex, skybox);
+			m_LastSkyboxModificationCount[imageIndex] = skybox->modifications();
 		}
+	}
 
-		VkDescriptorSet descriptorSet = m_SkyboxDescriptorPool->get(imageIndex);
+	void VulkanPBRForwardRenderPass::setSkyboxUniformData(uint32_t imageIndex, Skybox* skybox) {
 
 		VulkanCubemap* environmentMap = (VulkanCubemap*)skybox->environmentMap();
 		VulkanCubemap* irradianceMap = (VulkanCubemap*)skybox->irradianceMap();
 		VulkanCubemap* prefilterMap = (VulkanCubemap*)skybox->prefilterMap();
 		VulkanTexture2D* brdfMap = (VulkanTexture2D*)skybox->brdfMap();
-
-		VkDescriptorImageInfo envMapInfo{};
-		envMapInfo.imageView = environmentMap->vkImageView();
-		envMapInfo.sampler = environmentMap->vkSampler();
-		envMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkDescriptorImageInfo irradianceMapInfo{};
 		irradianceMapInfo.imageView = irradianceMap->vkImageView();
@@ -273,88 +239,61 @@ namespace milo {
 		brdfInfo.sampler = brdfMap->vkSampler();
 		brdfInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		VkWriteDescriptorSet writeDescriptors[4];
+		VkDescriptorSet descriptorSet = m_SceneDescriptorPool->get(imageIndex);
 
-		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &envMapInfo);
-		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &irradianceMapInfo);
-		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &prefilterMapInfo);
-		writeDescriptors[3] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &brdfInfo);
+		VkWriteDescriptorSet writeDescriptors[3];
 
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 4, writeDescriptors, 0, nullptr));
+		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &irradianceMapInfo);
+		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &prefilterMapInfo);
+		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(4, descriptorSet, 1, &brdfInfo);
+
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
 	}
 
 	void VulkanPBRForwardRenderPass::setNullSkyboxUniformData(uint32_t imageIndex) {
 
-		VkDescriptorSet descriptorSet = m_SkyboxDescriptorPool->get(imageIndex);
-
 		auto* defaultCubemap = dynamic_cast<VulkanCubemap*>(Assets::textures().blackCubemap().get());
 		auto* defaultTexture = dynamic_cast<VulkanTexture2D*>(Assets::textures().blackTexture().get());
 
-		VkDescriptorImageInfo envMapInfo{};
-		envMapInfo.imageView = defaultCubemap->vkImageView();
-		envMapInfo.sampler = defaultCubemap->vkSampler();
-		envMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		VkDescriptorImageInfo irradianceMapInfo{};
+		irradianceMapInfo.imageView = defaultCubemap->vkImageView();
+		irradianceMapInfo.sampler = defaultCubemap->vkSampler();
+		irradianceMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		VkDescriptorImageInfo irradianceMapInfo = envMapInfo;
-		VkDescriptorImageInfo prefilterMapInfo = envMapInfo;
+		VkDescriptorImageInfo prefilterMapInfo = irradianceMapInfo;
 
 		VkDescriptorImageInfo brdfInfo{};
 		brdfInfo.imageView = defaultTexture->vkImageView();
 		brdfInfo.sampler = defaultTexture->vkSampler();
 		brdfInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		VkWriteDescriptorSet writeDescriptors[4];
+		VkDescriptorSet descriptorSet = m_SceneDescriptorPool->get(imageIndex);
 
-		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &envMapInfo);
-		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &irradianceMapInfo);
-		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &prefilterMapInfo);
-		writeDescriptors[3] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &brdfInfo);
+		VkWriteDescriptorSet writeDescriptors[3];
 
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 4, writeDescriptors, 0, nullptr));
-	}
+		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &irradianceMapInfo);
+		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &prefilterMapInfo);
+		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(4, descriptorSet, 1, &brdfInfo);
 
-	void VulkanPBRForwardRenderPass::updateShadowsUniformData(uint32_t imageIndex) {
-
-		auto& resources = WorldRenderer::get().resources();
-
-		VulkanTexture2DArray* shadowMap = (VulkanTexture2DArray*)resources.getTexture2D(ShadowMapRenderPass::getDepthMap(0)).get();
-
-		shadowMap->setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
-
-		VkDescriptorSet descriptorSet = m_ShadowsDescriptorPool->get(imageIndex);
-
-		VkDescriptorImageInfo shadowMapInfo{};
-		shadowMapInfo.imageView = shadowMap->vkImageView();
-		shadowMapInfo.sampler = shadowMap->vkSampler();
-		shadowMapInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-
-		VkWriteDescriptorSet writeDescriptor = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(0, descriptorSet, 1, &shadowMapInfo);
-
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptor, 0, nullptr));
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
 	}
 
 	void VulkanPBRForwardRenderPass::bindDescriptorSets(uint32_t imageIndex, VkCommandBuffer commandBuffer) {
 
 		VkDescriptorSet sceneDescriptorSet = m_SceneDescriptorPool->get(imageIndex);
-		VkDescriptorSet skyboxDescriptorSet = m_SkyboxDescriptorPool->get(imageIndex);
-		VkDescriptorSet shadowsDescriptorSet = m_ShadowsDescriptorPool->get(imageIndex);
 
 		VkDescriptorSet descriptorSets[] = {
 				sceneDescriptorSet,
-				skyboxDescriptorSet,
-				shadowsDescriptorSet
 		};
 
-		uint32_t dynamicOffsets[4] = {
+		uint32_t dynamicOffsets[] = {
 				imageIndex * m_CameraUniformBuffer->elementSize(),
-				imageIndex * m_RenderUniformBuffer->elementSize(),
-				imageIndex * m_SceneUniformBuffer->elementSize(),
-				imageIndex * (uint32_t)sizeof(VisibleLightsIndices)
+				imageIndex * m_EnvironmentUniformBuffer->elementSize()
 		};
 
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 										 m_GraphicsPipeline->pipelineLayout(),
-										 0, 3, descriptorSets, 4, dynamicOffsets));
+										 0, 1, descriptorSets, 2, dynamicOffsets));
 	}
 
 	void VulkanPBRForwardRenderPass::createRenderPass() {
@@ -371,106 +310,47 @@ namespace milo {
 		m_CameraUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
-	void VulkanPBRForwardRenderPass::createRendererDataUniformBuffer() {
-		m_RenderUniformBuffer = new VulkanUniformBuffer<RendererData>();
-		m_RenderUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
+	void VulkanPBRForwardRenderPass::createEnvironmentDataUniformBuffer() {
+		m_EnvironmentUniformBuffer = new VulkanUniformBuffer<EnvironmentData>();
+		m_EnvironmentUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
-	void VulkanPBRForwardRenderPass::createSceneDataUniformBuffer() {
-		m_SceneUniformBuffer = new VulkanUniformBuffer<SceneData>();
-		m_SceneUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
-	}
-
-	void VulkanPBRForwardRenderPass::createSceneDescriptorLayoutAndPool() {
+	void VulkanPBRForwardRenderPass::createSceneDescriptorSetLayoutAndPool() {
 
 		mvk::DescriptorSet::CreateInfo createInfo{};
-		createInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT;
-
+		createInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		// Camera
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+		// Environment: Lights + skybox
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC);
+		// Skybox textures
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
 		m_SceneDescriptorSetLayout = mvk::DescriptorSet::Layout::create(createInfo);
 		m_SceneDescriptorPool = mvk::DescriptorSet::Pool::create(m_SceneDescriptorSetLayout, createInfo);
-	}
-
-	void VulkanPBRForwardRenderPass::createSceneDescriptorSets() {
 
 		m_SceneDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
 
-			VkDescriptorBufferInfo cameraBufferInfo{};
-			cameraBufferInfo.offset = 0;
-			cameraBufferInfo.range = sizeof(CameraData);
-			cameraBufferInfo.buffer = m_CameraUniformBuffer->vkBuffer();
+			VkDescriptorBufferInfo cameraInfo{};
+			cameraInfo.offset = 0;
+			cameraInfo.range = sizeof(CameraData);
+			cameraInfo.buffer = m_CameraUniformBuffer->vkBuffer();
 
-			VkDescriptorBufferInfo renderBufferInfo{};
-			renderBufferInfo.offset = 0;
-			renderBufferInfo.range = sizeof(RendererData);
-			renderBufferInfo.buffer = m_RenderUniformBuffer->vkBuffer();
-
-			VkDescriptorBufferInfo sceneBufferInfo{};
-			sceneBufferInfo.offset = 0;
-			sceneBufferInfo.range = sizeof(SceneData);
-			sceneBufferInfo.buffer = m_SceneUniformBuffer->vkBuffer();
-
-			const VulkanBuffer* visibleLightsBuffer = (const VulkanBuffer*)WorldRenderer::get().resources()
-					.getBuffer(LightCullingPass::getVisibleLightsBufferHandle()).get();
-
-			VkDescriptorBufferInfo visibleLightsBufferInfo{};
-			visibleLightsBufferInfo.offset = 0;
-			visibleLightsBufferInfo.range = sizeof(VisibleLightsIndices);
-			visibleLightsBufferInfo.buffer = visibleLightsBuffer->vkBuffer();
+			VkDescriptorBufferInfo environmentInfo{};
+			environmentInfo.offset = 0;
+			environmentInfo.range = sizeof(EnvironmentData);
+			environmentInfo.buffer = m_EnvironmentUniformBuffer->vkBuffer();
 
 			VkWriteDescriptorSet writeDescriptors[] = {
-					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(0, descriptorSet, 1, &cameraBufferInfo),
-					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(1, descriptorSet, 1, &renderBufferInfo),
-					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(2, descriptorSet, 1, &sceneBufferInfo),
-					mvk::WriteDescriptorSet::createDynamicStorageBufferWrite(3, descriptorSet, 1, &visibleLightsBufferInfo)
+					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(0, descriptorSet, 1, &cameraInfo),
+					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(1, descriptorSet, 1, &environmentInfo)
 			};
 
-			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 4, writeDescriptors, 0, nullptr));
+			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 2, writeDescriptors, 0, nullptr));
 		});
-	}
-
-	void VulkanPBRForwardRenderPass::createSkyboxDescriptorLayoutAndPool() {
-
-		mvk::DescriptorSet::CreateInfo createInfo{};
-		createInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT;
-
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Environment map
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Irradiance map
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Prefilter map
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Environment map
-
-		m_SkyboxDescriptorSetLayout = mvk::DescriptorSet::Layout::create(createInfo);
-		m_SkyboxDescriptorPool = mvk::DescriptorSet::Pool::create(m_SkyboxDescriptorSetLayout, createInfo);
-	}
-
-	void VulkanPBRForwardRenderPass::createSkyboxDescriptorSets() {
-		m_SkyboxDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
-	}
-
-	void VulkanPBRForwardRenderPass::createShadowsDescriptorLayoutAndPool() {
-
-		mvk::DescriptorSet::CreateInfo createInfo{};
-		createInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		createInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT;
-
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-		m_ShadowsDescriptorSetLayout = mvk::DescriptorSet::Layout::create(createInfo);
-		m_ShadowsDescriptorPool = mvk::DescriptorSet::Pool::create(m_ShadowsDescriptorSetLayout, createInfo);
-	}
-
-	void VulkanPBRForwardRenderPass::createShadowsDescriptorSets() {
-		m_ShadowsDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
 	void VulkanPBRForwardRenderPass::createGraphicsPipeline() {
@@ -490,8 +370,6 @@ namespace milo {
 		pipelineInfo.pushConstantRanges.push_back(pushConstants);
 
 		pipelineInfo.setLayouts.push_back(m_SceneDescriptorSetLayout);
-		pipelineInfo.setLayouts.push_back(m_SkyboxDescriptorSetLayout);
-		pipelineInfo.setLayouts.push_back(m_ShadowsDescriptorSetLayout);
 		pipelineInfo.setLayouts.push_back(materialResourcePool.materialDescriptorSetLayout());
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;

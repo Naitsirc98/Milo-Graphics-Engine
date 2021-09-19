@@ -132,7 +132,7 @@ namespace milo {
 
 			if(Files::exists(texturePath)) {
 
-				Image* image = Image::loadImage(texturePath, PixelFormat::SRGBA);
+				Image* image = Image::loadImage(texturePath, PixelFormat::RGBA8);
 				texture = Ref<Texture2D>(Texture2D::create());
 
 				Texture2D::AllocInfo allocInfo = {};

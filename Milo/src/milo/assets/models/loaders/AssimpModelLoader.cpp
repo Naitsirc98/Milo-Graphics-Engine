@@ -5,14 +5,6 @@
 
 namespace milo {
 
-	static const int ASSIMP_FLAGS = aiProcess_OptimizeMeshes
-			| aiProcess_OptimizeGraph
-			| aiProcess_Triangulate
-			| aiProcess_CalcTangentSpace
-			//| aiProcess_FlipUVs
-			| aiProcess_JoinIdenticalVertices
-			| aiProcess_GenSmoothNormals;
-
 	Model* AssimpModelLoader::load(const String& filename) {
 
 		m_File = filename;

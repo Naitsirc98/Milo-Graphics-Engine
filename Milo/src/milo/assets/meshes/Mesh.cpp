@@ -1,8 +1,17 @@
 #include "milo/assets/meshes/Mesh.h"
 #include "milo/graphics/Graphics.h"
 #include "milo/graphics/vulkan/buffers/VulkanMeshBuffers.h"
+#include <assimp/postprocess.h>
 
 namespace milo {
+
+	const int ASSIMP_FLAGS = aiProcess_OptimizeGraph
+							 | aiProcess_CalcTangentSpace
+							 | aiProcess_Triangulate
+							 | aiProcess_GenSmoothNormals
+							 //| aiProcess_GenUVCoords
+							 //| aiProcess_FlipUVs
+							 | aiProcess_JoinIdenticalVertices;
 
 	Mesh::Mesh(String filename) {
 		m_Filename = std::move(filename);

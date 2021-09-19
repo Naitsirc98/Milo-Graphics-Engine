@@ -41,6 +41,7 @@ namespace milo {
 
 	void Skybox::maxPrefilterLOD(float value) {
 		m_MaxPrefilterLOD = value;
+		++m_Modifications;
 	}
 
 	float Skybox::prefilterLODBias() const {
@@ -49,6 +50,11 @@ namespace milo {
 
 	void Skybox::prefilterLODBias(float value) {
 		m_PrefilterLODBias = value;
+		++m_Modifications;
+	}
+
+	uint32_t Skybox::modifications() const {
+		return m_Modifications;
 	}
 
 	// =======================
@@ -100,6 +106,7 @@ namespace milo {
 
 	void PreethamSky::update() {
 		Assets::skybox().updatePreethamSky(this);
+		++m_Modifications;
 		m_Dirty = false;
 	}
 }

@@ -17,6 +17,7 @@ namespace milo {
 		Texture2D* m_BRDFMap{nullptr};
 		float m_MaxPrefilterLOD{4.0f};
 		float m_PrefilterLODBias{-0.25f};
+		uint32_t m_Modifications{1};
 	protected:
 		Skybox(String name, String filename);
 		virtual ~Skybox();
@@ -30,6 +31,7 @@ namespace milo {
 		void maxPrefilterLOD(float value);
 		float prefilterLODBias() const;
 		void prefilterLODBias(float value);
+		uint32_t modifications() const;
 	};
 
 	class PreethamSky : public Skybox {
