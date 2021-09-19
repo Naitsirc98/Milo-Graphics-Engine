@@ -324,8 +324,7 @@ vec4 computeLighting() {
 }
 
 void main() {
-    out_FragColor = computeLighting();
-    //float prefilterLOD = g_PBR.roughness * 4 + -0.25;
-    //vec3 prefilteredColor = textureLod(u_PrefilterMap, g_PBR.reflectDir, prefilterLOD).rgb;
-    //out_FragColor = vec4(prefilteredColor, 1);
+    vec4 color = computeLighting();
+    vec4 emissive = u_Material.emissiveColor * texture(u_EmissiveMap, fragment.texCoords);
+    out_FragColor = color + emissive;
 }
