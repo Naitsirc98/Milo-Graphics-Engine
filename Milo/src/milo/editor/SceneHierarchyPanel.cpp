@@ -69,6 +69,16 @@ namespace milo {
 
 		if (ImGui::BeginPopupContextWindow(nullptr, 1, false))
 		{
+			if(ImGui::BeginMenu("Import")) {
+				if(ImGui::MenuItem("Model 3D")) {
+					Optional<String> file = UI::FileDialog::open(".obj;.fbx;.gltf;.collada");
+					if(file.has_value()) {
+						ModelUtils::createModelEntityTree(scene, Assets::models().load(Files::getName(file.value()), file.value()));
+					}
+				}
+				ImGui::EndMenu();
+			}
+
 			if (ImGui::BeginMenu("Create"))
 			{
 				if (ImGui::MenuItem("Empty"))

@@ -26,7 +26,7 @@ namespace milo {
 
 		//push<PreDepthRenderPass>();
 		//push<LightCullingPass>();
-		//push<ShadowMapRenderPass>();
+		push<ShadowMapRenderPass>();
 		//push<GeometryRenderPass>();
 		push<PBRForwardRenderPass>();
 

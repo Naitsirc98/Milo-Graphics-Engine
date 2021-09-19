@@ -17,9 +17,11 @@ namespace milo {
 
 		createRenderPass();
 
-		createUniformBuffers();
-
+		createSceneUniformBuffers();
 		createSceneDescriptorSetLayoutAndPool();
+
+		createShadowsUniformBuffer();
+		createShadowsDescriptorSetLayoutAndPool();
 
 		createGraphicsPipeline();
 		createSemaphores();
@@ -105,6 +107,7 @@ namespace milo {
 		auto& materialResources = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
 
 		updateSceneUniformData(imageIndex, scene);
+		updateShadowsUniformData(imageIndex, scene);
 		bindDescriptorSets(imageIndex, commandBuffer);
 
 		Mesh* lastMesh = nullptr;
@@ -168,7 +171,7 @@ namespace milo {
 
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 										 m_GraphicsPipeline->pipelineLayout(),
-										 1, 1, descriptorSets, 1, &dynamicOffset));
+										 2, 1, descriptorSets, 1, &dynamicOffset));
 	}
 
 	inline void VulkanPBRForwardRenderPass::updateSceneUniformData(uint32_t imageIndex, Scene* scene) {
@@ -287,23 +290,73 @@ namespace milo {
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
 	}
 
+	void VulkanPBRForwardRenderPass::updateShadowsUniformData(uint32_t imageIndex, Scene* scene) {
+
+		{
+			const auto& cascades = WorldRenderer::get().shadowCascades();
+
+			ShadowDetails shadows{};
+			shadows.u_SoftShadows = true;
+			shadows.u_ShadowFade = 1;
+			shadows.u_MaxShadowDistance = 200;
+			shadows.u_LightSize = 0.5f;
+			shadows.u_CascadeFading = true;
+			shadows.u_CascadeTransitionFade = 1;
+			shadows.u_TilesCountX = (uint32_t) (scene->viewportSize().width / TILE_SIZE);
+			shadows.u_ShowLightComplexity = false;
+			shadows.u_ShadowsEnabled = true;
+
+			for(int32_t i = 0;i < cascades.size();++i) {
+				shadows.u_CascadeSplits[i] = cascades[i].splitDepth;
+			}
+
+			m_ShadowsUniformBuffer->update(imageIndex, shadows);
+		}
+
+		auto& resources = WorldRenderer::get().resources();
+
+		VulkanTexture2DArray* shadowMap = (VulkanTexture2DArray*)resources.getTexture2D(ShadowMapRenderPass::getDepthMap(0)).get();
+
+		shadowMap->setLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+
+		VkDescriptorImageInfo imageInfos[4];
+		VkWriteDescriptorSet writeDescriptors[4];
+
+		VkDescriptorSet descriptorSet = m_ShadowsDescriptorPool->get(imageIndex);
+
+		for(uint32_t i = 0;i < 4;++i) {
+
+			imageInfos[i].imageView = shadowMap->getLayer(i);
+			imageInfos[i].sampler = shadowMap->vkSampler();
+			imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
+			writeDescriptors[i] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &imageInfos[i]);
+			writeDescriptors[i].dstArrayElement = i;
+		}
+
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 4, writeDescriptors, 0, nullptr));
+	}
+
 	void VulkanPBRForwardRenderPass::bindDescriptorSets(uint32_t imageIndex, VkCommandBuffer commandBuffer) {
 
 		VkDescriptorSet sceneDescriptorSet = m_SceneDescriptorPool->get(imageIndex);
+		VkDescriptorSet shadowsDescriptorSet = m_ShadowsDescriptorPool->get(imageIndex);
 
 		VkDescriptorSet descriptorSets[] = {
 				sceneDescriptorSet,
+				shadowsDescriptorSet
 		};
 
 		uint32_t dynamicOffsets[] = {
 				imageIndex * m_CameraUniformBuffer->elementSize(),
 				imageIndex * m_EnvironmentUniformBuffer->elementSize(),
-				imageIndex * m_PointLightsUniformBuffer->elementSize()
+				imageIndex * m_PointLightsUniformBuffer->elementSize(),
+				imageIndex * m_ShadowsUniformBuffer->elementSize()
 		};
 
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 										 m_GraphicsPipeline->pipelineLayout(),
-										 0, 1, descriptorSets, 3, dynamicOffsets));
+										 0, 2, descriptorSets, 4, dynamicOffsets));
 	}
 
 	void VulkanPBRForwardRenderPass::createRenderPass() {
@@ -315,7 +368,7 @@ namespace milo {
 		m_RenderPass = mvk::RenderPass::create(desc);
 	}
 
-	void VulkanPBRForwardRenderPass::createUniformBuffers() {
+	void VulkanPBRForwardRenderPass::createSceneUniformBuffers() {
 
 		m_CameraUniformBuffer = new VulkanUniformBuffer<CameraData>();
 		m_CameraUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
@@ -373,6 +426,55 @@ namespace milo {
 		});
 	}
 
+	void VulkanPBRForwardRenderPass::createShadowsUniformBuffer() {
+		m_ShadowsUniformBuffer = new VulkanUniformBuffer<ShadowDetails>();
+		m_ShadowsUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
+	}
+
+	void VulkanPBRForwardRenderPass::createShadowsDescriptorSetLayoutAndPool() {
+
+		Array<VkDescriptorSetLayoutBinding, 2> bindings{};
+		// Shadow details
+		bindings[0].binding = 0;
+		bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		bindings[0].descriptorCount = 1;
+		bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		// Shadow maps
+		bindings[1].binding = 1;
+		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		bindings[1].descriptorCount = 4;
+		bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.pBindings = bindings.data();
+		layoutInfo.bindingCount = bindings.size();
+
+		VK_CALL(vkCreateDescriptorSetLayout(m_Device->logical(), &layoutInfo, nullptr, &m_ShadowsDescriptorSetLayout));
+
+		VulkanDescriptorPool::CreateInfo poolInfo{};
+		poolInfo.layout = m_ShadowsDescriptorSetLayout;
+		poolInfo.capacity = MAX_SWAPCHAIN_IMAGE_COUNT;
+		poolInfo.poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, MAX_SWAPCHAIN_IMAGE_COUNT});
+		poolInfo.poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 * MAX_SWAPCHAIN_IMAGE_COUNT});
+
+		m_ShadowsDescriptorPool = new VulkanDescriptorPool(m_Device, poolInfo);
+
+		m_ShadowsDescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
+
+			VkDescriptorBufferInfo shadowsInfo{};
+			shadowsInfo.offset = 0;
+			shadowsInfo.range = sizeof(ShadowDetails);
+			shadowsInfo.buffer = m_ShadowsUniformBuffer->vkBuffer();
+
+			VkWriteDescriptorSet writeDescriptors[] = {
+					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(0, descriptorSet, 1, &shadowsInfo)
+			};
+
+			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, writeDescriptors, 0, nullptr));
+		});
+	}
+
 	void VulkanPBRForwardRenderPass::createGraphicsPipeline() {
 
 		VulkanGraphicsPipeline::CreateInfo pipelineInfo{};
@@ -390,6 +492,7 @@ namespace milo {
 		pipelineInfo.pushConstantRanges.push_back(pushConstants);
 
 		pipelineInfo.setLayouts.push_back(m_SceneDescriptorSetLayout);
+		pipelineInfo.setLayouts.push_back(m_ShadowsDescriptorSetLayout);
 		pipelineInfo.setLayouts.push_back(materialResourcePool.materialDescriptorSetLayout());
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;

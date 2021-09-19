@@ -34,6 +34,23 @@ namespace milo {
 
 		// =============================================
 
+		struct ShadowDetails {
+			Matrix4 u_LightMatrix[4]{};
+			Vector4 u_CascadeSplits{};
+			int u_TilesCountX{};
+			int u_ShowCascades{};
+			int u_SoftShadows{};
+			float u_LightSize{};
+			float u_MaxShadowDistance{};
+			float u_ShadowFade{};
+			int u_CascadeFading{};
+			float u_CascadeTransitionFade{};
+			int u_ShowLightComplexity{};
+			int u_ShadowsEnabled{};
+		};
+
+		// =============================================
+
 		struct PushConstants {
 			Matrix4 modelMatrix;
 		};
@@ -49,6 +66,11 @@ namespace milo {
 
 		VkDescriptorSetLayout m_SceneDescriptorSetLayout = VK_NULL_HANDLE;
 		VulkanDescriptorPool* m_SceneDescriptorPool = nullptr;
+
+		VulkanUniformBuffer<ShadowDetails>* m_ShadowsUniformBuffer = nullptr;
+
+		VkDescriptorSetLayout m_ShadowsDescriptorSetLayout = VK_NULL_HANDLE;
+		VulkanDescriptorPool* m_ShadowsDescriptorPool = nullptr;
 
 		VulkanGraphicsPipeline* m_GraphicsPipeline = nullptr;
 
@@ -78,13 +100,17 @@ namespace milo {
 		void setSkyboxUniformData(uint32_t imageIndex, Skybox* skybox);
 		void setNullSkyboxUniformData(uint32_t imageIndex);
 
+		void updateShadowsUniformData(uint32_t imageIndex, Scene* scene);
+
 		void bindDescriptorSets(uint32_t imageIndex, VkCommandBuffer commandBuffer);
 
 		void createRenderPass();
 
-		void createUniformBuffers();
-
+		void createSceneUniformBuffers();
 		void createSceneDescriptorSetLayoutAndPool();
+
+		void createShadowsUniformBuffer();
+		void createShadowsDescriptorSetLayoutAndPool();
 
 		void createGraphicsPipeline();
 		void createSemaphores();

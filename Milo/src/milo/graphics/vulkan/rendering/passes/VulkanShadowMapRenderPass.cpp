@@ -62,6 +62,8 @@ namespace milo {
 		submitInfo.commandBufferCount = 1;
 
 		queue->submit(submitInfo, VK_NULL_HANDLE);
+
+		queue->awaitTermination();
 	}
 
 	void VulkanShadowMapRenderPass::buildCommandBuffers(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
@@ -170,6 +172,7 @@ namespace milo {
 	}
 
 	void VulkanShadowMapRenderPass::createRenderPass() {
+
 		VkAttachmentDescription attachmentDescription{};
 		attachmentDescription.format = VK_FORMAT_D32_SFLOAT;
 		attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -190,7 +193,7 @@ namespace milo {
 		subpass.pDepthStencilAttachment = &depthReference;
 
 		// Use subpass dependencies for layout transitions
-		std::array<VkSubpassDependency, 2> dependencies;
+		std::array<VkSubpassDependency, 2> dependencies{};
 
 		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependencies[0].dstSubpass = 0;
@@ -261,6 +264,8 @@ namespace milo {
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 
 		pipelineInfo.colorBlendAttachments.clear();
+
+		//pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_FRONT_BIT;
 
 		pipelineInfo.depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 		pipelineInfo.rasterizationState.depthClampEnable = VK_TRUE; // TODO: check for support
