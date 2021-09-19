@@ -36,6 +36,13 @@ public:
 		PointLight& p1 = light1.addComponent<PointLight>();
 		p1.color = {0, 1, 0, 0};
 
+		Entity light2 = createSphere(scene, {0, 0, 0}, Assets::materials().getDefault());
+		light2.setName("Point Light 2");
+		light2.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
+		light2.getComponent<Transform>().translation({0.0f, 1.0f, 0.0f});
+		PointLight& p2 = light2.addComponent<PointLight>();
+		p2.color = {0, 0, 1, 0};
+
 		Entity sun = createSphere(scene, {0, 20, 0}, Assets::materials().getDefault());
 		sun.setName("Sun");
 		sun.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});

@@ -14,32 +14,32 @@ struct DirectionalLight {
     vec4 unused;
 };
 
+layout(std140, set = 0, binding = 1) uniform Environment {
+    DirectionalLight u_DirLight;
+    bool u_DirLightPresent;
+    float u_MaxPrefilterLOD;
+    float u_PrefilterLODBias;
+    bool u_SkyboxPresent;
+};
+
 struct PointLight {
     vec4 position;
     vec4 color;
     float multiplier;
     float minRadius;
     float radius;
-    float fallOff;
-    float lightSize;
-    bool castsShadows;
-    float _padding[2];
+    float falloff;
+    vec4 unused;
 };
 
-layout(std140, set = 0, binding = 1) uniform Environment {
-    DirectionalLight u_DirLight;
-    PointLight u_PointLights[1];
+layout(std140, set = 0, binding = 2) uniform PointLights {
+    PointLight u_PointLights[128];
     uint u_PointLightsCount;
-    bool u_DirLightPresent;
-    float u_MaxPrefilterLOD;
-    float u_PrefilterLODBias;
-    bool u_SkyboxPresent;
-// TODO: point lights etc
 };
 
-layout(set = 0, binding = 2) uniform samplerCube u_IrradianceMap;
-layout(set = 0, binding = 3) uniform samplerCube u_PrefilterMap;
-layout(set = 0, binding = 4) uniform sampler2D u_BRDF;
+layout(set = 0, binding = 3) uniform samplerCube u_IrradianceMap;
+layout(set = 0, binding = 4) uniform samplerCube u_PrefilterMap;
+layout(set = 0, binding = 5) uniform sampler2D u_BRDF;
 
 // ========================================================
 
@@ -211,7 +211,7 @@ vec3 computePointLights() {
 
     vec3 L0 = vec3(0.0);
 
-    for(int i = 0; i < 1; ++i) {
+    for(int i = 0; i < u_PointLightsCount; ++i) {
 
         PointLight light = u_PointLights[i];
 
@@ -311,15 +311,15 @@ vec4 computeLighting() {
     vec3 kD = 1.0 - kS;
     kD = kD * (1.0 - g_PBR.metallic);
 
-    vec3 ambient = (kD * getDiffuseIBL() + getSpecularIBL(F, angle)) * g_PBR.occlusion;
+    vec3 ambient = vec3(0);
 
-    //if(u_SkyboxPresent) {
-    //    // If skybox is present, then apply Image Based Lighting (IBL)
-    //    ambient = (kD * getDiffuseIBL() + getSpecularIBL(F, angle)) * g_PBR.occlusion;
-    //} else {
-    //    vec3 ambientColor = vec3(0.25);
-    //    ambient = kD * ambientColor * g_PBR.albedo * g_PBR.occlusion;
-    //}
+    if(u_SkyboxPresent) {
+        // If skybox is present, then apply Image Based Lighting (IBL)
+        ambient = (kD * getDiffuseIBL() + getSpecularIBL(F, angle)) * g_PBR.occlusion;
+    } else {
+        vec3 ambientColor = vec3(0.25);
+        ambient = kD * ambientColor * g_PBR.albedo * g_PBR.occlusion;
+    }
 
     vec3 color = ambient + L0;
 

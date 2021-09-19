@@ -21,12 +21,15 @@ namespace milo {
 
 		struct EnvironmentData {
 			DirectionalLight dirLight{};
-			PointLight pointLights[1]{};
-			uint32_t u_PointLightsCount{0};
 			bool dirLightPresent{false};
 			float maxPrefilterLod{0};
 			float prefilterLodBias{0};
 			bool skyboxPresent{false};
+		};
+
+		struct PointLightsData {
+			PointLight pointLights[128]{};
+			uint32_t u_PointLightsCount{0};
 		};
 
 		// =============================================
@@ -42,6 +45,7 @@ namespace milo {
 
 		VulkanUniformBuffer<CameraData>* m_CameraUniformBuffer = nullptr;
 		VulkanUniformBuffer<EnvironmentData>* m_EnvironmentUniformBuffer = nullptr;
+		VulkanUniformBuffer<PointLightsData>* m_PointLightsUniformBuffer = nullptr;
 
 		VkDescriptorSetLayout m_SceneDescriptorSetLayout = VK_NULL_HANDLE;
 		VulkanDescriptorPool* m_SceneDescriptorPool = nullptr;
@@ -78,8 +82,7 @@ namespace milo {
 
 		void createRenderPass();
 
-		void createCameraUniformBuffer();
-		void createEnvironmentDataUniformBuffer();
+		void createUniformBuffers();
 
 		void createSceneDescriptorSetLayoutAndPool();
 

@@ -17,8 +17,7 @@ namespace milo {
 
 		createRenderPass();
 
-		createCameraUniformBuffer();
-		createEnvironmentDataUniformBuffer();
+		createUniformBuffers();
 
 		createSceneDescriptorSetLayoutAndPool();
 
@@ -36,6 +35,7 @@ namespace milo {
 
 		DELETE_PTR(m_CameraUniformBuffer);
 		DELETE_PTR(m_EnvironmentUniformBuffer);
+		DELETE_PTR(m_PointLightsUniformBuffer);
 		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_SceneDescriptorSetLayout, nullptr));
 		DELETE_PTR(m_SceneDescriptorPool);
 
@@ -203,11 +203,16 @@ namespace milo {
 				env.skyboxPresent = true;
 			}
 
-			uint32_t pointLightsCount = std::min(lights.pointLights.size(), (size_t)1);
-			memcpy(env.pointLights, lights.pointLights.data(), sizeof(PointLight) * pointLightsCount);
-			env.u_PointLightsCount = pointLightsCount;
-
 			m_EnvironmentUniformBuffer->update(imageIndex, env);
+		}
+
+		{
+			PointLightsData pointLightsData{};
+			uint32_t pointLightsCount = std::min(lights.pointLights.size(), (size_t)128);
+			memcpy(pointLightsData.pointLights, lights.pointLights.data(), sizeof(PointLight) * pointLightsCount);
+			pointLightsData.u_PointLightsCount = pointLightsCount;
+
+			m_PointLightsUniformBuffer->update(imageIndex, pointLightsData);
 		}
 
 		// ==== SKYBOX TEXTURES
@@ -247,9 +252,9 @@ namespace milo {
 
 		VkWriteDescriptorSet writeDescriptors[3];
 
-		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &irradianceMapInfo);
-		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &prefilterMapInfo);
-		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(4, descriptorSet, 1, &brdfInfo);
+		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &irradianceMapInfo);
+		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(4, descriptorSet, 1, &prefilterMapInfo);
+		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(5, descriptorSet, 1, &brdfInfo);
 
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
 	}
@@ -275,9 +280,9 @@ namespace milo {
 
 		VkWriteDescriptorSet writeDescriptors[3];
 
-		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(2, descriptorSet, 1, &irradianceMapInfo);
-		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &prefilterMapInfo);
-		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(4, descriptorSet, 1, &brdfInfo);
+		writeDescriptors[0] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(3, descriptorSet, 1, &irradianceMapInfo);
+		writeDescriptors[1] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(4, descriptorSet, 1, &prefilterMapInfo);
+		writeDescriptors[2] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(5, descriptorSet, 1, &brdfInfo);
 
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
 	}
@@ -292,12 +297,13 @@ namespace milo {
 
 		uint32_t dynamicOffsets[] = {
 				imageIndex * m_CameraUniformBuffer->elementSize(),
-				imageIndex * m_EnvironmentUniformBuffer->elementSize()
+				imageIndex * m_EnvironmentUniformBuffer->elementSize(),
+				imageIndex * m_PointLightsUniformBuffer->elementSize()
 		};
 
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 										 m_GraphicsPipeline->pipelineLayout(),
-										 0, 1, descriptorSets, 2, dynamicOffsets));
+										 0, 1, descriptorSets, 3, dynamicOffsets));
 	}
 
 	void VulkanPBRForwardRenderPass::createRenderPass() {
@@ -309,14 +315,16 @@ namespace milo {
 		m_RenderPass = mvk::RenderPass::create(desc);
 	}
 
-	void VulkanPBRForwardRenderPass::createCameraUniformBuffer() {
+	void VulkanPBRForwardRenderPass::createUniformBuffers() {
+
 		m_CameraUniformBuffer = new VulkanUniformBuffer<CameraData>();
 		m_CameraUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
-	}
 
-	void VulkanPBRForwardRenderPass::createEnvironmentDataUniformBuffer() {
 		m_EnvironmentUniformBuffer = new VulkanUniformBuffer<EnvironmentData>();
 		m_EnvironmentUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
+
+		m_PointLightsUniformBuffer = new VulkanUniformBuffer<PointLightsData>();
+		m_PointLightsUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
 	void VulkanPBRForwardRenderPass::createSceneDescriptorSetLayoutAndPool() {
@@ -326,7 +334,9 @@ namespace milo {
 		createInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		// Camera
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-		// Environment: Lights + skybox
+		// Environment
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+		// Point Lights
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
 		// Skybox textures
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -348,12 +358,18 @@ namespace milo {
 			environmentInfo.range = sizeof(EnvironmentData);
 			environmentInfo.buffer = m_EnvironmentUniformBuffer->vkBuffer();
 
+			VkDescriptorBufferInfo pointLightsInfo{};
+			pointLightsInfo.offset = 0;
+			pointLightsInfo.range = sizeof(PointLightsData);
+			pointLightsInfo.buffer = m_PointLightsUniformBuffer->vkBuffer();
+
 			VkWriteDescriptorSet writeDescriptors[] = {
 					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(0, descriptorSet, 1, &cameraInfo),
-					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(1, descriptorSet, 1, &environmentInfo)
+					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(1, descriptorSet, 1, &environmentInfo),
+					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(2, descriptorSet, 1, &pointLightsInfo)
 			};
 
-			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 2, writeDescriptors, 0, nullptr));
+			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
 		});
 	}
 
