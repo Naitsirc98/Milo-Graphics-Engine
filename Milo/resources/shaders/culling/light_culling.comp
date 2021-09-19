@@ -12,9 +12,9 @@ layout(std140, binding = 0) uniform Camera {
 };
 
 struct PointLight {
-    vec3 position;
+    vec4 position;
+    vec4 color;
     float multiplier;
-    vec3 radiance;
     float minRadius;
     float radius;
     float fallOff;
@@ -22,7 +22,7 @@ struct PointLight {
     bool castsShadows;
 };
 
-#define MAX_POINT_LIGHTS 1024
+#define MAX_POINT_LIGHTS 128
 
 layout(std140, binding = 1) uniform PointLightData {
     uint u_PointLightsCount;
@@ -124,7 +124,7 @@ void main() {
         if (lightIndex >= u_PointLightsCount)
         break;
 
-        vec4 position = vec4(u_PointLights[lightIndex].position, 1.0f);
+        vec4 position = vec4(u_PointLights[lightIndex].position.rgb, 1.0f);
         float radius = u_PointLights[lightIndex].radius;
         radius += radius * 0.3f;
 

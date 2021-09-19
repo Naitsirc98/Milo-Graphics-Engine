@@ -11,10 +11,25 @@ layout(std140, set = 0, binding = 0) uniform CameraData {
 struct DirectionalLight {
     vec4 direction;
     vec4 color;
+    vec4 unused;
+};
+
+struct PointLight {
+    vec4 position;
+    vec4 color;
+    float multiplier;
+    float minRadius;
+    float radius;
+    float fallOff;
+    float lightSize;
+    bool castsShadows;
+    float _padding[2];
 };
 
 layout(std140, set = 0, binding = 1) uniform Environment {
     DirectionalLight u_DirLight;
+    PointLight u_PointLights[1];
+    uint u_PointLightsCount;
     bool u_DirLightPresent;
     float u_MaxPrefilterLOD;
     float u_PrefilterLODBias;
@@ -194,13 +209,11 @@ vec3 computeDirLights() {
 
 vec3 computePointLights() {
 
-    /*
-
     vec3 L0 = vec3(0.0);
 
-    for(int i = 0; i < u_PointLightsCount; ++i) {
+    for(int i = 0; i < 1; ++i) {
 
-        Light light = u_PointLights[i];
+        PointLight light = u_PointLights[i];
 
         vec3 direction = light.position.xyz - fragment.position;
 
@@ -213,10 +226,6 @@ vec3 computePointLights() {
     }
 
     return L0;
-
-    */
-
-    return vec3(0);
 }
 
 vec3 reflectanceEquation() {
@@ -295,7 +304,7 @@ vec4 computeLighting() {
 
     float angle = max(dot(g_PBR.normal, g_PBR.viewDir), 0.0);
 
-    vec3 L0 = vec3(0);//reflectanceEquation();
+    vec3 L0 = reflectanceEquation();
     vec3 F = fresnelSchlickRoughness(angle, g_PBR.F0, g_PBR.roughness);
 
     vec3 kS = F;

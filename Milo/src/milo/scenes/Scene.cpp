@@ -112,6 +112,15 @@ namespace milo {
 			if(!transform.m_Dirty) continue;
 
 			transform.update();
+
+			for(EntityId childId : entity.children()) {
+				Entity child = {childId, this};
+				Transform& childTransform = child.getComponent<Transform>();
+				childTransform.m_Translation += transform.m_TranslationDelta;
+				childTransform.m_Scale += transform.m_ScaleDelta;
+				childTransform.m_Rotation += transform.m_RotationDelta;
+				childTransform.m_Dirty = true;
+			}
 		}
 
 		if(getSimulationState() == SimulationState::Editor) return;

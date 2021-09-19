@@ -24,9 +24,9 @@ namespace milo {
 
 		const WorldRenderer& renderer = WorldRenderer::get();
 
-		push<PreDepthRenderPass>();
-		push<LightCullingPass>();
-		push<ShadowMapRenderPass>();
+		//push<PreDepthRenderPass>();
+		//push<LightCullingPass>();
+		//push<ShadowMapRenderPass>();
 		//push<GeometryRenderPass>();
 		push<PBRForwardRenderPass>();
 

@@ -21,6 +21,8 @@ namespace milo {
 
 		struct EnvironmentData {
 			DirectionalLight dirLight{};
+			PointLight pointLights[1]{};
+			uint32_t u_PointLightsCount{0};
 			bool dirLightPresent{false};
 			float maxPrefilterLod{0};
 			float prefilterLodBias{0};

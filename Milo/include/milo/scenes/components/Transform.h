@@ -13,7 +13,7 @@ namespace milo {
 		Vector3 m_Scale{1.0f, 1.0f, 1.0f};
 		Vector3 m_ScaleDelta{0.0f, 0.0f, 0.0f};
 		Quaternion m_Rotation{0.0f, 0.0f, 0.0f, 1.0f};
-		Quaternion m_RotationDelta{0.0f, 0.0f, 0.0f, 1.0f};
+		Quaternion m_RotationDelta{0.0f, 0.0f, 0.0f, 0.0f};
 		Matrix4 m_ModelMatrix = Matrix4(1.0f);
 		bool m_Dirty{false};
 
@@ -74,8 +74,12 @@ namespace milo {
 		}
 
 	private:
+
 		inline void update() {
 			m_ModelMatrix = glm::translate(m_Translation) * glm::scale(m_Scale) * glm::toMat4(m_Rotation);
+			m_TranslationDelta = Vector3();
+			m_ScaleDelta = Vector3();
+			m_RotationDelta = Quaternion();
 			m_Dirty = false;
 		}
 	};

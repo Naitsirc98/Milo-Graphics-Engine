@@ -203,6 +203,10 @@ namespace milo {
 				env.skyboxPresent = true;
 			}
 
+			uint32_t pointLightsCount = std::min(lights.pointLights.size(), (size_t)1);
+			memcpy(env.pointLights, lights.pointLights.data(), sizeof(PointLight) * pointLightsCount);
+			env.u_PointLightsCount = pointLightsCount;
+
 			m_EnvironmentUniformBuffer->update(imageIndex, env);
 		}
 

@@ -7,7 +7,7 @@
 #include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/graphics/vulkan/buffers/VulkanShaderBuffer.h"
 
-#define MAX_POINT_LIGHTS 1024
+#define MAX_POINT_LIGHTS 128
 
 namespace milo {
 

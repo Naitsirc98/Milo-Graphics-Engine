@@ -10,6 +10,9 @@ namespace milo {
 	Window::Window(const WindowInfo& info) : m_Title(info.title) {
 		m_Handle = createWindow(info);
 		setEventCallbacks();
+
+		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+		m_InvMonitorAspectRatio = (float)mode->height / (float)mode->width;
 	}
 
 	Window::~Window() {
@@ -46,6 +49,8 @@ namespace milo {
 	Size Window::size() const {
 		Size size;
 		glfwGetWindowSize(m_Handle, &size.width, &size.height);
+		size.height = (int32_t) ((float)size.width * m_InvMonitorAspectRatio);
+
 		return size;
 	}
 

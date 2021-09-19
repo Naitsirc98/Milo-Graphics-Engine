@@ -39,6 +39,7 @@ namespace milo {
 		GLFWwindow* m_Handle = nullptr;
 		WindowState m_State = WindowState::Windowed;
 		String m_Title;
+		float m_InvMonitorAspectRatio{0};
 	private:
 		explicit Window(const WindowInfo& info);
 	public:

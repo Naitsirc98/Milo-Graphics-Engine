@@ -25,14 +25,14 @@ namespace milo {
 	struct PointLight {
 
 		// Get position from entity's transform
-		Vector3 position = {0, 0, 0};
-		Vector3 color = { 1, 1, 1 };
+		Vector4 position = {0, 0, 0, 0};
+		Vector4 color = { 1, 1, 1, 1};
 		float multiplier = 1.0f;
 		float minRadius = 0.001f;
 		float radius = 25.0f;
 		float falloff = 1.0f;
 		float sourceSize = 0.1f;
 		bool castsShadows = true;
-		byte_t padding[3]{0};
+		float _padding[2]{0};
 	};
 }

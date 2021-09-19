@@ -29,15 +29,12 @@ public:
 		h.getComponent<Transform>().translation({0, 5, -2});
 		h.getComponent<Transform>().rotate(radians(45.0f), {1, 0, 0});
 
-		//Entity light1 = createSphere(scene, {0, 0, 0}, Assets::materials().getDefault());
-		//light1.setName("Point Light 1");
-		//light1.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
-		//light1.addComponent<PointLight>();
-//
-		//Entity light2 = createSphere(scene, {-2.5f, 0, 0}, Assets::materials().getDefault());
-		//light2.setName("Point Light 2");
-		//light2.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
-		//light2.addComponent<PointLight>();
+		Entity light1 = createSphere(scene, {0, 0, 0}, Assets::materials().getDefault());
+		light1.setName("Point Light 1");
+		light1.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
+		light1.getComponent<Transform>().translation({0.0f, 0.0f, 1.0f});
+		PointLight& p1 = light1.addComponent<PointLight>();
+		p1.color = {0, 1, 0, 0};
 
 		Entity sun = createSphere(scene, {0, 20, 0}, Assets::materials().getDefault());
 		sun.setName("Sun");

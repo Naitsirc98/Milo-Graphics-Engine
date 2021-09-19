@@ -122,11 +122,13 @@ namespace milo {
 			SkyLight sky = skyLight.get<SkyLight>(entity);
 			env.dirLight = sky.light;
 			env.skybox = sky.sky;
+			dirLightPresent = true;
 		} else {
 			ECSComponentView<DirectionalLight> dirLight = scene->view<DirectionalLight>();
 			if(!dirLight.empty()) {
 				EntityId entity = *dirLight.begin();
 				env.dirLight = dirLight.get<DirectionalLight>(entity);
+				dirLightPresent = true;
 			}
 			if(scene->skyboxView() != nullptr) env.skybox = scene->skyboxView()->skybox;
 		}
@@ -140,7 +142,7 @@ namespace milo {
 		for(EntityId entityId : components) {
 			const Transform& transform = components.get<Transform>(entityId);
 			PointLight& pointLight = components.get<PointLight>(entityId);
-			pointLight.position = transform.translation();
+			pointLight.position = Vector4(transform.translation(), 1.0f);
 			env.pointLights.push_back(pointLight);
 		}
 	}

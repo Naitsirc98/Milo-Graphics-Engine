@@ -268,16 +268,23 @@ namespace milo {
 
 		drawComponent<PointLight>("Point Light", entity, [&](PointLight& light) {
 			Transform& transform = entity.getComponent<Transform>();
-			light.position = transform.translation();
-			drawVector3Control("Position", light.position);
-			drawVector3Control("Color", light.color);
+
+			Vector3 position = transform.translation();
+			Vector3 color = Vector3(light.color);
+
+			drawVector3Control("Position", position);
+			drawVector3Control("Color", color);
 			ImGui::DragFloat("Multiplier", &light.multiplier, 0, FLT_MAX, 0.1f);
 			ImGui::DragFloat("Radius", &light.radius, 0, FLT_MAX, 0.1f);
 			ImGui::DragFloat("Fall off", &light.falloff, 0, FLT_MAX, 0.1f);
 			ImGui::DragFloat("Min Radius", &light.minRadius, 0, FLT_MAX, 0.1f);
 			ImGui::DragFloat("Source size", &light.sourceSize, 0, FLT_MAX, 0.1f);
 			ImGui::Checkbox("Casts Shadows", &light.castsShadows);
-			transform.translation(light.position);
+
+			light.position = Vector4(position, 1.0f);
+			light.color = Vector4(color, 1.0f);
+
+			transform.translation(position);
 		});
 	}
 
