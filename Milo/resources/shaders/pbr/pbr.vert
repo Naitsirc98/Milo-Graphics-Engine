@@ -27,7 +27,7 @@ void main() {
 	vec4 worldPos = u_ModelMatrix * vec4(in_Position, 1.0);
 
 	fragment.position = worldPos.xyz;
-	fragment.normal = normalize(in_Normal);
+	fragment.normal = mat3(u_ModelMatrix) * normalize(in_Normal);
 	fragment.texCoords = in_TexCoords;
 
 	gl_Position = u_Camera.viewProjectionMatrix * worldPos;
