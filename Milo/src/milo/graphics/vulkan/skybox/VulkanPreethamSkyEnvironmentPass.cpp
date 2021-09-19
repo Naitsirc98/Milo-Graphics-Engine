@@ -31,7 +31,7 @@ namespace milo {
 			Cubemap::AllocInfo allocInfo{};
 			allocInfo.width = mapSize;
 			allocInfo.height = mapSize;
-			allocInfo.format = PixelFormat::RGBA32F;
+			allocInfo.format = PixelFormat::RGBA16F;
 			allocInfo.mipLevels = 4;
 
 			environmentMap->allocate(allocInfo);

@@ -6,7 +6,7 @@
 
 #define PI 3.14159265359
 
-layout(binding = 0, set = 0, rgba32f) restrict writeonly uniform imageCube u_EnvironmentMap;
+layout(binding = 0, set = 0, rgba16f) restrict writeonly uniform imageCube u_EnvironmentMap;
 
 layout(push_constant) uniform PushConstants {
     float u_Turbidity;

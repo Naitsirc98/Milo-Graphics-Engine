@@ -164,12 +164,12 @@ namespace milo {
 		m_Device->computeCommandPool()->execute([&](VkCommandBuffer commandBuffer) {
 			execInfo.commandBuffer = commandBuffer;
 			m_PreethamSkyPass->execute(execInfo);
-			m_IrradiancePass->execute(execInfo);
+			//m_IrradiancePass->execute(execInfo);
 			m_PrefilterPass->execute(execInfo);
 			m_BRDFPass->execute(execInfo);
 		});
 
-		execInfo.irradianceMap->generateMipmaps();
+		//execInfo.irradianceMap->generateMipmaps();
 
 		sky->m_Dirty = false;
 	}

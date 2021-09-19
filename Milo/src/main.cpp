@@ -18,7 +18,7 @@ public:
 		Entity skyboxEntity = scene->createEntity("Skybox");
 		SkyboxView& skyboxView = skyboxEntity.addComponent<SkyboxView>();
 		skyboxView.skybox = skybox;
-		skyboxView.type = SkyType::Static;
+		skyboxView.type = SkyType::Dynamic;
 
 		scene->setSkyEntity(skyboxEntity.id());
 

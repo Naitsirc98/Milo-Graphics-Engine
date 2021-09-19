@@ -63,7 +63,7 @@ namespace milo {
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 										 0, 1, &descriptorSet, 0, nullptr));
 
-		uint32_t samples = 1024;
+		uint32_t samples = 64;
 		VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(samples), &samples));
 
 		VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 6));
@@ -71,7 +71,6 @@ namespace milo {
 		irradianceMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 								 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-		// irradianceMap->generateMipmaps();
 	}
 
 	void VulkanIrradianceMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo) {
