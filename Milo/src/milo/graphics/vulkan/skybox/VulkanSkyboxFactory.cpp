@@ -121,6 +121,8 @@ namespace milo {
 			m_BRDFPass->execute(execInfo);
 		});
 
+		irradianceMap->generateMipmaps();
+
 		PreethamSky* sky = new PreethamSky(name);
 		sky->m_EnvironmentMap = environmentMap;
 		sky->m_IrradianceMap = irradianceMap;
@@ -166,6 +168,8 @@ namespace milo {
 			m_PrefilterPass->execute(execInfo);
 			m_BRDFPass->execute(execInfo);
 		});
+
+		execInfo.irradianceMap->generateMipmaps();
 
 		sky->m_Dirty = false;
 	}
