@@ -74,6 +74,11 @@ namespace milo {
 		roughnessInfo.imageView = getImageView(material->roughnessMap());
 		roughnessInfo.sampler = getSampler(material->roughnessMap());
 
+		VkDescriptorImageInfo metallicRoughnessInfo{};
+		metallicRoughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		metallicRoughnessInfo.imageView = getImageView(material->metallicRoughnessMap());
+		metallicRoughnessInfo.sampler = getSampler(material->metallicRoughnessMap());
+
 		VkDescriptorImageInfo occlusionInfo{};
 		occlusionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		occlusionInfo.imageView = getImageView(material->occlusionMap());
@@ -88,7 +93,8 @@ namespace milo {
 				createCombineImageSamplerWrite(3, descriptorSet, 1, &normalInfo),
 				createCombineImageSamplerWrite(4, descriptorSet, 1, &metallicInfo),
 				createCombineImageSamplerWrite(5, descriptorSet, 1, &roughnessInfo),
-				createCombineImageSamplerWrite(6, descriptorSet, 1, &occlusionInfo),
+				createCombineImageSamplerWrite(6, descriptorSet, 1, &metallicRoughnessInfo),
+				createCombineImageSamplerWrite(7, descriptorSet, 1, &occlusionInfo),
 		};
 
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1 + Material::TEXTURE_COUNT, writeDescriptors, 0, nullptr));
@@ -123,6 +129,7 @@ namespace milo {
 		createInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		createInfo.numSets = m_MaxMaterialCount;
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);

@@ -43,6 +43,8 @@ namespace milo {
 			m_BRDFPass->execute(execInfo);
 		});
 
+		execInfo.irradianceMap->generateMipmaps();
+
 		Skybox* skybox = new Skybox(name, imageFile);
 		skybox->m_EquirectangularTexture = Ref<VulkanTexture2D>(equirectangularTexture);
 		skybox->m_EnvironmentMap = environmentMap;

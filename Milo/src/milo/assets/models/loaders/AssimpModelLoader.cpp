@@ -146,9 +146,13 @@ namespace milo {
 		outFloat = aiFloat;
 	}
 
-	Ref<Texture2D> AssimpModelLoader::getTexture(const aiScene* aiScene, const aiMaterial* aiMaterial, aiTextureType type, PixelFormat format) {
+	Ref<Texture2D> AssimpModelLoader::getTexture(const aiScene* aiScene, const aiMaterial* aiMaterial,
+												 aiTextureType type, PixelFormat format, bool* present) {
 
 		if(aiMaterial->GetTextureCount(type) == 0) {
+			if(present != nullptr) {
+				*present = false;
+			}
 			if(type == aiTextureType_EMISSIVE) return Assets::textures().blackTexture();
 			return Assets::textures().whiteTexture();
 		}
@@ -162,7 +166,15 @@ namespace milo {
 			textureFile = Files::append(m_Dir, textureFile);
 		}
 
-		return Assets::textures().load(textureFile, format);
+		auto texture =  Assets::textures().load(textureFile, format);
+
+		texture->setName(path.C_Str());
+
+		if(present != nullptr) {
+			*present = true;
+		}
+
+		return texture;
 	}
 
 	void AssimpModelLoader::processMaterial(const aiScene* aiScene, const aiMaterial* aiMaterial, Material* outMaterial) {
@@ -176,12 +188,24 @@ namespace milo {
 		getFloat(aiMaterial, AI_MATKEY_OPACITY, mat.alpha);
 		getFloat(aiMaterial, AI_MATKEY_ROUGHNESS_FACTOR, mat.roughness);
 
-		outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE, PixelFormat::RGBA8);
-		//outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_BASE_COLOR, PixelFormat::RGBA8);
-		outMaterial->m_EmissiveMap = getTexture(aiScene, aiMaterial, aiTextureType_EMISSIVE, PixelFormat::RGBA8);
-		outMaterial->m_NormalMap = getTexture(aiScene, aiMaterial, aiTextureType_NORMALS, PixelFormat::RGBA8);
-		outMaterial->m_MetallicMap = getTexture(aiScene, aiMaterial, aiTextureType_METALNESS, PixelFormat::RGBA8);
-		outMaterial->m_RoughnessMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE_ROUGHNESS, PixelFormat::RGBA8);
-		outMaterial->m_OcclusionMap = getTexture(aiScene, aiMaterial, aiTextureType_AMBIENT_OCCLUSION, PixelFormat::RGBA8);
+		bool hasAlbedoMap = false;
+		bool hasEmissiveMap = false;
+		bool hasNormalMap = false;
+		bool hasMetallicMap = false;
+		bool hasRoughnessMap = false;
+		bool hasOcclusionMap = false;
+
+		outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE, PixelFormat::RGBA8, &hasAlbedoMap);
+		outMaterial->m_EmissiveMap = getTexture(aiScene, aiMaterial, aiTextureType_EMISSIVE, PixelFormat::RGBA8, &hasEmissiveMap);
+		outMaterial->m_NormalMap = getTexture(aiScene, aiMaterial, aiTextureType_NORMALS, PixelFormat::RGBA8, &hasNormalMap);
+		outMaterial->m_MetallicMap = getTexture(aiScene, aiMaterial, aiTextureType_METALNESS, PixelFormat::RGBA8, &hasMetallicMap);
+		outMaterial->m_RoughnessMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE_ROUGHNESS, PixelFormat::RGBA8, &hasRoughnessMap);
+		outMaterial->m_OcclusionMap = getTexture(aiScene, aiMaterial, aiTextureType_AMBIENT_OCCLUSION, PixelFormat::RGBA8, &hasOcclusionMap);
+
+		if(!hasMetallicMap && !hasRoughnessMap) {
+			bool hasMetallicRoughnessMap = false;
+			outMaterial->m_MetallicRoughnessMap = getTexture(aiScene, aiMaterial, aiTextureType_UNKNOWN, PixelFormat::RGBA8, &hasMetallicRoughnessMap);
+			outMaterial->useCombinedMetallicRoughness(hasMetallicRoughnessMap);
+		}
 	}
 }

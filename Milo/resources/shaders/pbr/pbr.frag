@@ -41,6 +41,7 @@ layout(std140, set = 1, binding = 0) uniform Material {
     float normalScale;
 
     bool useNormalMap;
+    bool useCombinedMetallicRoughnessMap;
 
 } u_Material;
 
@@ -49,7 +50,8 @@ layout(set = 1, binding = 2) uniform sampler2D u_EmissiveMap;
 layout(set = 1, binding = 3) uniform sampler2D u_NormalMap;
 layout(set = 1, binding = 4) uniform sampler2D u_MetallicMap;
 layout(set = 1, binding = 5) uniform sampler2D u_RoughnessMap;
-layout(set = 1, binding = 6) uniform sampler2D u_OcclusionMap;
+layout(set = 1, binding = 6) uniform sampler2D u_MetallicRoughnessMap;
+layout(set = 1, binding = 7) uniform sampler2D u_OcclusionMap;
 
 // ============================
 
@@ -228,7 +230,7 @@ vec3 getDiffuseIBL() {
 }
 
 vec3 getSpecularIBL(vec3 F, float angle) {
-    float prefilterLOD = g_PBR.roughness * 4 + -0.25;
+    float prefilterLOD = g_PBR.roughness * u_MaxPrefilterLOD + u_PrefilterLODBias;
     vec3 prefilteredColor = textureLod(u_PrefilterMap, g_PBR.reflectDir, prefilterLOD).rgb;
     vec2 brdf = texture(u_BRDF, vec2(angle, g_PBR.roughness)).rg;
     return prefilteredColor * (F * brdf.x + brdf.y);
@@ -256,10 +258,16 @@ vec4 getAlbedo(vec2 uv) {
 }
 
 float getMetallic(vec2 uv) {
+    if(u_Material.useCombinedMetallicRoughnessMap) {
+        return texture(u_MetallicRoughnessMap, uv).b * u_Material.metallic;
+    }
     return texture(u_MetallicMap, uv).r * u_Material.metallic;
 }
 
 float getRoughness(vec2 uv) {
+    if(u_Material.useCombinedMetallicRoughnessMap) {
+        return texture(u_MetallicRoughnessMap, uv).g * u_Material.roughness;
+    }
     return texture(u_RoughnessMap, uv).r * u_Material.roughness;
 }
 
@@ -316,8 +324,8 @@ vec4 computeLighting() {
 }
 
 void main() {
-    computeLighting();
-    float prefilterLOD = g_PBR.roughness * 4 + -0.25;
-    vec3 prefilteredColor = textureLod(u_PrefilterMap, g_PBR.reflectDir, prefilterLOD).rgb;
-    out_FragColor = vec4(g_PBR.normal, 1);
+    out_FragColor = computeLighting();
+    //float prefilterLOD = g_PBR.roughness * 4 + -0.25;
+    //vec3 prefilteredColor = textureLod(u_PrefilterMap, g_PBR.reflectDir, prefilterLOD).rgb;
+    //out_FragColor = vec4(prefilteredColor, 1);
 }

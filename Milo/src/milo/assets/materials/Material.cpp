@@ -5,11 +5,12 @@ namespace milo {
 
 	Material::Material(String name, String filename) : Asset(name, filename) {
 		m_AlbedoMap = Assets::textures().whiteTexture();
-		m_MetallicMap = Assets::textures().whiteTexture();
-		m_RoughnessMap = Assets::textures().whiteTexture();
-		m_OcclusionMap = Assets::textures().whiteTexture();
 		m_EmissiveMap = Assets::textures().blackTexture();
 		m_NormalMap = Assets::textures().whiteTexture();
+		m_MetallicMap = Assets::textures().whiteTexture();
+		m_RoughnessMap = Assets::textures().whiteTexture();
+		m_MetallicRoughnessMap = Assets::textures().whiteTexture();
+		m_OcclusionMap = Assets::textures().whiteTexture();
 	}
 
 	Material::~Material() = default;
@@ -146,6 +147,23 @@ namespace milo {
 
 	Material* Material::roughnessMap(Ref<Texture2D> texture) {
 		m_RoughnessMap = texture;
+		return this;
+	}
+
+	bool Material::useCombinedMetallicRoughness() const {
+		return m_Data.useCombinedMetallicRoughness;
+	}
+
+	void Material::useCombinedMetallicRoughness(bool value) {
+		m_Data.useCombinedMetallicRoughness = value;
+	}
+
+	Ref<Texture2D> Material::metallicRoughnessMap() const {
+		return m_MetallicRoughnessMap;
+	}
+
+	Material* Material::metallicRoughnessMap(Ref<Texture2D> texture) {
+		m_MetallicRoughnessMap = texture;
 		return this;
 	}
 

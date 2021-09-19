@@ -22,15 +22,17 @@ namespace milo {
 			float normalScale{1.0f};
 			// Flags
 			bool useNormalMap{false};
+			bool useCombinedMetallicRoughness{false};
 		};
 	public:
-		inline static const uint32_t TEXTURE_COUNT = 6;
+		inline static const uint32_t TEXTURE_COUNT = 7;
 	private:
 		Material::Data m_Data{};
 		// Textures
 		Ref<Texture2D> m_AlbedoMap{nullptr};
 		Ref<Texture2D> m_MetallicMap{nullptr};
 		Ref<Texture2D> m_RoughnessMap{nullptr};
+		Ref<Texture2D> m_MetallicRoughnessMap{nullptr};
 		Ref<Texture2D> m_OcclusionMap{nullptr};
 		Ref<Texture2D> m_EmissiveMap{nullptr};
 		Ref<Texture2D> m_NormalMap{nullptr};
@@ -56,6 +58,8 @@ namespace milo {
 		Material* normalScale(float value);
 		bool useNormalMap() const;
 		Material* useNormalMap(bool value);
+		bool useCombinedMetallicRoughness() const;
+		void useCombinedMetallicRoughness(bool value);
 		const Material::Data& data() const;
 		Ref<Texture2D> albedoMap() const;
 		Material* albedoMap(Ref<Texture2D> texture);
@@ -65,9 +69,11 @@ namespace milo {
 		Material* normalMap(Ref<Texture2D> texture);
 		Ref<Texture2D> metallicMap() const;
 		Material* metallicMap(Ref<Texture2D> texture);
-		Ref<Texture2D> occlusionMap() const;
-		Material* occlusionMap(Ref<Texture2D> texture);
 		Ref<Texture2D> roughnessMap() const;
 		Material* roughnessMap(Ref<Texture2D> texture);
+		Ref<Texture2D> metallicRoughnessMap() const;
+		Material* metallicRoughnessMap(Ref<Texture2D> texture);
+		Ref<Texture2D> occlusionMap() const;
+		Material* occlusionMap(Ref<Texture2D> texture);
 	};
 }

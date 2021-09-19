@@ -37,7 +37,6 @@ namespace milo {
 			allocInfo.mipLevels = 4;
 
 			irradianceMap->allocate(allocInfo);
-			irradianceMap->generateMipmaps();
 
 			VkSamplerCreateInfo samplerInfo = mvk::SamplerCreateInfo::create();
 			samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -71,6 +70,8 @@ namespace milo {
 
 		irradianceMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 								 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+		// irradianceMap->generateMipmaps();
 	}
 
 	void VulkanIrradianceMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo) {
