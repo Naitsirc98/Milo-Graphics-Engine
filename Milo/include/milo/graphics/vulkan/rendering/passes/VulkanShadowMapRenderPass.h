@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <milo/graphics/rendering/WorldRenderer.h>
@@ -57,7 +58,7 @@ namespace milo {
 		void execute(Scene* scene);
 	private:
 		void buildCommandBuffers(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
-		void renderShadowCascade(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex);
+		void renderShadowCascade(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex, VkRenderPassBeginInfo& renderPassInfo);
 		void renderScene(VkCommandBuffer commandBuffer, uint32_t index);
 		void renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex);
 		void bindMesh(VkCommandBuffer commandBuffer, const milo::DrawCommand& command) const;

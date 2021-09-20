@@ -467,12 +467,12 @@ namespace milo {
 				vkFramebuffer = vulkanFramebuffer->get(info.renderPass);
 			}
 
-			Viewport sceneViewport{};
+			Viewport theViewport{};
 
 			if(info.viewport == nullptr) {
-				sceneViewport = SceneManager::activeScene()->viewport();
+				theViewport = SceneManager::activeScene()->viewport();
 			} else {
-				sceneViewport = *info.viewport;
+				theViewport = *info.viewport;
 			}
 
 			VkRenderPassBeginInfo renderPassInfo = {};
@@ -480,8 +480,8 @@ namespace milo {
 			renderPassInfo.renderPass = info.renderPass;
 			renderPassInfo.framebuffer = vkFramebuffer;
 			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent.width = (uint32_t)sceneViewport.width;
-			renderPassInfo.renderArea.extent.height = (uint32_t)sceneViewport.height;
+			renderPassInfo.renderArea.extent.width = (uint32_t)theViewport.width;
+			renderPassInfo.renderArea.extent.height = (uint32_t)theViewport.height;
 
 			if(info.clearValues == nullptr) {
 				throw MILO_RUNTIME_EXCEPTION("VkClearValues is null!!");
@@ -496,12 +496,12 @@ namespace milo {
 
 			if(info.dynamicViewport) {
 				VkViewport viewport{};
-				viewport.x = (float)sceneViewport.x;
-				viewport.y = (float)sceneViewport.y;
-				viewport.width = (float)sceneViewport.width;
-				viewport.height = (float)sceneViewport.height;
-				viewport.minDepth = 0;
-				viewport.maxDepth = 1;
+				viewport.x = (float)theViewport.x;
+				viewport.y = (float)theViewport.y;
+				viewport.width = (float)theViewport.width;
+				viewport.height = (float)theViewport.height;
+				viewport.minDepth = 0.0f;
+				viewport.maxDepth = 1.0f;
 
 				VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
 			}
@@ -509,7 +509,7 @@ namespace milo {
 			if(info.dynamicScissor) {
 				VkRect2D scissor{};
 				scissor.offset = {0, 0};
-				scissor.extent = {(uint32_t)sceneViewport.width, (uint32_t)sceneViewport.height};
+				scissor.extent = {(uint32_t)theViewport.width, (uint32_t)theViewport.height};
 
 				VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
 			}

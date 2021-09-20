@@ -527,7 +527,7 @@ vec3 getDiffuseIBL() {
 }
 
 vec3 getSpecularIBL(vec3 F, float angle) {
-    float prefilterLOD = g_PBR.roughness * u_MaxPrefilterLOD + u_PrefilterLODBias;
+    float prefilterLOD = g_PBR.roughness;
     vec3 prefilteredColor = textureLod(u_PrefilterMap, g_PBR.reflectDir, prefilterLOD).rgb;
     vec2 brdf = texture(u_BRDF, vec2(angle, g_PBR.roughness)).rg;
     return prefilteredColor * (F * brdf.x + brdf.y);

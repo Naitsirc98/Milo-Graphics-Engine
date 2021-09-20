@@ -21,10 +21,10 @@ namespace milo {
 
 		struct EnvironmentData {
 			DirectionalLight dirLight{};
-			bool dirLightPresent{false};
+			bool dirLightPresent[4]{false};
 			float maxPrefilterLod{0};
 			float prefilterLodBias{0};
-			bool skyboxPresent{false};
+			bool skyboxPresent[4]{false};
 		};
 
 		struct PointLightsData {
@@ -37,16 +37,16 @@ namespace milo {
 		struct ShadowDetails {
 			Matrix4 u_LightMatrix[4]{};
 			Vector4 u_CascadeSplits{};
-			int u_TilesCountX{};
-			int u_ShowCascades{};
-			int u_SoftShadows{};
+			uint32_t u_TilesCountX{};
+			bool u_ShowCascades[4]{};
+			bool u_SoftShadows[4]{};
 			float u_LightSize{};
 			float u_MaxShadowDistance{};
 			float u_ShadowFade{};
-			int u_CascadeFading{};
+			bool u_CascadeFading[4]{};
 			float u_CascadeTransitionFade{};
-			int u_ShowLightComplexity{};
-			int u_ShadowsEnabled{};
+			bool u_ShowLightComplexity[4]{};
+			bool u_ShadowsEnabled[4]{};
 		};
 
 		// =============================================

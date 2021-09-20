@@ -198,13 +198,13 @@ namespace milo {
 
 			if(lights.dirLight.has_value()) {
 				env.dirLight = lights.dirLight.value();
-				env.dirLightPresent = true;
+				env.dirLightPresent[0] = true;
 			}
 
 			if(skybox != nullptr) {
 				env.maxPrefilterLod = skybox->maxPrefilterLOD();
 				env.prefilterLodBias = skybox->prefilterLODBias();
-				env.skyboxPresent = true;
+				env.skyboxPresent[0] = true;
 			}
 
 			m_EnvironmentUniformBuffer->update(imageIndex, env);
@@ -297,15 +297,15 @@ namespace milo {
 			const auto& cascades = WorldRenderer::get().shadowCascades();
 
 			ShadowDetails shadows{};
-			shadows.u_SoftShadows = true;
+			shadows.u_SoftShadows[0] = true;
 			shadows.u_ShadowFade = 1;
-			shadows.u_MaxShadowDistance = 200;
+			shadows.u_MaxShadowDistance = 400;
 			shadows.u_LightSize = 0.5f;
-			shadows.u_CascadeFading = true;
+			shadows.u_CascadeFading[0] = true;
 			shadows.u_CascadeTransitionFade = 1;
 			shadows.u_TilesCountX = (uint32_t) (scene->viewportSize().width / TILE_SIZE);
-			shadows.u_ShowLightComplexity = false;
-			shadows.u_ShadowsEnabled = false;
+			shadows.u_ShowLightComplexity[0] = false;
+			shadows.u_ShadowsEnabled[0] = true;
 
 			for(int32_t i = 0;i < cascades.size();++i) {
 				shadows.u_LightMatrix[i] = cascades[i].viewProj;

@@ -30,6 +30,7 @@ public:
 			MeshView& meshView = floor.addComponent<MeshView>();
 			meshView.mesh = Assets::meshes().getCube();
 			meshView.material = Assets::materials().getDefault();
+			meshView.castShadows = false;
 		}
 
 		Entity s1 = createSphere(scene, {-2.5f, 0, 0}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));

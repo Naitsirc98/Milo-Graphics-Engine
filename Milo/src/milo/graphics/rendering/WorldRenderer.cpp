@@ -68,7 +68,7 @@ namespace milo {
 			Mesh* mesh = meshView.mesh;
 			Material* material = meshView.material;
 			if(mesh == nullptr || material == nullptr) continue;
-			//if(mesh->canBeCulled() && !mesh->boundingVolume().isVisible(modelMatrix, camera.frustum.plane, 6)) continue; // TODO
+			if(mesh->canBeCulled() && !mesh->boundingVolume().isVisible(modelMatrix, camera.frustum.plane, 6)) continue; // TODO
 
 			DrawCommand drawCommand;
 			drawCommand.transform = modelMatrix;
@@ -76,7 +76,10 @@ namespace milo {
 			drawCommand.material = material;
 
 			drawCommands.push_back(drawCommand);
-			shadowsDrawCommands.push_back(drawCommand);
+
+			if(meshView.castShadows) {
+				shadowsDrawCommands.push_back(drawCommand);
+			}
 		}
 
 		std::sort(drawCommands.begin(), drawCommands.end());
@@ -151,6 +154,7 @@ namespace milo {
 
 		static const float CascadeFarPlaneOffset = 50.0f;
 		static const float CascadeNearPlaneOffset = -50.0f;
+		static const float CascadeSplitLambda = 0.92f;
 
 		float fov, zNear, zFar;
 		decomposeProjectionMatrix(s_Instance->m_Camera.proj, fov, zNear, zFar);
@@ -164,8 +168,29 @@ namespace milo {
 
 		auto& shadowCascades = s_Instance->m_ShadowCascades;
 
-		float cascadeRanges[5]{0.0f};
-		calculateShadowCascadeRanges(cascadeRanges, zNear, zFar);
+		zNear = 0.1f;
+		zFar = 1000.0f;
+		zRange = zFar - zNear;
+
+		float minZ = zNear;
+		float maxZ = zNear + zRange;
+
+		float range = maxZ - minZ;
+		float ratio = maxZ / minZ;
+
+		// Calculate split depths based on view camera frustum
+		// Based on method presented in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
+		const float SHADOW_MAP_CASCADE_COUNT = 4;
+		float cascadeSplits[(uint32_t)SHADOW_MAP_CASCADE_COUNT];
+		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; ++i) {
+			float p = (i + 1) / static_cast<float>(SHADOW_MAP_CASCADE_COUNT);
+			float log = minZ * std::pow(ratio, p);
+			float uniform = minZ + range * p;
+			float d = CascadeSplitLambda * (log - uniform) + uniform;
+			cascadeSplits[i] = (d - zNear) / zRange;
+		}
+
+		cascadeSplits[3] = 0.3f;
 
 		float lastSplitDist = 0.0f;
 
@@ -173,7 +198,7 @@ namespace milo {
 
 			ShadowCascade& cascade = shadowCascades[index];
 
-			float splitDist = cascadeRanges[index];
+			float splitDist = cascadeSplits[index];
 
 			Vector3 frustumCorners[8] = {
 					Vector3(-1.0f,  1.0f, -1.0f),
@@ -238,7 +263,7 @@ namespace milo {
 			cascade.viewProj = lightOrthoMatrix * lightViewMatrix;
 			cascade.view = lightViewMatrix;
 
-			lastSplitDist = cascadeRanges[index];
+			lastSplitDist = cascadeSplits[index];
 		}
 	}
 

@@ -16,7 +16,7 @@ namespace milo {
 		Cubemap* m_PrefilterMap{nullptr};
 		Texture2D* m_BRDFMap{nullptr};
 		float m_MaxPrefilterLOD{4.0f};
-		float m_PrefilterLODBias{-0.25f};
+		float m_PrefilterLODBias{-1.0f};
 		uint32_t m_Modifications{1};
 	protected:
 		Skybox(String name, String filename);

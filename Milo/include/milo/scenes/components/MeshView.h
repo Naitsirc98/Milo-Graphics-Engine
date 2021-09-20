@@ -11,6 +11,7 @@ namespace milo {
 		Mesh* mesh{Assets::meshes().getCube()};
 		Material* material{Assets::materials().getDefault()};
 		bool opaque = true;
+		bool castShadows = true;
 	};
 
 }

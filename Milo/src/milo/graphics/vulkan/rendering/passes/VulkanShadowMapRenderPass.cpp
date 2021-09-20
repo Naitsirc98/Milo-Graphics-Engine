@@ -68,38 +68,46 @@ namespace milo {
 
 	void VulkanShadowMapRenderPass::buildCommandBuffers(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
 
-		renderShadowCascade(imageIndex, commandBuffer, 0);
-		renderShadowCascade(imageIndex, commandBuffer, 1);
-		renderShadowCascade(imageIndex, commandBuffer, 2);
-		renderShadowCascade(imageIndex, commandBuffer, 3);
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = m_RenderPass;
+		renderPassInfo.renderArea.offset = {0, 0};
+		renderPassInfo.renderArea.extent = {4096, 4096};
+
+		VkClearValue clearValues[1];
+		clearValues[0].depthStencil = {1, 0};
+
+		renderPassInfo.pClearValues = clearValues;
+		renderPassInfo.clearValueCount = 1;
+
+		VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+		{
+			bindDescriptorSets(imageIndex, commandBuffer);
+
+			VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
+
+			renderShadowCascade(imageIndex, commandBuffer, 0, renderPassInfo);
+			renderShadowCascade(imageIndex, commandBuffer, 1, renderPassInfo);
+			renderShadowCascade(imageIndex, commandBuffer, 2, renderPassInfo);
+			renderShadowCascade(imageIndex, commandBuffer, 3, renderPassInfo);
+		}
+		VK_CALLV(vkEndCommandBuffer(commandBuffer));
 	}
 
-	inline void VulkanShadowMapRenderPass::renderShadowCascade(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex) {
+	inline void VulkanShadowMapRenderPass::renderShadowCascade(uint32_t imageIndex, VkCommandBuffer commandBuffer,
+															   uint32_t cascadeIndex, VkRenderPassBeginInfo& renderPassInfo) {
 
-		mvk::CommandBuffer::BeginGraphicsRenderPassInfo beginInfo{};
-		beginInfo.renderPass = m_RenderPass;
-		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
-		beginInfo.vkFramebuffer = m_ShadowCascades[cascadeIndex].framebuffer;
-		beginInfo.dynamicViewport = false;
-		beginInfo.dynamicScissor = false;
-		beginInfo.subpassContents = VK_SUBPASS_CONTENTS_INLINE;
 
-		Viewport viewport = {0, 0, 4096, 4096};
-		beginInfo.viewport = &viewport;
+		renderPassInfo.framebuffer = m_ShadowCascades[cascadeIndex].framebuffer;
 
-		VkClearValue clearValues;
-		clearValues.depthStencil = {1, 0};
-		beginInfo.clearValues = &clearValues;
-		beginInfo.clearValuesCount = 1;
+		VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
 
-		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
-		renderMeshViews(imageIndex, commandBuffer, cascadeIndex);
-		mvk::CommandBuffer::endGraphicsRenderPass(commandBuffer);
-	}
-
-	inline void VulkanShadowMapRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex) {
-		bindDescriptorSets(imageIndex * MAX_SHADOW_CASCADES + cascadeIndex, commandBuffer);
 		renderScene(commandBuffer, cascadeIndex);
+
+		VK_CALLV(vkCmdEndRenderPass(commandBuffer));
 	}
 
 	inline void VulkanShadowMapRenderPass::bindDescriptorSets(uint32_t index, VkCommandBuffer commandBuffer) {
@@ -127,7 +135,7 @@ namespace milo {
 
 		Mesh* lastMesh = nullptr;
 
-		for(const DrawCommand& command : WorldRenderer::get().drawCommands()) {
+		for(const DrawCommand& command : WorldRenderer::get().shadowsDrawCommands()) {
 
 			if(lastMesh != command.mesh) {
 				bindMesh(commandBuffer, command);
@@ -193,7 +201,7 @@ namespace milo {
 		subpass.pDepthStencilAttachment = &depthReference;
 
 		// Use subpass dependencies for layout transitions
-		std::array<VkSubpassDependency, 2> dependencies{};
+		Array<VkSubpassDependency, 2> dependencies{};
 
 		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependencies[0].dstSubpass = 0;
@@ -226,7 +234,7 @@ namespace milo {
 	void VulkanShadowMapRenderPass::createDescriptorSetLayoutAndPool() {
 
 		mvk::DescriptorSet::CreateInfo createInfo{};
-		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT * MAX_SHADOW_CASCADES;
+		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT;
 		createInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
 
@@ -236,12 +244,12 @@ namespace milo {
 
 	void VulkanShadowMapRenderPass::createUniformBuffer() {
 		m_UniformBuffer = new VulkanUniformBuffer<ShadowData>();
-		m_UniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT * MAX_SHADOW_CASCADES);
+		m_UniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
 	void VulkanShadowMapRenderPass::createDescriptorSets() {
 
-		m_DescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT * MAX_SHADOW_CASCADES, [&](uint32_t index, VkDescriptorSet descriptorSet) {
+		m_DescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
 
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBuffer->vkBuffer();
@@ -272,6 +280,8 @@ namespace milo {
 
 		pipelineInfo.shaders.push_back({"resources/shaders/shadows/shadow_map.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaders.push_back({"resources/shaders/shadows/shadow_map.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
+
+		//pipelineInfo.dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 
 		const Size& size = WorldRenderer::get().shadowsMapSize();
 
