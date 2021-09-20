@@ -22,6 +22,16 @@ public:
 
 		scene->setSkyEntity(skyboxEntity.id());
 
+		{
+			Entity floor = scene->createEntity("Floor");
+			Transform& t = floor.getComponent<Transform>();
+			t.translation({0, -4, 0});
+			t.scale({100, 0.2f, 100});
+			MeshView& meshView = floor.addComponent<MeshView>();
+			meshView.mesh = Assets::meshes().getCube();
+			meshView.material = Assets::materials().getDefault();
+		}
+
 		Entity s1 = createSphere(scene, {-2.5f, 0, 0}, Assets::materials().load("Plastic", "resources/materials/Plastic/M_Plastic.mat"));
 		Entity s2 = createSphere(scene, {2.5f, 0, 0}, Assets::materials().load("Gold", "resources/materials/Gold/M_Gold.mat"));
 
@@ -43,7 +53,7 @@ public:
 		PointLight& p2 = light2.addComponent<PointLight>();
 		p2.color = {0, 0, 1, 0};
 
-		Entity sun = createSphere(scene, {0, 20, 0}, Assets::materials().getDefault());
+		Entity sun = createSphere(scene, {0, 12, 0}, Assets::materials().getDefault());
 		sun.setName("Sun");
 		sun.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
 		sun.addComponent<DirectionalLight>().direction = {0, 1, 0};

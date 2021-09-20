@@ -9,6 +9,7 @@ namespace milo {
 
 		m_File = filename;
 		m_Dir = Files::parentOf(filename);
+		m_LoadedTextureNames.clear();
 
 		Assimp::Importer importer;
 
@@ -174,7 +175,16 @@ namespace milo {
 			*present = true;
 		}
 
+		m_LoadedTextureNames.insert(texture->name());
+
 		return texture;
+	}
+
+	inline static bool containsAny(const String& s, const HashSet<String>& tokens) {
+		for(const String& token : tokens) {
+			if(s.find(token) != String::npos) return true;
+		}
+		return false;
 	}
 
 	void AssimpModelLoader::processMaterial(const aiScene* aiScene, const aiMaterial* aiMaterial, Material* outMaterial) {
@@ -194,6 +204,7 @@ namespace milo {
 		bool hasMetallicMap = false;
 		bool hasRoughnessMap = false;
 		bool hasOcclusionMap = false;
+		bool hasMetallicRoughnessMap = false;
 
 		outMaterial->m_AlbedoMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE, PixelFormat::RGBA8, &hasAlbedoMap);
 		outMaterial->m_EmissiveMap = getTexture(aiScene, aiMaterial, aiTextureType_EMISSIVE, PixelFormat::RGBA8, &hasEmissiveMap);
@@ -202,10 +213,35 @@ namespace milo {
 		outMaterial->m_RoughnessMap = getTexture(aiScene, aiMaterial, aiTextureType_DIFFUSE_ROUGHNESS, PixelFormat::RGBA8, &hasRoughnessMap);
 		outMaterial->m_OcclusionMap = getTexture(aiScene, aiMaterial, aiTextureType_AMBIENT_OCCLUSION, PixelFormat::RGBA8, &hasOcclusionMap);
 
-		if(!hasMetallicMap && !hasRoughnessMap) {
-			bool hasMetallicRoughnessMap = false;
-			outMaterial->m_MetallicRoughnessMap = getTexture(aiScene, aiMaterial, aiTextureType_UNKNOWN, PixelFormat::RGBA8, &hasMetallicRoughnessMap);
-			outMaterial->useCombinedMetallicRoughness(hasMetallicRoughnessMap);
+		static const HashSet<String> imageExtensions = {".PNG", ".png", ".jpg", ".JPG", ".jpeg", ".JPEG", ".tga", ".TGA", ".gif", ".GIF", ".bmp", ".BMP"};
+		static const HashSet<String> metRoughKeys = {"met", "rough", "Rough", "Met"};
+		static const HashSet<String> occlusionKeys = {"occlusion", "AO", "ao"};
+
+		for(const String& file : Files::listFiles(m_Dir)) {
+
+			String filename = Files::getName(file);
+			String extension = Files::extension(filename);
+
+			if(imageExtensions.find(extension) == imageExtensions.end()) continue;
+
+			if(std::find(m_LoadedTextureNames.begin(), m_LoadedTextureNames.end(), filename) != m_LoadedTextureNames.end()) {
+				continue;
+			}
+
+			auto texture = Assets::textures().load(file, PixelFormat::RGBA8);
+			texture->setName(filename);
+
+			if(!hasMetallicRoughnessMap && !hasMetallicMap && !hasRoughnessMap && containsAny(filename, metRoughKeys)) {
+
+				outMaterial->m_MetallicRoughnessMap = texture;
+				hasMetallicRoughnessMap = true;
+				outMaterial->useCombinedMetallicRoughness(hasMetallicRoughnessMap);
+
+			} else if(!hasOcclusionMap && containsAny(filename, occlusionKeys)) {
+
+				outMaterial->m_OcclusionMap = texture;
+				hasOcclusionMap = true;
+			}
 		}
 	}
 }

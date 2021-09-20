@@ -305,9 +305,10 @@ namespace milo {
 			shadows.u_CascadeTransitionFade = 1;
 			shadows.u_TilesCountX = (uint32_t) (scene->viewportSize().width / TILE_SIZE);
 			shadows.u_ShowLightComplexity = false;
-			shadows.u_ShadowsEnabled = true;
+			shadows.u_ShadowsEnabled = false;
 
 			for(int32_t i = 0;i < cascades.size();++i) {
+				shadows.u_LightMatrix[i] = cascades[i].viewProj;
 				shadows.u_CascadeSplits[i] = cascades[i].splitDepth;
 			}
 

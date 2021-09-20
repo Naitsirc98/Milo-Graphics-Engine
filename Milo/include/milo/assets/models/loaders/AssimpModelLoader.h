@@ -3,13 +3,18 @@
 #include "milo/assets/models/ModelLoader.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
+#include <unordered_set>
 
 namespace milo {
+
+	template<typename T>
+	using HashSet = std::unordered_set<T>;
 
 	class AssimpModelLoader : public ModelLoader {
 	private:
 		String m_File;
 		String m_Dir;
+		HashSet<String> m_LoadedTextureNames;
 	public:
 		Model* load(const String& filename) override;
 	private:

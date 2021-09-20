@@ -98,7 +98,7 @@ namespace milo {
 	}
 
 	inline void VulkanShadowMapRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, uint32_t cascadeIndex) {
-		bindDescriptorSets(imageIndex, commandBuffer);
+		bindDescriptorSets(imageIndex * MAX_SHADOW_CASCADES + cascadeIndex, commandBuffer);
 		renderScene(commandBuffer, cascadeIndex);
 	}
 
@@ -173,15 +173,15 @@ namespace milo {
 
 	void VulkanShadowMapRenderPass::createRenderPass() {
 
-		VkAttachmentDescription attachmentDescription{};
-		attachmentDescription.format = VK_FORMAT_D32_SFLOAT;
-		attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-		attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+		VkAttachmentDescription depthAttachment{};
+		depthAttachment.format = VK_FORMAT_D32_SFLOAT;
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
 		VkAttachmentReference depthReference = {};
 		depthReference.attachment = 0;
@@ -214,7 +214,7 @@ namespace milo {
 		VkRenderPassCreateInfo renderPassCreateInfo{};
 		renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassCreateInfo.attachmentCount = 1;
-		renderPassCreateInfo.pAttachments = &attachmentDescription;
+		renderPassCreateInfo.pAttachments = &depthAttachment;
 		renderPassCreateInfo.subpassCount = 1;
 		renderPassCreateInfo.pSubpasses = &subpass;
 		renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
@@ -226,7 +226,7 @@ namespace milo {
 	void VulkanShadowMapRenderPass::createDescriptorSetLayoutAndPool() {
 
 		mvk::DescriptorSet::CreateInfo createInfo{};
-		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT;
+		createInfo.numSets = MAX_SWAPCHAIN_IMAGE_COUNT * MAX_SHADOW_CASCADES;
 		createInfo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		createInfo.descriptors.push_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
 
@@ -236,12 +236,12 @@ namespace milo {
 
 	void VulkanShadowMapRenderPass::createUniformBuffer() {
 		m_UniformBuffer = new VulkanUniformBuffer<ShadowData>();
-		m_UniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
+		m_UniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT * MAX_SHADOW_CASCADES);
 	}
 
 	void VulkanShadowMapRenderPass::createDescriptorSets() {
 
-		m_DescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT, [&](uint32_t index, VkDescriptorSet descriptorSet) {
+		m_DescriptorPool->allocate(MAX_SWAPCHAIN_IMAGE_COUNT * MAX_SHADOW_CASCADES, [&](uint32_t index, VkDescriptorSet descriptorSet) {
 
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBuffer->vkBuffer();
@@ -275,7 +275,7 @@ namespace milo {
 
 		const Size& size = WorldRenderer::get().shadowsMapSize();
 
-		pipelineInfo.viewport = {0, 0, (float)size.width, (float)size.height};
+		pipelineInfo.viewport = {0, 0, (float)size.width, (float)size.height, 0, 1};
 		pipelineInfo.scissor = {{0, 0}, {(uint32_t)size.width, (uint32_t)size.height}};
 
 		VkPushConstantRange pushConstant;
@@ -324,14 +324,15 @@ namespace milo {
 
 		resourcePool.putTexture2D(ShadowMapRenderPass::getDepthMap(0), m_DepthTexture); // TODO
 
-		VkFormat depthFormat = mvk::fromPixelFormat(allocInfo.format);
 		for(uint32_t i = 0;i < m_ShadowCascades.size();++i) {
 
 			VulkanShadowCascade& cascade = m_ShadowCascades[i];
 
 			cascade.imageView = m_DepthTexture->getLayer(i);
 
-			VkFramebufferCreateInfo framebufferInfo = mvk::FramebufferCreateInfo::create(m_RenderPass);
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = m_RenderPass;
 			framebufferInfo.pAttachments = &cascade.imageView;
 			framebufferInfo.attachmentCount = 1;
 			framebufferInfo.width = 4096;

@@ -23,7 +23,7 @@ namespace milo {
 
 		m_ViewInfo.subresourceRange.layerCount = createInfo.arrayLayers;
 
-		if((createInfo.usage & TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
+		if(createInfo.usage & TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
 			m_ViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 		} else {
 			m_ViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
