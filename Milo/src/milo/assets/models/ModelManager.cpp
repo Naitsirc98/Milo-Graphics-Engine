@@ -18,8 +18,8 @@ namespace milo {
 		// TODO
 		//Model* sponza = load("Sponza", "resources/models/Sponza/Sponza.gltf");
 		//sponza->setCanBeCulled(false);
-		Model* damagedHelment = load("DamagedHelmet", "resources/models/DamagedHelmet/DamagedHelmet.gltf");
-		damagedHelment->setCanBeCulled(false);
+		Model* damagedHelmet = load("DamagedHelmet", "resources/models/DamagedHelmet/DamagedHelmet.gltf");
+		damagedHelmet->setCanBeCulled(false);
 	}
 
 	Model* ModelManager::getSponza() const {

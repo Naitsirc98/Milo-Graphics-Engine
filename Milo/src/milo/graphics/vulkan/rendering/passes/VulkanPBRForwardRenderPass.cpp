@@ -299,14 +299,14 @@ namespace milo {
 			ShadowDetails shadows{};
 			shadows.u_SoftShadows[0] = true;
 			shadows.u_ShadowFade = 1;
-			shadows.u_MaxShadowDistance = 1000;
+			shadows.u_MaxShadowDistance = 200;
 			shadows.u_LightSize = 0.5f;
 			shadows.u_CascadeFading[0] = true;
 			shadows.u_CascadeTransitionFade = 1;
 			shadows.u_TilesCountX = (uint32_t) (scene->viewportSize().width / TILE_SIZE);
 			shadows.u_ShowLightComplexity[0] = false;
 			shadows.u_ShadowsEnabled[0] = true;
-			shadows.u_ShowCascades[0] = true;
+			shadows.u_ShowCascades[0] = false;
 
 			for(int32_t i = 0;i < cascades.size();++i) {
 				shadows.u_LightMatrix[i] = cascades[i].viewProj;

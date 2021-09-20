@@ -77,7 +77,7 @@ namespace milo {
 			uint32_t mipLevelSize = static_cast<uint32_t>(mapSize * powf(0.5f, i));
 
 			PushConstants pushConstants{};
-			pushConstants.roughness = (float)i / (float)(mipLevels);
+			pushConstants.roughness = (float)i / (float)(mipLevels - 1);
 			pushConstants.envMapResolution = envMapResolution;
 			pushConstants.mipLevel = i;
 			pushConstants.numSamples = 32;
