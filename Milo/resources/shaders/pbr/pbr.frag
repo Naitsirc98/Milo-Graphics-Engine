@@ -448,9 +448,9 @@ float PCSS_DirectionalLight(sampler2DArray shadowMap, uint cascade, vec3 shadowC
 
 /////////////////////////////////////////////
 
-float computeCascadeShadows() {
+uint cascadeIndex = 0;
 
-    uint cascadeIndex = 0;
+float computeCascadeShadows() {
 
     const uint SHADOW_MAP_CASCADE_COUNT = 4;
     for (uint i = 0; i < SHADOW_MAP_CASCADE_COUNT - 1; i++) {
@@ -624,4 +624,21 @@ void main() {
     vec4 color = computeLighting();
     vec4 emissive = u_Material.emissiveColor * texture(u_EmissiveMap, fragment.texCoords);
     out_FragColor = color + emissive;
+
+    if (u_ShowCascades) {
+        switch (cascadeIndex) {
+            case 0:
+            out_FragColor.rgb *= vec3(1.0f, 0.25f, 0.25f);
+            break;
+            case 1:
+            out_FragColor.rgb *= vec3(0.25f, 1.0f, 0.25f);
+            break;
+            case 2:
+            out_FragColor.rgb *= vec3(0.25f, 0.25f, 1.0f);
+            break;
+            case 3:
+            out_FragColor.rgb *= vec3(1.0f, 1.0f, 0.25f);
+            break;
+        }
+    }
 }

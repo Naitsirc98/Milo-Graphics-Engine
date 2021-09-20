@@ -299,13 +299,14 @@ namespace milo {
 			ShadowDetails shadows{};
 			shadows.u_SoftShadows[0] = true;
 			shadows.u_ShadowFade = 1;
-			shadows.u_MaxShadowDistance = 400;
+			shadows.u_MaxShadowDistance = 1000;
 			shadows.u_LightSize = 0.5f;
 			shadows.u_CascadeFading[0] = true;
 			shadows.u_CascadeTransitionFade = 1;
 			shadows.u_TilesCountX = (uint32_t) (scene->viewportSize().width / TILE_SIZE);
 			shadows.u_ShowLightComplexity[0] = false;
 			shadows.u_ShadowsEnabled[0] = true;
+			shadows.u_ShowCascades[0] = true;
 
 			for(int32_t i = 0;i < cascades.size();++i) {
 				shadows.u_LightMatrix[i] = cascades[i].viewProj;
@@ -328,12 +329,12 @@ namespace milo {
 
 		for(uint32_t i = 0;i < 4;++i) {
 
-			imageInfos[i].imageView = shadowMap->getLayer(i);
+			imageInfos[i].imageView = shadowMap->vkImageView();
 			imageInfos[i].sampler = shadowMap->vkSampler();
 			imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
 			writeDescriptors[i] = mvk::WriteDescriptorSet::createCombineImageSamplerWrite(1, descriptorSet, 1, &imageInfos[i]);
-			writeDescriptors[i].dstArrayElement = i;
+			//writeDescriptors[i].dstArrayElement = i;
 		}
 
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 4, writeDescriptors, 0, nullptr));
@@ -444,7 +445,7 @@ namespace milo {
 		// Shadow maps
 		bindings[1].binding = 1;
 		bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		bindings[1].descriptorCount = 4;
+		bindings[1].descriptorCount = 1;
 		bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};

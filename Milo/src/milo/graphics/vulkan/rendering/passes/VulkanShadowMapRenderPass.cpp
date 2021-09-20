@@ -62,8 +62,6 @@ namespace milo {
 		submitInfo.commandBufferCount = 1;
 
 		queue->submit(submitInfo, VK_NULL_HANDLE);
-
-		queue->awaitTermination();
 	}
 
 	void VulkanShadowMapRenderPass::buildCommandBuffers(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {

@@ -44,6 +44,7 @@ namespace milo {
 		Matrix4 projView = Matrix4(1.0);
 		Polyhedron frustum{};
 		Vector3 position{};
+		float aspect{0};
 	};
 
 	class WorldRenderer {
@@ -100,6 +101,7 @@ namespace milo {
 		static void generateLightEnvironment(Scene* scene);
 		static void calculateShadowCascades(Scene* scene);
 		static void calculateShadowCascadeRanges(float cascadeRanges[5], float zNear, float zFar);
+		static Vector3 getFrustumCorner(const Matrix4& projView, uint32_t corner);
 	};
 
 }

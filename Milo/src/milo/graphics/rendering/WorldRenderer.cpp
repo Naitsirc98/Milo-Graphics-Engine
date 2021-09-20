@@ -97,6 +97,7 @@ namespace milo {
 			c.projView = c.proj * c.view;
 			c.frustum = buildFrustumPolyhedron(camera.viewMatrix(), fov, camera.aspect(), znear, zfar);
 			c.position = camera.position();
+			c.aspect = camera.aspect();
 		} else {
 			const auto* camera = scene->camera();
 			float fov, znear, zfar;
@@ -109,6 +110,7 @@ namespace milo {
 			c.projView = c.proj * c.view;
 			c.frustum = buildFrustumPolyhedron(viewMatrix, fov, aspect, znear, zfar);
 			c.position = position;
+			c.aspect = aspect;
 		}
 	}
 
@@ -152,106 +154,109 @@ namespace milo {
 
 	void WorldRenderer::calculateShadowCascades(Scene* scene) {
 
-		static const float CascadeFarPlaneOffset = 50.0f;
 		static const float CascadeNearPlaneOffset = -50.0f;
+		static const float CascadeFarPlaneOffset = 50.0f;
 		static const float CascadeSplitLambda = 0.92f;
 
-		float fov, zNear, zFar;
-		decomposeProjectionMatrix(s_Instance->m_Camera.proj, fov, zNear, zFar);
-		zFar = std::min(zFar, s_Instance->m_ShadowsMaxDistance);
-		float zRange = zFar - zNear;
+		auto viewProjection = s_Instance->camera().projView;
 
-		const DirectionalLight& light = s_Instance->m_LightEnvironment.dirLight.value();
+		const int SHADOW_MAP_CASCADE_COUNT = 4;
+		float cascadeSplits[SHADOW_MAP_CASCADE_COUNT];
 
-		const Matrix4 projView = s_Instance->m_Camera.projView;
-		const Matrix4 invProjView = glm::inverse(projView);
+		// TODO: less hard-coding!
+		float nearClip = 0.1f;
+		float farClip = 1000.0f;
+		float clipRange = farClip - nearClip;
 
-		auto& shadowCascades = s_Instance->m_ShadowCascades;
-
-		zNear = 0.1f;
-		zFar = 1000.0f;
-		zRange = zFar - zNear;
-
-		float minZ = zNear;
-		float maxZ = zNear + zRange;
+		float minZ = nearClip;
+		float maxZ = nearClip + clipRange;
 
 		float range = maxZ - minZ;
 		float ratio = maxZ / minZ;
 
+		auto& cascades = s_Instance->m_ShadowCascades;
+
 		// Calculate split depths based on view camera frustum
 		// Based on method presented in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
-		const float SHADOW_MAP_CASCADE_COUNT = 4;
-		float cascadeSplits[(uint32_t)SHADOW_MAP_CASCADE_COUNT];
-		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; ++i) {
-			float p = (i + 1) / static_cast<float>(SHADOW_MAP_CASCADE_COUNT);
+		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
+		{
+			float p = (i + 1.0f) / static_cast<float>(SHADOW_MAP_CASCADE_COUNT);
 			float log = minZ * std::pow(ratio, p);
 			float uniform = minZ + range * p;
 			float d = CascadeSplitLambda * (log - uniform) + uniform;
-			cascadeSplits[i] = (d - zNear) / zRange;
+			cascadeSplits[i] = (d - nearClip) / clipRange;
 		}
 
-		cascadeSplits[3] = 0.3f;
+		//cascadeSplits[3] = 0.3f;
 
-		float lastSplitDist = 0.0f;
+		// Manually set cascades here
+		// cascadeSplits[0] = 0.05f;
+		// cascadeSplits[1] = 0.15f;
+		// cascadeSplits[2] = 0.3f;
+		// cascadeSplits[3] = 1.0f;
 
-		for(uint32_t index = 0; index < shadowCascades.size(); ++index) {
+		// Calculate orthographic projection matrix for each cascade
+		float lastSplitDist = 0.0;
+		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
+		{
+			float splitDist = cascadeSplits[i];
 
-			ShadowCascade& cascade = shadowCascades[index];
-
-			float splitDist = cascadeSplits[index];
-
-			Vector3 frustumCorners[8] = {
-					Vector3(-1.0f,  1.0f, -1.0f),
-					Vector3(1.0f,  1.0f, -1.0f),
-					Vector3(1.0f, -1.0f, -1.0f),
-					Vector3(-1.0f, -1.0f, -1.0f),
-					Vector3(-1.0f,  1.0f,  1.0f),
-					Vector3(1.0f,  1.0f,  1.0f),
-					Vector3(1.0f, -1.0f,  1.0f),
-					Vector3(-1.0f, -1.0f,  1.0f),
+			glm::vec3 frustumCorners[8] = {
+					glm::vec3(-1.0f,  1.0f, -1.0f),
+					glm::vec3(1.0f,  1.0f, -1.0f),
+					glm::vec3(1.0f, -1.0f, -1.0f),
+					glm::vec3(-1.0f, -1.0f, -1.0f),
+					glm::vec3(-1.0f,  1.0f,  1.0f),
+					glm::vec3(1.0f,  1.0f,  1.0f),
+					glm::vec3(1.0f, -1.0f,  1.0f),
+					glm::vec3(-1.0f, -1.0f,  1.0f),
 			};
 
 			// Project frustum corners into world space
-			for (uint32_t i = 0; i < 8; i++) {
-				Vector4 invCorner = invProjView * Vector4(frustumCorners[i], 1.0f);
+			glm::mat4 invCam = glm::inverse(viewProjection);
+			for (uint32_t i = 0; i < 8; i++)
+			{
+				glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[i], 1.0f);
 				frustumCorners[i] = invCorner / invCorner.w;
 			}
 
-			for (uint32_t i = 0; i < 4; i++) {
-				Vector3 dist = frustumCorners[i + 4] - frustumCorners[i];
+			for (uint32_t i = 0; i < 4; i++)
+			{
+				glm::vec3 dist = frustumCorners[i + 4] - frustumCorners[i];
 				frustumCorners[i + 4] = frustumCorners[i] + (dist * splitDist);
 				frustumCorners[i] = frustumCorners[i] + (dist * lastSplitDist);
 			}
 
 			// Get frustum center
-			Vector3 frustumCenter = Vector3(0.0f);
-			for (uint32_t i = 0; i < 8; i++) {
+			glm::vec3 frustumCenter = glm::vec3(0.0f);
+			for (uint32_t i = 0; i < 8; i++)
 				frustumCenter += frustumCorners[i];
-			}
+
 			frustumCenter /= 8.0f;
 
-			//frustumCenter *= 0.01f;
+			//frustumCenter *= 0.1f;
 
 			float radius = 0.0f;
-			for (uint32_t i = 0; i < 8; i++) {
+			for (uint32_t i = 0; i < 8; i++)
+			{
 				float distance = glm::length(frustumCorners[i] - frustumCenter);
 				radius = glm::max(radius, distance);
 			}
 			radius = std::ceil(radius * 16.0f) / 16.0f;
 
-			Vector3 maxExtents = Vector3(radius);
-			Vector3 minExtents = -maxExtents;
+			glm::vec3 maxExtents = glm::vec3(radius);
+			glm::vec3 minExtents = -maxExtents;
 
-			Vector3 lightDir = -light.direction;
-			Matrix4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, Vector3(0.0f, 0.0f, 1.0f));
-			Matrix4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f + CascadeNearPlaneOffset, maxExtents.z - minExtents.z + CascadeFarPlaneOffset);
+			glm::vec3 lightDir = -glm::normalize(s_Instance->m_LightEnvironment.dirLight->direction);
+			glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 0.0f, 1.0f));
+			glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f + CascadeNearPlaneOffset, maxExtents.z - minExtents.z + CascadeFarPlaneOffset);
 
 			// Offset to texel space to avoid shimmering (from https://stackoverflow.com/questions/33499053/cascaded-shadow-map-shimmering)
-			Matrix4 shadowMatrix = lightOrthoMatrix * lightViewMatrix;
+			glm::mat4 shadowMatrix = lightOrthoMatrix * lightViewMatrix;
 			const float ShadowMapResolution = 4096.0f;
-			Vector4 shadowOrigin = (shadowMatrix * Vector4(0.0f, 0.0f, 0.0f, 1.0f)) * ShadowMapResolution / 2.0f;
-			Vector4 roundedOrigin = glm::round(shadowOrigin);
-			Vector4 roundOffset = roundedOrigin - shadowOrigin;
+			glm::vec4 shadowOrigin = (shadowMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) * ShadowMapResolution / 2.0f;
+			glm::vec4 roundedOrigin = glm::round(shadowOrigin);
+			glm::vec4 roundOffset = roundedOrigin - shadowOrigin;
 			roundOffset = roundOffset * 2.0f / ShadowMapResolution;
 			roundOffset.z = 0.0f;
 			roundOffset.w = 0.0f;
@@ -259,11 +264,11 @@ namespace milo {
 			lightOrthoMatrix[3] += roundOffset;
 
 			// Store split distance and matrix in cascade
-			cascade.splitDepth = (zNear + splitDist * zRange) * -1.0f;
-			cascade.viewProj = lightOrthoMatrix * lightViewMatrix;
-			cascade.view = lightViewMatrix;
+			cascades[i].splitDepth = (nearClip + splitDist * clipRange) * -1.0f;
+			cascades[i].viewProj = lightOrthoMatrix * lightViewMatrix;
+			cascades[i].view = lightViewMatrix;
 
-			lastSplitDist = cascadeSplits[index];
+			lastSplitDist = cascadeSplits[i];
 		}
 	}
 
@@ -371,5 +376,147 @@ namespace milo {
 
 	void WorldRenderer::shutdown() {
 		DELETE_PTR(s_Instance);
+	}
+
+	Vector3 WorldRenderer::getFrustumCorner(const Matrix4& m, uint32_t corner) {
+		float d1, d2, d3;
+		float n1x, n1y, n1z, n2x, n2y, n2z, n3x, n3y, n3z;
+		switch (corner) {
+			case 0: // left, bottom, near
+				n1x = m[0][3] + m[0][0];
+				n1y = m[1][3] + m[1][0];
+				n1z = m[2][3] + m[2][0];
+				d1 = m[3][3] + m[3][0]; // left
+				n2x = m[0][3] + m[0][1];
+				n2y = m[1][3] + m[1][1];
+				n2z = m[2][3] + m[2][1];
+				d2 = m[3][3] + m[3][1]; // bottom
+				n3x = m[0][3] + m[0][2];
+				n3y = m[1][3] + m[1][2];
+				n3z = m[2][3] + m[2][2];
+				d3 = m[3][3] + m[3][2]; // near
+				break;
+			case 1: // right, bottom, near
+				n1x = m[0][3] - m[0][0];
+				n1y = m[1][3] - m[1][0];
+				n1z = m[2][3] - m[2][0];
+				d1 = m[3][3] - m[3][0]; // right
+				n2x = m[0][3] + m[0][1];
+				n2y = m[1][3] + m[1][1];
+				n2z = m[2][3] + m[2][1];
+				d2 = m[3][3] + m[3][1]; // bottom
+				n3x = m[0][3] + m[0][2];
+				n3y = m[1][3] + m[1][2];
+				n3z = m[2][3] + m[2][2];
+				d3 = m[3][3] + m[3][2]; // near
+				break;
+			case 2: // right, top, near
+				n1x = m[0][3] - m[0][0];
+				n1y = m[1][3] - m[1][0];
+				n1z = m[2][3] - m[2][0];
+				d1 = m[3][3] - m[3][0]; // right
+				n2x = m[0][3] - m[0][1];
+				n2y = m[1][3] - m[1][1];
+				n2z = m[2][3] - m[2][1];
+				d2 = m[3][3] - m[3][1]; // top
+				n3x = m[0][3] + m[0][2];
+				n3y = m[1][3] + m[1][2];
+				n3z = m[2][3] + m[2][2];
+				d3 = m[3][3] + m[3][2]; // near
+				break;
+			case 3: // left, top, near
+				n1x = m[0][3] + m[0][0];
+				n1y = m[1][3] + m[1][0];
+				n1z = m[2][3] + m[2][0];
+				d1 = m[3][3] + m[3][0]; // left
+				n2x = m[0][3] - m[0][1];
+				n2y = m[1][3] - m[1][1];
+				n2z = m[2][3] - m[2][1];
+				d2 = m[3][3] - m[3][1]; // top
+				n3x = m[0][3] + m[0][2];
+				n3y = m[1][3] + m[1][2];
+				n3z = m[2][3] + m[2][2];
+				d3 = m[3][3] + m[3][2]; // near
+				break;
+			case 4: // right, bottom, far
+				n1x = m[0][3] - m[0][0];
+				n1y = m[1][3] - m[1][0];
+				n1z = m[2][3] - m[2][0];
+				d1 = m[3][3] - m[3][0]; // right
+				n2x = m[0][3] + m[0][1];
+				n2y = m[1][3] + m[1][1];
+				n2z = m[2][3] + m[2][1];
+				d2 = m[3][3] + m[3][1]; // bottom
+				n3x = m[0][3] - m[0][2];
+				n3y = m[1][3] - m[1][2];
+				n3z = m[2][3] - m[2][2];
+				d3 = m[3][3] - m[3][2]; // far
+				break;
+			case 5: // left, bottom, far
+				n1x = m[0][3] + m[0][0];
+				n1y = m[1][3] + m[1][0];
+				n1z = m[2][3] + m[2][0];
+				d1 = m[3][3] + m[3][0]; // left
+				n2x = m[0][3] + m[0][1];
+				n2y = m[1][3] + m[1][1];
+				n2z = m[2][3] + m[2][1];
+				d2 = m[3][3] + m[3][1]; // bottom
+				n3x = m[0][3] - m[0][2];
+				n3y = m[1][3] - m[1][2];
+				n3z = m[2][3] - m[2][2];
+				d3 = m[3][3] - m[3][2]; // far
+				break;
+			case 6: // left, top, far
+				n1x = m[0][3] + m[0][0];
+				n1y = m[1][3] + m[1][0];
+				n1z = m[2][3] + m[2][0];
+				d1 = m[3][3] + m[3][0]; // left
+				n2x = m[0][3] - m[0][1];
+				n2y = m[1][3] - m[1][1];
+				n2z = m[2][3] - m[2][1];
+				d2 = m[3][3] - m[3][1]; // top
+				n3x = m[0][3] - m[0][2];
+				n3y = m[1][3] - m[1][2];
+				n3z = m[2][3] - m[2][2];
+				d3 = m[3][3] - m[3][2]; // far
+				break;
+			case 7: // right, top, far
+				n1x = m[0][3] - m[0][0];
+				n1y = m[1][3] - m[1][0];
+				n1z = m[2][3] - m[2][0];
+				d1 = m[3][3] - m[3][0]; // right
+				n2x = m[0][3] - m[0][1];
+				n2y = m[1][3] - m[1][1];
+				n2z = m[2][3] - m[2][1];
+				d2 = m[3][3] - m[3][1]; // top
+				n3x = m[0][3] - m[0][2];
+				n3y = m[1][3] - m[1][2];
+				n3z = m[2][3] - m[2][2];
+				d3 = m[3][3] - m[3][2]; // far
+				break;
+			default:
+				throw MILO_RUNTIME_EXCEPTION("Invalid corner value");
+		}
+		float c23x, c23y, c23z;
+		c23x = n2y * n3z - n2z * n3y;
+		c23y = n2z * n3x - n2x * n3z;
+		c23z = n2x * n3y - n2y * n3x;
+		float c31x, c31y, c31z;
+		c31x = n3y * n1z - n3z * n1y;
+		c31y = n3z * n1x - n3x * n1z;
+		c31z = n3x * n1y - n3y * n1x;
+		float c12x, c12y, c12z;
+		c12x = n1y * n2z - n1z * n2y;
+		c12y = n1z * n2x - n1x * n2z;
+		c12z = n1x * n2y - n1y * n2x;
+		float invDot = 1.0f / (n1x * c23x + n1y * c23y + n1z * c23z);
+
+		Vector3 result;
+
+		result.x = (- c23x * d1 - c31x * d2 - c12x * d3) * invDot;
+		result.y = (- c23y * d1 - c31y * d2 - c12y * d3) * invDot;
+		result.z = (- c23z * d1 - c31z * d2 - c12z * d3) * invDot;
+
+		return result;
 	}
 }
