@@ -103,6 +103,11 @@ namespace milo {
 		VulkanCubemap* prefilterMap = VulkanCubemap::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 		VulkanTexture2D* brdfMap = VulkanTexture2D::create(TEXTURE_USAGE_SAMPLED_BIT | TEXTURE_USAGE_STORAGE_BIT);
 
+		environmentMap->setName(name + "_EnvironmentMap");
+		irradianceMap->setName(name + "_IrradianceMap");
+		prefilterMap->setName(name + "_PrefilterMap");
+		brdfMap->setName(name + "_BRDFMap");
+
 		VulkanSkyboxPassExecuteInfo execInfo{};
 		execInfo.environmentMap = environmentMap;
 		execInfo.irradianceMap = irradianceMap;
@@ -132,11 +137,6 @@ namespace milo {
 		sky->m_MaxPrefilterLOD = loadInfo.maxLOD;
 		sky->turbidity(turbidity)->azimuth(azimuth)->inclination(inclination);
 		sky->m_Dirty = false;
-
-		environmentMap->setName(name + "_EnvironmentMap");
-		irradianceMap->setName(name + "_IrradianceMap");
-		prefilterMap->setName(name + "_PrefilterMap");
-		brdfMap->setName(name + "_BRDFMap");
 
 		return sky;
 	}

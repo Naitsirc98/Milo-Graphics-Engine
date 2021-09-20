@@ -13,12 +13,12 @@ public:
 
 		Scene* scene = SceneManager::activeScene();
 
-		Skybox* skybox = Assets::skybox().getPreethamSky();
+		Skybox* skybox = Assets::skybox().getIndoorSkybox();
 
 		Entity skyboxEntity = scene->createEntity("Skybox");
 		SkyboxView& skyboxView = skyboxEntity.addComponent<SkyboxView>();
 		skyboxView.skybox = skybox;
-		skyboxView.type = SkyType::Dynamic;
+		skyboxView.type = SkyType::Static;
 
 		scene->setSkyEntity(skyboxEntity.id());
 

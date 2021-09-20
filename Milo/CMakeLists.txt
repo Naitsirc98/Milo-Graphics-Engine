@@ -91,7 +91,6 @@ target_link_libraries(${PROJECT_NAME} ${Vulkan_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} shaderc)
 target_link_libraries(${PROJECT_NAME} assimp)
 
-
 message("Target directory is ${PROJECT_BINARY_DIR}")
 
 set(RESOURCES_DIR ${PROJECT_SOURCE_DIR}/resources)

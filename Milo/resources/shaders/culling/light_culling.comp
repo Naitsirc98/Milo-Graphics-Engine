@@ -25,8 +25,8 @@ struct PointLight {
 #define MAX_POINT_LIGHTS 128
 
 layout(std140, binding = 1) uniform PointLightData {
-    uint u_PointLightsCount;
     PointLight u_PointLights[MAX_POINT_LIGHTS];
+    uint u_PointLightsCount;
 };
 
 layout(push_constant) uniform ScreenData {

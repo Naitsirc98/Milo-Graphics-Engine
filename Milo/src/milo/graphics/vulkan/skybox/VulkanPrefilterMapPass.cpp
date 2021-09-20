@@ -55,6 +55,8 @@ namespace milo {
 			prefilterMap->vkSampler(VulkanContext::get()->samplerMap()->get(sampler));
 
 			prefilterMap->generateMipmaps();
+
+			prefilterMap->createMipImageViews();
 		}
 
 		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline));
@@ -62,22 +64,23 @@ namespace milo {
 		prefilterMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_GENERAL,
 								VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-		VulkanMipView mipViews(prefilterMap);
-
-		updateDescriptorSet(execInfo, mipViews);
+		updateDescriptorSet(execInfo);
 
 		VkDescriptorSet descriptorSet = m_DescriptorPool->get(0);
 		VK_CALLV(vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout,
 										 0, 1, &descriptorSet, 0, nullptr));
 
-		for(uint32_t i = 0;i < mipLevels;++i) {
+		int32_t envMapResolution = (int32_t)execInfo.environmentMap->width();
+
+		for(int32_t i = 0;i < mipLevels;++i) {
 
 			uint32_t mipLevelSize = static_cast<uint32_t>(mapSize * powf(0.5f, i));
 
 			PushConstants pushConstants{};
-			pushConstants.roughness = 0;
-			pushConstants.envMapResolution = execInfo.environmentMap->width();
+			pushConstants.roughness = (float)i / (float) mipLevels;
+			pushConstants.envMapResolution = envMapResolution;
 			pushConstants.mipLevel = i;
+			pushConstants.numSamples = 32;
 			VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
 										0, sizeof(PushConstants), &pushConstants));
 
@@ -88,7 +91,7 @@ namespace milo {
 								VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 	}
 
-	void VulkanPrefilterMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo, const VulkanMipView& mipLevels) {
+	void VulkanPrefilterMapPass::updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo) {
 
 		using namespace mvk::WriteDescriptorSet;
 
@@ -107,7 +110,7 @@ namespace milo {
 
 		for(uint32_t i = 0;i < 5;++i) {
 			prefilterInfo[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			prefilterInfo[i].imageView = mipLevels[i];
+			prefilterInfo[i].imageView = execInfo.prefilterMap->getMipImageView(i);
 			prefilterInfo[i].sampler = execInfo.prefilterMap->vkSampler();
 
 			writeDescriptors[i + 1] = mvk::WriteDescriptorSet::createStorageImageWrite(1, descriptorSet, 1, &prefilterInfo[i]);

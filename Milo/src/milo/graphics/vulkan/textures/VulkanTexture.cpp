@@ -40,6 +40,8 @@ namespace milo {
 
 		m_Device->awaitTermination();
 
+		destroyMipImageViews();
+
 		VulkanAllocator::get()->freeImage(m_VkImage, m_Allocation);
 
 		VK_CALLV(vkDestroyImageView(m_Device->logical(), m_VkImageView, nullptr));
@@ -90,8 +92,40 @@ namespace milo {
 	}
 
 	void VulkanTexture::setDebugName(const String& name) {
+		m_DebugName = &name;
+		if(m_VkImage == VK_NULL_HANDLE) return;
 		VulkanDebugMessenger::setName(m_VkImage, name.c_str());
 		VulkanDebugMessenger::setName(m_VkImageView, name.c_str());
+	}
+
+	VkImageView VulkanTexture::getMipImageView(uint32_t level) const {
+#ifdef _DEBUG
+		if(m_MipImageViews.size() <= level) throw MILO_RUNTIME_EXCEPTION(fmt::format("Trying to get image view of mip {} but it does not exists", level));
+#endif
+		return m_MipImageViews[level];
+	}
+
+	void VulkanTexture::createMipImageViews() {
+
+		if(m_VkImage == VK_NULL_HANDLE) return;
+		if(!m_MipImageViews.empty()) return;
+
+		m_MipImageViews.resize(vkImageInfo().mipLevels, VK_NULL_HANDLE);
+
+		VkImageViewCreateInfo createInfo = vkImageViewInfo();
+
+		for(uint32_t i = 0;i < m_MipImageViews.size();++i) {
+			createInfo.subresourceRange.baseMipLevel = i;
+			createInfo.subresourceRange.levelCount = 1;
+			VK_CALL(vkCreateImageView(device()->logical(), &createInfo, nullptr, &m_MipImageViews[i]));
+		}
+	}
+
+	void VulkanTexture::destroyMipImageViews() {
+		for(uint32_t i = 0;i < m_MipImageViews.size();++i) {
+			VK_CALLV(vkDestroyImageView(device()->logical(), m_MipImageViews[i], nullptr));
+			m_MipImageViews[i] = VK_NULL_HANDLE;
+		}
 	}
 
 	void VulkanTexture::resize(const Size& size) {
@@ -190,6 +224,10 @@ namespace milo {
 		VK_CALL(vkCreateImageView(m_Device->logical(), &m_ViewInfo, nullptr, &m_VkImageView));
 
 		m_ImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		if(m_DebugName != nullptr) {
+			setDebugName(*m_DebugName);
+		}
 	}
 
 	void VulkanTexture::copyFromBuffer(VkCommandBuffer commandBuffer, VulkanBuffer& buffer) {

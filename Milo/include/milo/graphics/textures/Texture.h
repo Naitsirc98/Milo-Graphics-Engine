@@ -86,7 +86,7 @@ namespace milo {
 		virtual uint32_t width() const = 0;
 		virtual uint32_t height() const = 0;
 		const String& name() const {return m_Name;}
-		void setName(const String& name) {doSetName(name); m_Name = name;}
+		void setName(const String& name) {m_Name = name; doSetName(m_Name);}
 		Size size() const {return {(int32_t)width(), (int32_t)height()};}
 		virtual void allocate(const AllocInfo& allocInfo) = 0;
 		virtual void update(const UpdateInfo& updateInfo) = 0;

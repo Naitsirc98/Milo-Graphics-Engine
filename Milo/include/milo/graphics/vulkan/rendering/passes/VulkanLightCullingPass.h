@@ -20,8 +20,8 @@ namespace milo {
 			Matrix4 viewProjectionMatrix;
 		};
 		struct PointLightsUniformBuffer {
-			uint32_t pointLightsCount;
 			PointLight pointLights[MAX_POINT_LIGHTS];
+			uint32_t pointLightsCount;
 		};
 		struct VisibleLightIndicesData {
 			int32_t indices[4096];

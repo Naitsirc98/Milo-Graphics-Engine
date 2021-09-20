@@ -66,6 +66,7 @@ namespace milo {
 			float roughness{0};
 			int32_t envMapResolution{0};
 			int32_t mipLevel{0};
+			uint32_t numSamples{0};
 		};
 	private:
 		VulkanDevice* m_Device;
@@ -78,7 +79,7 @@ namespace milo {
 		~VulkanPrefilterMapPass();
 		void execute(const VulkanSkyboxPassExecuteInfo& execInfo);
 	private:
-		void updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo, const VulkanMipView& mipLevels);
+		void updateDescriptorSet(const VulkanSkyboxPassExecuteInfo& execInfo);
 		void createDescriptorSetLayoutAndPool();
 		void createPipelineLayout();
 		void createComputePipeline();

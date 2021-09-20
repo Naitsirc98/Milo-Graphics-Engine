@@ -40,6 +40,10 @@ namespace milo {
 		VmaMemoryUsage m_Usage = VMA_MEMORY_USAGE_UNKNOWN;
 
 		VulkanTexture::CreateInfo m_CreateInfo;
+
+		ArrayList<VkImageView> m_MipImageViews;
+
+		const String* m_DebugName{nullptr};
 	public:
 		explicit VulkanTexture(const CreateInfo& createInfo);
 		virtual ~VulkanTexture();
@@ -55,6 +59,11 @@ namespace milo {
 		VkImageLayout layout() const;
 		VmaMemoryUsage memoryUsage() const;
 		void setDebugName(const String& name);
+
+		VkImageView getMipImageView(uint32_t level) const;
+
+		void createMipImageViews();
+		void destroyMipImageViews();
 
 		void resize(const Size& size);
 
@@ -72,39 +81,5 @@ namespace milo {
 		virtual void destroy();
 
 		void create(const CreateInfo& createInfo);
-	};
-
-	class VulkanMipView {
-	private:
-		VulkanTexture* m_Texture;
-		ArrayList<VkImageView> m_ImageViews;
-	public:
-		VulkanMipView(VulkanTexture* texture) {
-			m_Texture = texture;
-			m_ImageViews.resize(texture->vkImageInfo().mipLevels, VK_NULL_HANDLE);
-
-			VkImageViewCreateInfo createInfo = texture->vkImageViewInfo();
-
-			for(uint32_t i = 0;i < m_ImageViews.size();++i) {
-				createInfo.subresourceRange.baseMipLevel = i;
-				createInfo.subresourceRange.levelCount = 1;
-				VK_CALL(vkCreateImageView(texture->device()->logical(), &createInfo, nullptr, &m_ImageViews[i]));
-			}
-		}
-
-		~VulkanMipView() {
-			for(uint32_t i = 0;i < m_ImageViews.size();++i) {
-				VK_CALLV(vkDestroyImageView(m_Texture->device()->logical(), m_ImageViews[i], nullptr));
-				m_ImageViews[i] = VK_NULL_HANDLE;
-			}
-		}
-
-		VkImageView operator[](uint32_t index) const {
-			return m_ImageViews[index];
-		}
-
-		uint32_t size() const {
-			return m_ImageViews.size();
-		}
 	};
 }
