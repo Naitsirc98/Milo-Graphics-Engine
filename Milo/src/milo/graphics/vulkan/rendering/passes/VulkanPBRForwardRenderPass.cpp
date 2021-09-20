@@ -38,6 +38,7 @@ namespace milo {
 		DELETE_PTR(m_CameraUniformBuffer);
 		DELETE_PTR(m_EnvironmentUniformBuffer);
 		DELETE_PTR(m_PointLightsUniformBuffer);
+		DELETE_PTR(m_ShadowsUniformBuffer);
 		VK_CALLV(vkDestroyDescriptorSetLayout(device, m_SceneDescriptorSetLayout, nullptr));
 		DELETE_PTR(m_SceneDescriptorPool);
 
