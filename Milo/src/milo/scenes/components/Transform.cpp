@@ -36,4 +36,19 @@ namespace milo {
 			child.getComponent<Transform>().rotation(rotation);
 		}
 	}
+
+	Matrix4 Transform::modelMatrix() const noexcept {
+
+		Matrix4 m = this->localModelMatrix();
+
+		Entity entity = SceneManager::activeScene()->find(m_EntityId);
+
+		Entity parent = entity.parent();
+
+		if(parent) {
+			m = parent.getComponent<Transform>().modelMatrix() * m;
+		}
+
+		return m;
+	}
 }

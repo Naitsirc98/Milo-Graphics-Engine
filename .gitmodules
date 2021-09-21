@@ -13,6 +13,3 @@
 [submodule "Milo/dependencies/assimp"]
 	path = Milo/dependencies/assimp
 	url = https://github.com/assimp/assimp.git
-[submodule "Milo/dependencies/imgui-node-editor"]
-	path = Milo/dependencies/imgui-node-editor
-	url = https://github.com/Naitsirc98/imgui-node-editor.git

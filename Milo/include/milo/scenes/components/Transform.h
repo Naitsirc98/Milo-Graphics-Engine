@@ -17,8 +17,6 @@ namespace milo {
 		Vector3 m_ScaleDelta{0.0f, 0.0f, 0.0f};
 		Quaternion m_Rotation{0.0f, 0.0f, 0.0f, 1.0f};
 		Quaternion m_RotationDelta{0.0f, 0.0f, 0.0f, 0.0f};
-		Matrix4 m_ModelMatrix = Matrix4(1.0f);
-		bool m_Dirty{false};
 
 	public:
 		Transform() = default;
@@ -32,7 +30,6 @@ namespace milo {
 			m_TranslationDelta = translation - m_Translation;
 			//updateChildrenPosition(translation);
 			m_Translation = translation;
-			m_Dirty = true;
 		}
 
 		inline const Vector3& scale() const {
@@ -44,7 +41,6 @@ namespace milo {
 			m_ScaleDelta = scale - m_Scale;
 			//updateChildrenScale(scale);
 			m_Scale = scale;
-			m_Dirty = true;
 		}
 
 		inline const Quaternion& rotation() const {
@@ -56,15 +52,16 @@ namespace milo {
 			m_RotationDelta = rotation - m_Rotation;
 			//updateChildrenRotation(rotation);
 			m_Rotation = rotation;
-			m_Dirty = true;
 		}
 
 		inline void rotate(float radians, const Vector3 axis) {
 			rotation(angleAxis(radians, axis));
 		}
 
-		inline const Matrix4& modelMatrix() const noexcept {
-			return m_ModelMatrix;
+		Matrix4 modelMatrix() const noexcept;
+
+		inline Matrix4 localModelMatrix() const noexcept {
+			return glm::translate(m_Translation) * glm::scale(m_Scale) * glm::toMat4(m_Rotation);
 		}
 
 		inline void setMatrix(const Matrix4& matrix) {
@@ -90,10 +87,6 @@ namespace milo {
 			m_TranslationDelta = Vector3();
 			m_ScaleDelta = Vector3();
 			m_RotationDelta = Quaternion();
-
-			m_ModelMatrix = glm::translate(m_Translation) * glm::scale(m_Scale) * glm::toMat4(m_Rotation);
-
-			m_Dirty = false;
 		}
 
 		void updateChildrenPosition(const Vector3& position);

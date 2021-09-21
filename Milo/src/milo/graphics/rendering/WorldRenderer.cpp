@@ -187,14 +187,6 @@ namespace milo {
 			cascadeSplits[i] = (d - nearClip) / clipRange;
 		}
 
-		//cascadeSplits[3] = 0.3f;
-
-		// Manually set cascades here
-		// cascadeSplits[0] = 0.05f;
-		// cascadeSplits[1] = 0.15f;
-		// cascadeSplits[2] = 0.3f;
-		// cascadeSplits[3] = 1.0f;
-
 		// Calculate orthographic projection matrix for each cascade
 		float lastSplitDist = 0.0;
 		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
