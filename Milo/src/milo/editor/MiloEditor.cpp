@@ -36,7 +36,6 @@ namespace milo {
 		}
 
 		int uniqueId = 450;
-
 		renderSceneViewport();
 
 		s_Renderer->end();
@@ -45,7 +44,7 @@ namespace milo {
 	void MiloEditor::renderSceneViewport() {
 		ImGui::Begin("SceneViewportPanel", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		Texture2D* texture = nullptr;
-		if(false) {
+		if(true) {
 			texture = WorldRenderer::get().resources().getTexture2D(ShadowMapRenderPass::getDepthMap(0)).get();
 		} else {
 			texture = WorldRenderer::get().getFramebuffer().colorAttachments()[0];

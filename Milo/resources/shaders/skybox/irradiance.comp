@@ -74,26 +74,32 @@ void main(void) {
 
     vec3 N = GetCubeMapTexCoord();
 
-    vec3 S, T;
-    computeBasisVectors(N, S, T);
+    // Tangent space calculation from origin point
+    vec3 up = vec3(0.0, 1.0, 0.0);
+    vec3 right = cross(up, N);
+    up = cross(N, right);
 
-    uint samples = 64 * u_PushConstants.samples;
-    //samples = 64 * 1024;
+    float sampleDelta = 0.025;
 
-    // Monte Carlo integration of hemispherical irradiance.
-    // As a small optimization this also includes Lambertian BRDF assuming perfectly white surface (albedo of 1.0)
-    // so we don't need to normalize in PBR fragment shader (so technically it encodes exitant radiance rather than irradiance).
+    float samples = 0;
+
     vec3 irradiance = vec3(0);
-    for(uint i = 0; i < samples; i++) {
 
-        vec2 u  = SampleHammersley(i, samples);
-        vec3 Li = tangentToWorld(sampleHemisphere(u.x, u.y), N, S, T);
-        float cosTheta = max(0.0, dot(Li, N));
+    for(float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta) {
 
-        // PIs here cancel out because of division by pdf.
-        irradiance += 2.0 * textureLod(u_RadianceMap, Li, 0).rgb * cosTheta;
+        for(float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta) {
+            // Spherical to cartesian (in tangent space)
+            vec3 tangentSample = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
+            // Tangent space to world
+            vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * N;
+
+            irradiance += textureLod(u_RadianceMap, sampleVec, 0).rgb * cos(theta) * sin(theta);
+
+            ++samples;
+        }
     }
-    irradiance /= vec3(samples);
+
+    irradiance = PI * irradiance * (1.0 / samples);
 
     imageStore(u_IrradianceMap, ivec3(gl_GlobalInvocationID), vec4(irradiance, 1.0));
 }

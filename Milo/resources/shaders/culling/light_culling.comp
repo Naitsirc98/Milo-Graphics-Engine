@@ -22,7 +22,7 @@ struct PointLight {
     bool castsShadows;
 };
 
-#define MAX_POINT_LIGHTS 128
+#define MAX_POINT_LIGHTS 256
 
 layout(std140, binding = 1) uniform PointLightData {
     PointLight u_PointLights[MAX_POINT_LIGHTS];
@@ -158,5 +158,13 @@ void main() {
             // Final shader step will use this to determine where to stop (without having to pass the light count)
             visibleLightIndicesBuffer.indices[offset + visibleLightCount] = -1;
         }
+    }
+
+    // ======
+
+    barrier();
+
+    if(gl_LocalInvocationIndex == 0) {
+        visibleLightIndicesBuffer.indices[0] = int(u_PointLightsCount);
     }
 }

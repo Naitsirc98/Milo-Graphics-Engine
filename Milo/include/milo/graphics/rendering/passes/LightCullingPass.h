@@ -1,8 +1,13 @@
 #pragma once
 
 #include "RenderPass.h"
+#include "milo/scenes/components/Light.h"
 
 namespace milo {
+
+	struct VisibleLightsBuffer {
+		uint32_t indices[MAX_POINT_LIGHTS];
+	};
 
 	constexpr uint32_t TILE_SIZE = 16;
 

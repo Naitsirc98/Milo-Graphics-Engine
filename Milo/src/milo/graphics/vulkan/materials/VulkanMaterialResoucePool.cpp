@@ -117,7 +117,7 @@ namespace milo {
 	}
 
 	void VulkanMaterialResourcePool::createUniformBuffer() {
-		m_UniformBuffer = new VulkanUniformBuffer<Material::Data>();
+		m_UniformBuffer = VulkanUniformBuffer<Material::Data>::create();
 		m_MaxMaterialCount = std::floor(m_Device->info().uniformBufferMaxSize() / m_UniformBuffer->elementSize());
 		m_UniformBuffer->allocate(m_MaxMaterialCount);
 		Log::debug("Supporting {} different materials", m_MaxMaterialCount);

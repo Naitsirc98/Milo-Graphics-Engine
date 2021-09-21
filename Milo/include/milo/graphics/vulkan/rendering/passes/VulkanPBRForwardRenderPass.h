@@ -28,7 +28,7 @@ namespace milo {
 		};
 
 		struct PointLightsData {
-			PointLight pointLights[128]{};
+			PointLight pointLights[MAX_POINT_LIGHTS]{};
 			uint32_t u_PointLightsCount{0};
 		};
 

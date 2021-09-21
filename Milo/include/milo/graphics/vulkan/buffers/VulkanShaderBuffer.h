@@ -5,39 +5,34 @@
 namespace milo {
 
 	template<typename T>
-	class VulkanShaderBuffer {
+	class VulkanShaderBuffer : public VulkanBuffer {
 	protected:
-		VulkanBuffer* m_Buffer;
-		uint32_t m_MinAlignment;
-		uint32_t m_ElementSize;
+		uint32_t m_MinAlignment{0};
+		uint32_t m_ElementSize{0};
 	public:
-		VulkanShaderBuffer() = default;
+		explicit VulkanShaderBuffer(const VulkanBuffer::CreateInfo& createInfo) : VulkanBuffer(createInfo) {
+			if(createInfo.bufferInfo.usage & VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) {
+				m_MinAlignment = device()->info().uniformBufferAlignment();
+			} else if(createInfo.bufferInfo.usage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) {
+				m_MinAlignment = device()->info().storageBufferAlignment();
+			} else {
+				throw MILO_RUNTIME_EXCEPTION("Unsupported usage for VulkanShaderBuffer");
+			}
 
-		virtual ~VulkanShaderBuffer() {
-			DELETE_PTR(m_Buffer);
+			m_ElementSize = roundUp2((uint32_t)sizeof(T), m_MinAlignment);
 		}
+
+		virtual ~VulkanShaderBuffer() override = default;
 
 		void allocate(uint32_t numElements) {
 			Buffer::AllocInfo allocInfo = {};
 			allocInfo.size = numElements * m_ElementSize;
-			m_Buffer->allocate(allocInfo);
+			VulkanBuffer::allocate(allocInfo);
 		}
 
 		void update(uint32_t elementIndex, const T& value) {
-			byte_t* mappedMemory = (byte_t*)m_Buffer->map();
+			byte_t* mappedMemory = (byte_t*)map();
 			memcpy(mappedMemory + elementIndex * m_ElementSize, &value, sizeof(T));
-		}
-
-		inline VulkanBuffer& buffer() const {
-			return *m_Buffer;
-		}
-
-		inline VulkanDevice* device() const {
-			return m_Buffer->device();
-		}
-
-		inline VkBuffer vkBuffer() const {
-			return m_Buffer->vkBuffer();
 		}
 
 		inline uint32_t minAlignment() const {
@@ -48,10 +43,6 @@ namespace milo {
 			return m_ElementSize;
 		}
 
-		inline uint64_t size() const {
-			return buffer().size();
-		}
-
 		inline uint32_t numElements() const {
 			return size() / elementSize();
 		}
@@ -60,28 +51,35 @@ namespace milo {
 	template<typename T>
 	class VulkanUniformBuffer : public VulkanShaderBuffer<T> {
 	public:
-		VulkanUniformBuffer() {
-			m_Buffer = VulkanBuffer::createUniformBuffer();
-			m_MinAlignment = m_Buffer->device()->info().uniformBufferAlignment();
-			m_ElementSize = roundUp2((uint32_t)sizeof(T), m_MinAlignment);
+		explicit VulkanUniformBuffer(const VulkanBuffer::CreateInfo& createInfo) : VulkanShaderBuffer<T>(createInfo) {
 		}
 	public:
-		static VulkanUniformBuffer<T>* create() {
-			return new VulkanUniformBuffer<T>();
+		static VulkanUniformBuffer<T>* create(bool alwaysMapped = false) {
+			VulkanBuffer::CreateInfo createInfo = {};
+			createInfo.bufferInfo = mvk::BufferCreateInfo::create(UNIFORM_BUFFER_USAGE_FLAGS);
+			createInfo.memoryProperties.propertyFlags = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+			createInfo.memoryProperties.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+			if(alwaysMapped) createInfo.memoryProperties.allocationFlags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+			return new VulkanUniformBuffer<T>(createInfo);
 		}
 	};
 
 	template<typename T>
 	class VulkanStorageBuffer : public VulkanShaderBuffer<T> {
 	public:
-		VulkanStorageBuffer() {
-			m_Buffer = VulkanBuffer::createStorageBuffer(false);
-			m_MinAlignment = m_Buffer->device()->info().storageMinAlignment();
-			m_ElementSize = roundUp2((uint32_t)sizeof(T), m_MinAlignment);
+		explicit VulkanStorageBuffer(const VulkanBuffer::CreateInfo& createInfo) : VulkanShaderBuffer<T>(createInfo) {
 		}
 	public:
-		static VulkanStorageBuffer<T>* create() {
-			return new VulkanUniformBuffer<T>();
+		static VulkanStorageBuffer<T>* create(bool alwaysMapped = false) {
+			VulkanBuffer::CreateInfo createInfo = {};
+			createInfo.bufferInfo = mvk::BufferCreateInfo::create(STORAGE_BUFFER_USAGE_FLAGS);
+			createInfo.memoryProperties.propertyFlags = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+			createInfo.memoryProperties.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+			if(alwaysMapped)
+				createInfo.memoryProperties.allocationFlags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+			return new VulkanStorageBuffer<T>(createInfo);
 		}
 	};
 

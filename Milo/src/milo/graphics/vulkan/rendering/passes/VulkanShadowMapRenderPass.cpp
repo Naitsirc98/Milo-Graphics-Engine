@@ -241,7 +241,7 @@ namespace milo {
 	}
 
 	void VulkanShadowMapRenderPass::createUniformBuffer() {
-		m_UniformBuffer = new VulkanUniformBuffer<ShadowData>();
+		m_UniformBuffer = VulkanUniformBuffer<ShadowData>::create();
 		m_UniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 

@@ -3,6 +3,8 @@
 #include "milo/common/Common.h"
 #include "milo/assets/skybox/Skybox.h"
 
+#define MAX_POINT_LIGHTS 256
+
 namespace milo {
 
 	struct DirectionalLight {

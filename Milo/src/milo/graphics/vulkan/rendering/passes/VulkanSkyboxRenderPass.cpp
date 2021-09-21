@@ -176,7 +176,7 @@ namespace milo {
 	}
 
 	void VulkanSkyboxRenderPass::createUniformBuffer() {
-		m_UniformBuffer = new VulkanUniformBuffer<UniformBuffer>();
+		m_UniformBuffer = VulkanUniformBuffer<UniformBuffer>::create();
 		m_UniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 

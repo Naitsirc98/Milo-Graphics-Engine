@@ -26,6 +26,7 @@ namespace milo {
 		WindowMaximized,
 		WindowMinimized,
 		ApplicationExit,
+		Custom,
 		MaxEnumValue
 	};
 

@@ -70,20 +70,20 @@ namespace milo {
 		graphicsQueue->waitSemaphores().clear();
 		graphicsQueue->waitSemaphores().push_back(m_SignalSemaphores[imageIndex]);
 
-		//Matrix4 m = perspective(radians(45.0f), 1.77f, 0.1f, 1000.0f);
-		//float znear = (2.0f*m[3][2])/(2.0f*m[2][2]-2.0f);
-		//float zfar = ((m[2][2]-1.0f)*znear)/(m[2][2]+1.0);
-//
-		//float* indices = (float*)m_VisibleLightsStorageBuffer->map();
-		//indices = indices + (m_VisibleLightsStorageBuffer->size() / sizeof(float));
-//
-		//StringStream ss;
-		//for(uint32_t i = 0;i < 20;++i) {
-		//	ss << str(indices[i]) << ", ";
-		//}
-		//Log::info(ss.str() + "\n");
-//
-		//m_VisibleLightsStorageBuffer->unmap();
+		using type = int32_t;
+
+		type* indices = (type*)m_VisibleLightsStorageBuffer->map();
+		//indices = indices;
+
+		type x = indices[0];
+
+		StringStream ss;
+		for(uint32_t i = 0;i < 20;++i) {
+			ss << str(indices[i]) << ", ";
+		}
+		Log::info(ss.str() + "\n");
+
+		m_VisibleLightsStorageBuffer->unmap();
 	}
 
 	void VulkanLightCullingPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
@@ -101,7 +101,7 @@ namespace milo {
 			uint32_t dynamicOffsets[] = {
 					(uint32_t) (imageIndex * m_CameraUniformBuffer->elementSize()),
 					(uint32_t) (imageIndex * m_PointLightsUniformBuffer->elementSize()),
-					(uint32_t) (imageIndex * sizeof(VisibleLightIndicesData))};
+					(uint32_t) (imageIndex * sizeof(VisibleLightsBuffer))};
 
 			VK_CALLV(vkCmdBindDescriptorSets(commandBuffer,
 											 VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -215,23 +215,20 @@ namespace milo {
 	}
 
 	void VulkanLightCullingPass::createCameraUniformBuffer() {
-		m_CameraUniformBuffer = new VulkanUniformBuffer<CameraUniformBuffer>();
+		m_CameraUniformBuffer = VulkanUniformBuffer<CameraUniformBuffer>::create();
 		m_CameraUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
 	void VulkanLightCullingPass::createPointLightsUniformBuffer() {
-		m_PointLightsUniformBuffer = new VulkanUniformBuffer<PointLightsUniformBuffer>();
+		m_PointLightsUniformBuffer = VulkanUniformBuffer<PointLightsUniformBuffer>::create();
 		m_PointLightsUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 
 	void VulkanLightCullingPass::createVisibleLightIndicesStorageBuffer() {
 
-		m_VisibleLightsStorageBuffer = Ref<VulkanBuffer>(VulkanBuffer::createStorageBuffer());
+		m_VisibleLightsStorageBuffer = Ref<VulkanStorageBuffer<VisibleLightsBuffer>>(VulkanStorageBuffer<VisibleLightsBuffer>::create());
 
-		VulkanBuffer::AllocInfo allocInfo{};
-		allocInfo.size = MAX_SWAPCHAIN_IMAGE_COUNT * sizeof(VisibleLightIndicesData);
-
-		m_VisibleLightsStorageBuffer->allocate(allocInfo);
+		m_VisibleLightsStorageBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 
 		WorldRenderer::get().resources().putBuffer(LightCullingPass::getVisibleLightsBufferHandle(), m_VisibleLightsStorageBuffer);
 	}
@@ -253,7 +250,7 @@ namespace milo {
 			VkDescriptorBufferInfo visibleIndicesBufferInfo = {};
 			visibleIndicesBufferInfo.buffer = m_VisibleLightsStorageBuffer->vkBuffer();
 			visibleIndicesBufferInfo.offset = 0;
-			visibleIndicesBufferInfo.range = sizeof(VisibleLightIndicesData);
+			visibleIndicesBufferInfo.range = sizeof(VisibleLightsBuffer);
 
 			VkWriteDescriptorSet writeDescriptorSets[3] = {
 					mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(0, descriptorSet, 1, &cameraBufferInfo),

@@ -7,6 +7,21 @@
 
 namespace milo {
 
+	static const VkBufferUsageFlags VERTEX_BUFFER_USAGE_FLAGS =
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+	static const VkBufferUsageFlags INDEX_BUFFER_USAGE_FLAGS =
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+	static const VkBufferUsageFlags UNIFORM_BUFFER_USAGE_FLAGS =
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+	static const VkBufferUsageFlags STORAGE_BUFFER_USAGE_FLAGS =
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+	static const VkBufferUsageFlags STAGING_BUFFER_USAGE_FLAGS =
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
 	class VulkanBuffer : public Buffer {
 		friend class VulkanAllocator;
 	public:
@@ -32,7 +47,7 @@ namespace milo {
 	public:
 		explicit VulkanBuffer(const CreateInfo& createInfo);
 		explicit VulkanBuffer(const VulkanBuffer& other) = delete;
-		~VulkanBuffer() override;
+		virtual ~VulkanBuffer() override;
 
 		VulkanBuffer& operator=(const VulkanBuffer& other) = delete;
 
@@ -47,16 +62,16 @@ namespace milo {
 		const String& name() const;
 		void setName(const String& name);
 
-		void allocate(const AllocInfo& allocInfo) override;
-		void update(const UpdateInfo& updateInfo) override;
+		virtual void allocate(const AllocInfo& allocInfo) override;
+		virtual void update(const UpdateInfo& updateInfo) override;
 
-		MapState mapState() override;
-		void* mappedMemory() override;
-		void flush(uint64_t offset, uint64_t size) override;
-		void flush() override;
-		void* map() override;
-		void unmap() override;
-		void mapAndRun(Function<void, void*> func) override;
+		virtual MapState mapState() override;
+		virtual void* mappedMemory() override;
+		virtual void flush(uint64_t offset, uint64_t size) override;
+		virtual void flush() override;
+		virtual void* map() override;
+		virtual void unmap() override;
+		virtual void mapAndRun(Function<void, void*> func) override;
 
 	public:
 		static VulkanBuffer* create(Buffer::Type type);

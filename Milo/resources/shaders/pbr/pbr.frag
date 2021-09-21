@@ -37,9 +37,13 @@ layout(std140, set = 0, binding = 2) uniform PointLights {
     uint u_PointLightsCount;
 };
 
-layout(set = 0, binding = 3) uniform samplerCube u_IrradianceMap;
-layout(set = 0, binding = 4) uniform samplerCube u_PrefilterMap;
-layout(set = 0, binding = 5) uniform sampler2D u_BRDF;
+layout(set = 0, binding = 3) buffer VisibleLightsBuffer {
+    int u_VisibleLightIndices[];
+};
+
+layout(set = 0, binding = 4) uniform samplerCube u_IrradianceMap;
+layout(set = 0, binding = 5) uniform samplerCube u_PrefilterMap;
+layout(set = 0, binding = 6) uniform sampler2D u_BRDF;
 
 // ========================================================
 
@@ -111,6 +115,33 @@ layout(location = 0) in Fragment {
 } fragment;
 
 layout(location = 0) out vec4 out_FragColor;
+
+const ivec2 TILE_SIZE = ivec2(16, 16);
+const uint MAX_POINT_LIGHTS = 128;
+
+int GetLightBufferIndex(int i) {
+
+    ivec2 tileID = ivec2(gl_FragCoord) / TILE_SIZE;
+    uint index = tileID.y * u_TilesCountX + tileID.x;
+
+    uint offset = index * 128;
+
+    return u_VisibleLightIndices[offset + i];
+}
+
+int GetPointLightCount() {
+
+    int result = 0;
+    for (int i = 0; i < u_PointLightsCount; i++) {
+        uint lightIndex = GetLightBufferIndex(i);
+        if (lightIndex == -1)
+        break;
+
+        result++;
+    }
+
+    return result;
+}
 
 float radicalInverseVanDerCorpus(uint bits) {
     bits = (bits << 16u) | (bits >> 16u);
@@ -235,7 +266,10 @@ vec3 computePointLights() {
 
     for(int i = 0; i < u_PointLightsCount; ++i) {
 
-        PointLight light = u_PointLights[i];
+        uint lightIndex = GetLightBufferIndex(i);
+        if(lightIndex == -1) continue;
+
+        PointLight light = u_PointLights[lightIndex];
 
         vec3 direction = light.position.xyz - fragment.position;
 

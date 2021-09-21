@@ -7,8 +7,6 @@
 #include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/graphics/vulkan/buffers/VulkanShaderBuffer.h"
 
-#define MAX_POINT_LIGHTS 128
-
 namespace milo {
 
 	class VulkanLightCullingPass : public LightCullingPass {
@@ -23,9 +21,6 @@ namespace milo {
 			PointLight pointLights[MAX_POINT_LIGHTS];
 			uint32_t pointLightsCount;
 		};
-		struct VisibleLightIndicesData {
-			int32_t indices[4096];
-		};
 		struct PushConstants {
 			Size screenSize;
 		};
@@ -34,7 +29,7 @@ namespace milo {
 
 		VulkanUniformBuffer<CameraUniformBuffer>* m_CameraUniformBuffer{nullptr};
 		VulkanUniformBuffer<PointLightsUniformBuffer>* m_PointLightsUniformBuffer{nullptr};
-		Ref<VulkanBuffer> m_VisibleLightsStorageBuffer{nullptr};
+		Ref<VulkanStorageBuffer<VisibleLightsBuffer>> m_VisibleLightsStorageBuffer{nullptr};
 
 		VkDescriptorSetLayout m_DescriptorSetLayout{VK_NULL_HANDLE};
 		VulkanDescriptorPool* m_DescriptorPool = nullptr;

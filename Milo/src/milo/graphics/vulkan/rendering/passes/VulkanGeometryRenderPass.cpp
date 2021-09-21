@@ -182,7 +182,7 @@ namespace milo {
 	}
 
 	void VulkanGeometryRenderPass::createCameraUniformBuffer() {
-		m_CameraUniformBuffer = new VulkanUniformBuffer<CameraData>();
+		m_CameraUniformBuffer = VulkanUniformBuffer<CameraData>::create();
 		m_CameraUniformBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 	}
 

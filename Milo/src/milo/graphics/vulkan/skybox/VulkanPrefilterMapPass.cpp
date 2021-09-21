@@ -80,7 +80,7 @@ namespace milo {
 			pushConstants.roughness = (float)i / (float)(mipLevels - 1);
 			pushConstants.envMapResolution = envMapResolution;
 			pushConstants.mipLevel = i;
-			pushConstants.numSamples = 32;
+			pushConstants.numSamples = 1024;
 			VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
 										0, sizeof(PushConstants), &pushConstants));
 
