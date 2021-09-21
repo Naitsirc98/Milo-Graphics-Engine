@@ -31,6 +31,7 @@ file(GLOB_RECURSE ENGINE_HEADER_FILES
 
 file(GLOB_RECURSE IMGUI_SOURCE_FILES
         ${PROJECT_DEPENDENCIES_DIR}/imgui/*.cpp
+        ${PROJECT_DEPENDENCIES_DIR}/imgui-node-editor/*.cpp
         )
 
 # Build this project as a library
@@ -77,6 +78,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/sh
 target_include_directories(${PROJECT_NAME} PUBLIC $ENV{BOOST_HOME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/tiny_obj_loader)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/assimp/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/imgui-node-editor)
 
 message("Boost = $ENV{BOOST_HOME}")
 

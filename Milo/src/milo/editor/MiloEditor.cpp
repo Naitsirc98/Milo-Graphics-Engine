@@ -7,6 +7,7 @@
 #include "milo/graphics/rendering/passes/AllRenderPasses.h"
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include <imgui_node_editor.h>
 
 namespace milo {
 
@@ -33,6 +34,8 @@ namespace milo {
 			ImGui::Begin("PropertiesPanel");
 			ImGui::End();
 		}
+
+		int uniqueId = 450;
 
 		renderSceneViewport();
 

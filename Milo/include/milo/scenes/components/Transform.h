@@ -1,5 +1,6 @@
 #pragma once
 
+#include "milo/scenes/EntityComponentSystem.h"
 #include "milo/math/Math.h"
 #include <glm/gtx/matrix_decompose.hpp>
 
@@ -7,7 +8,9 @@ namespace milo {
 
 	class Transform {
 		friend class Scene;
+		friend class Entity;
 	private:
+		EntityId m_EntityId{};
 		Vector3 m_Translation{0.0f, 0.0f, 0.0f};
 		Vector3 m_TranslationDelta{0.0f, 0.0f, 0.0f};
 		Vector3 m_Scale{1.0f, 1.0f, 1.0f};
@@ -27,6 +30,7 @@ namespace milo {
 		inline void translation(const Vector3& translation) {
 			if(m_Translation == translation) return;
 			m_TranslationDelta = translation - m_Translation;
+			//updateChildrenPosition(translation);
 			m_Translation = translation;
 			m_Dirty = true;
 		}
@@ -38,6 +42,7 @@ namespace milo {
 		inline void scale(const Vector3& scale) {
 			if(m_Scale == scale) return;
 			m_ScaleDelta = scale - m_Scale;
+			//updateChildrenScale(scale);
 			m_Scale = scale;
 			m_Dirty = true;
 		}
@@ -49,6 +54,7 @@ namespace milo {
 		inline void rotation(const Quaternion& rotation) {
 			if(m_Rotation == rotation) return;
 			m_RotationDelta = rotation - m_Rotation;
+			//updateChildrenRotation(rotation);
 			m_Rotation = rotation;
 			m_Dirty = true;
 		}
@@ -76,11 +82,22 @@ namespace milo {
 	private:
 
 		inline void update() {
-			m_ModelMatrix = glm::translate(m_Translation) * glm::scale(m_Scale) * glm::toMat4(m_Rotation);
+
+			//if(m_TranslationDelta != Vector3()) updateChildrenPosition(m_TranslationDelta);
+			//if(m_ScaleDelta != Vector3()) updateChildrenScale(m_ScaleDelta);
+			//if(m_RotationDelta != Quaternion()) updateChildrenRotation(m_RotationDelta);
+
 			m_TranslationDelta = Vector3();
 			m_ScaleDelta = Vector3();
 			m_RotationDelta = Quaternion();
+
+			m_ModelMatrix = glm::translate(m_Translation) * glm::scale(m_Scale) * glm::toMat4(m_Rotation);
+
 			m_Dirty = false;
 		}
+
+		void updateChildrenPosition(const Vector3& position);
+		void updateChildrenScale(const Vector3& scale);
+		void updateChildrenRotation(const Quaternion& rotation);
 	};
 }

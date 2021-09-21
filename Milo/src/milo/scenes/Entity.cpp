@@ -5,7 +5,8 @@ namespace milo {
 
 	Entity::Entity(EntityId id, Scene* scene) : m_Id(id), m_Scene(scene) {
 		if(valid() && !hasComponent<Transform>()) {
-			addComponent<Transform>();
+			Transform& t = addComponent<Transform>();
+			t.m_EntityId = id;
 		}
 		if(valid() && !hasComponent<EntityBasicInfo>()) {
 			addComponent<EntityBasicInfo>();
