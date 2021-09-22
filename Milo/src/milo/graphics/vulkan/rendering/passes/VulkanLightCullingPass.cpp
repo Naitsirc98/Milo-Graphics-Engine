@@ -72,8 +72,10 @@ namespace milo {
 
 		using type = int32_t;
 
-		type* indices = (type*)m_VisibleLightsStorageBuffer->map();
-		//indices = indices;
+		byte_t* data = (byte_t*)m_VisibleLightsStorageBuffer->map();
+		data = data + m_VisibleLightsStorageBuffer->elementSize();
+
+		int* indices = (int*)data;
 
 		type x = indices[0];
 
@@ -226,7 +228,8 @@ namespace milo {
 
 	void VulkanLightCullingPass::createVisibleLightIndicesStorageBuffer() {
 
-		m_VisibleLightsStorageBuffer = Ref<VulkanStorageBuffer<VisibleLightsBuffer>>(VulkanStorageBuffer<VisibleLightsBuffer>::create());
+		m_VisibleLightsStorageBuffer = Ref<VulkanStorageBuffer<VisibleLightsBuffer>>(
+				VulkanStorageBuffer<VisibleLightsBuffer>::create());
 
 		m_VisibleLightsStorageBuffer->allocate(MAX_SWAPCHAIN_IMAGE_COUNT);
 

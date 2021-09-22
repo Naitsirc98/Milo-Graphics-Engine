@@ -35,6 +35,14 @@ namespace milo {
 			ImGui::End();
 		}
 
+		ImGui::Begin("Pre-Depth buffer");
+
+		auto* texture = WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle())->colorAttachments()[0];
+
+		UI::image(*texture, texture->size());
+
+		ImGui::End();
+
 		int uniqueId = 450;
 		renderSceneViewport();
 
@@ -44,7 +52,7 @@ namespace milo {
 	void MiloEditor::renderSceneViewport() {
 		ImGui::Begin("SceneViewportPanel", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		Texture2D* texture = nullptr;
-		if(true) {
+		if(false) {
 			texture = WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle())->colorAttachments()[0];
 		} else {
 			texture = WorldRenderer::get().getFramebuffer().colorAttachments()[0];
@@ -152,6 +160,7 @@ namespace milo {
 		Size size = Window::get()->size();
 
 		s_Camera = EditorCamera(perspectiveFov(radians(45.0f), (float)size.width, (float)size.height, 0.1f, 1000.0f));
+		//s_Camera.m_Position = {0, 0, 0};
 	}
 
 	void MiloEditor::shutdown() {

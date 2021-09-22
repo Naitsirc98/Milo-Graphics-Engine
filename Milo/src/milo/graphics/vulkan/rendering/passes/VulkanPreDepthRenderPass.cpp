@@ -139,7 +139,7 @@ namespace milo {
 	void VulkanPreDepthRenderPass::createRenderPass() {
 
 		RenderPass::Description desc;
-		desc.colorAttachments.push_back({PixelFormat::R32F, 1, RenderPass::LoadOp::Clear});
+		desc.colorAttachments.push_back({PixelFormat::RGBA32F, 1, RenderPass::LoadOp::Clear});
 		desc.depthAttachment = {PixelFormat::DEPTH32, 1, RenderPass::LoadOp::Clear};
 
 		m_RenderPass = mvk::RenderPass::create(desc);
@@ -232,7 +232,7 @@ namespace milo {
 
 		Framebuffer::CreateInfo createInfo{};
 		createInfo.size = size;
-		createInfo.colorAttachments.push_back(PixelFormat::R32F);
+		createInfo.colorAttachments.push_back(PixelFormat::RGBA32F);
 		createInfo.depthAttachments.push_back(PixelFormat::DEPTH32);
 		createInfo.apiInfo = &apiInfo;
 

@@ -11,5 +11,5 @@ layout(location = 0) in float in_LinearDepth;
 layout(location = 0) out vec4 out_FragColor;
 
 void main() {
-    out_FragColor = vec4(vec3(in_LinearDepth), 1.0);
+    out_FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
 }

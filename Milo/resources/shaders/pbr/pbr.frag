@@ -268,11 +268,11 @@ vec3 computePointLights() {
     ivec2 location = ivec2(gl_FragCoord.xy);
     ivec2 tileID = location / ivec2(16, 16);
     uint index = tileID.y * u_TilesCountX + tileID.x;
-    uint offset = index * MAX_POINT_LIGHTS;
+    uint offset = index;
 
-    for(int i = 0; i < MAX_POINT_LIGHTS && u_VisibleLightIndices[offset + i] != -1; ++i) {
+    for(int i = 0; i < MAX_POINT_LIGHTS && u_VisibleLightIndices[i] != -1; ++i) {
 
-        uint lightIndex = GetLightBufferIndex(i);
+        uint lightIndex = u_VisibleLightIndices[i];
 
         PointLight light = u_PointLights[lightIndex];
 

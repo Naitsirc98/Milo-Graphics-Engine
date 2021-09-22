@@ -49,6 +49,10 @@ shared vec4 frustumPlanes[6];
 // Shared local storage for visible indices, will be written out to the global buffer at the end
 shared int visibleLightIndices[MAX_POINT_LIGHTS];
 
+float linearizeDepth(float depth, float zNear, float zFar) {
+    return zNear * zFar / (zFar + depth * (zNear - zFar));
+}
+
 layout(local_size_x = TILE_SIZE, local_size_y = TILE_SIZE, local_size_z = 1) in;
 void main() {
 
@@ -71,7 +75,10 @@ void main() {
     vec2 tc = vec2(location) / u_ScreenSize;
     float depth = texture(u_PreDepthMap, tc).r;
     // Linearize depth value (keeping in mind Vulkan depth is 0->1 and we're using GLM_FORCE_DEPTH_ZERO_TO_ONE)
-    depth = (0.5 * u_ProjectionMatrix[3][2]) / (depth + 0.5 * u_ProjectionMatrix[2][2] - 0.5);
+    float zNear = u_ProjectionMatrix[3][2];
+    float zFar = u_ProjectionMatrix[2][2];
+    depth = linearizeDepth(depth, zNear, zFar);
+    //depth = (0.5 * u_ProjectionMatrix[3][2]) / (depth + 0.5 * u_ProjectionMatrix[2][2] - 0.5);
 
     // Convert depth to uint so we can do atomic min and max comparisons between the threads
     uint depthInt = floatBitsToUint(depth);

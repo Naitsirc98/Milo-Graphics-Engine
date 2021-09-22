@@ -215,7 +215,14 @@ namespace milo {
 
 		{
 			PointLightsData pointLightsData{};
-			uint32_t pointLightsCount = std::min(lights.pointLights.size(), (size_t)128);
+
+			for(uint32_t i = 0;i < MAX_POINT_LIGHTS;++i) {
+				PointLight l{};
+				l.color = {1, 0, 0, 1};
+				pointLightsData.pointLights[i] = l;
+			}
+
+			uint32_t pointLightsCount = std::min(lights.pointLights.size(), (size_t)MAX_POINT_LIGHTS);
 			memcpy(pointLightsData.pointLights, lights.pointLights.data(), sizeof(PointLight) * pointLightsCount);
 			pointLightsData.u_PointLightsCount = pointLightsCount;
 
