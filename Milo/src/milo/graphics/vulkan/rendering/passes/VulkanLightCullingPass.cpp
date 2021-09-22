@@ -69,23 +69,6 @@ namespace milo {
 
 		graphicsQueue->waitSemaphores().clear();
 		graphicsQueue->waitSemaphores().push_back(m_SignalSemaphores[imageIndex]);
-
-		using type = int32_t;
-
-		byte_t* data = (byte_t*)m_VisibleLightsStorageBuffer->map();
-		data = data + m_VisibleLightsStorageBuffer->elementSize();
-
-		int* indices = (int*)data;
-
-		type x = indices[0];
-
-		StringStream ss;
-		for(uint32_t i = 0;i < 20;++i) {
-			ss << str(indices[i]) << ", ";
-		}
-		Log::info(ss.str() + "\n");
-
-		m_VisibleLightsStorageBuffer->unmap();
 	}
 
 	void VulkanLightCullingPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {

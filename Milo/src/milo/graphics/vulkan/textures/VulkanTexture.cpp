@@ -94,8 +94,8 @@ namespace milo {
 	void VulkanTexture::setDebugName(const String& name) {
 		m_DebugName = &name;
 		if(m_VkImage == VK_NULL_HANDLE) return;
-		VulkanDebugMessenger::setName(m_VkImage, name.c_str());
-		VulkanDebugMessenger::setName(m_VkImageView, name.c_str());
+		//VulkanDebugMessenger::setName(m_VkImage, name.c_str());
+		//VulkanDebugMessenger::setName(m_VkImageView, name.c_str());
 	}
 
 	VkImageView VulkanTexture::getMipImageView(uint32_t level) const {

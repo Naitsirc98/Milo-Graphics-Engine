@@ -92,6 +92,14 @@ namespace milo {
 					newEntity.addComponent<Camera>();
 					selectEntity(newEntity);
 				}
+
+				if(ImGui::MenuItem("Point Light")) {
+					auto newEntity = scene->createEntity("Point Light");
+					PointLight& p = newEntity.addComponent<PointLight>();
+					p.position = Vector4(newEntity.getComponent<Transform>().translation(), 1);
+					selectEntity(newEntity);
+				}
+
 				if (ImGui::BeginMenu("3D"))
 				{
 					if (ImGui::MenuItem("Cube"))
@@ -183,6 +191,10 @@ namespace milo {
 		if (ImGui::BeginPopupContextItem()) {
 			if (ImGui::MenuItem("Delete"))
 				entityDeleted = true;
+
+			if(ImGui::MenuItem("Duplicate")) {
+
+			}
 
 			ImGui::EndPopup();
 		}

@@ -223,8 +223,16 @@ namespace milo {
 
 				ImGui::Text("Skybox");
 				IMGUI_LEFT_LABEL(ImGui::Text, "Name: ", skyboxView.skybox->name().c_str());
-				ImGui::SameLine();
-				UI::image(*Assets::textures().getIcon(skyboxView.skybox->name()));
+
+				float maxPrefilterLod = skyboxView.skybox->maxPrefilterLOD();
+				float prefilterLodBias = skyboxView.skybox->prefilterLODBias();
+
+				if(ImGui::DragFloat("Max Prefilter LOD", &maxPrefilterLod, 0.05f, 0.0f)) {
+					skyboxView.skybox->maxPrefilterLOD(maxPrefilterLod);
+				}
+				if(ImGui::DragFloat("Prefilter LOD Bias", &prefilterLodBias, 0.05f)) {
+					skyboxView.skybox->prefilterLODBias(prefilterLodBias);
+				}
 
 			} else {
 
@@ -233,7 +241,18 @@ namespace milo {
 				float azimuth = sky->azimuth();
 				float inclination = degrees(sky->inclination());
 
-				ImGui::Text("Skybox");
+				ImGui::Text("Preetham sky");
+
+				float maxPrefilterLod = skyboxView.skybox->maxPrefilterLOD();
+				float prefilterLodBias = skyboxView.skybox->prefilterLODBias();
+
+				if(ImGui::DragFloat("Max Prefilter LOD", &maxPrefilterLod, 0.05f, 0.0f)) {
+					skyboxView.skybox->maxPrefilterLOD(maxPrefilterLod);
+				}
+				if(ImGui::DragFloat("Prefilter LOD Bias", &prefilterLodBias, 0.05f)) {
+					skyboxView.skybox->prefilterLODBias(prefilterLodBias);
+				}
+
 				if(ImGui::DragFloat("Turbidity", &turbidity, 0.01f, 0.0f)) {
 					sky->turbidity(turbidity);
 				}
@@ -279,7 +298,7 @@ namespace milo {
 			ImGui::DragFloat("Fall off", &light.falloff, 0, FLT_MAX, 0.1f);
 			ImGui::DragFloat("Min Radius", &light.minRadius, 0, FLT_MAX, 0.1f);
 			ImGui::DragFloat("Source size", &light.sourceSize, 0, FLT_MAX, 0.1f);
-			ImGui::Checkbox("Casts Shadows", &light.castsShadows);
+			//ImGui::Checkbox("Casts Shadows", &light.castsShadows);
 
 			light.position = Vector4(position, 1.0f);
 			light.color = Vector4(color, 1.0f);

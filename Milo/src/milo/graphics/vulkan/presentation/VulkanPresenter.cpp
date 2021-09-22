@@ -74,8 +74,8 @@ namespace milo {
 				throw MILO_RUNTIME_EXCEPTION(str("Failed to acquire swapchain image: ") + mvk::getErrorName(result));
 		}
 
-		if (m_ImageAvailableFences[m_CurrentImageIndex] != VK_NULL_HANDLE)
-			VK_CALL(vkWaitForFences(dv, 1, &m_ImageAvailableFences[m_CurrentImageIndex], VK_TRUE, UINT64_MAX));
+		if (m_ImageAvailableFences[m_CurrentImageIndex] != VK_NULL_HANDLE);
+			//VK_CALL(vkWaitForFences(dv, 1, &m_ImageAvailableFences[m_CurrentImageIndex], VK_TRUE, UINT64_MAX));
 
 		m_ImageAvailableFences[m_CurrentImageIndex] = m_FramesInFlightFences[m_CurrentFrame];
 

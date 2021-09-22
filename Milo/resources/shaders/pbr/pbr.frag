@@ -566,7 +566,7 @@ vec3 getDiffuseIBL() {
 }
 
 vec3 getSpecularIBL(vec3 F, float angle) {
-    float prefilterLOD = g_PBR.roughness;
+    float prefilterLOD = g_PBR.roughness * u_MaxPrefilterLOD + u_PrefilterLODBias;
     vec3 prefilteredColor = textureLod(u_PrefilterMap, g_PBR.reflectDir, prefilterLOD).rgb;
     vec2 brdf = texture(u_BRDF, vec2(angle, g_PBR.roughness)).rg;
     return prefilteredColor * (F * brdf.x + brdf.y);
@@ -590,7 +590,7 @@ vec3 getNormal(vec2 uv, vec3 position, vec3 normal) {
 }
 
 vec4 getAlbedo(vec2 uv) {
-    return u_Material.albedo * pow(texture(u_AlbedoMap, uv), vec4(2.2));
+    return u_Material.albedo * texture(u_AlbedoMap, uv);
 }
 
 float getMetallic(vec2 uv) {
@@ -621,7 +621,7 @@ vec4 computeLighting() {
 
     g_PBR.albedo = getAlbedo(texCoords).rgb;
     g_PBR.metallic = getMetallic(texCoords);
-    g_PBR.roughness = getRoughness(texCoords);
+    g_PBR.roughness = max(getRoughness(texCoords), 0.05);
     g_PBR.occlusion = getOcclusion(texCoords);
     g_PBR.normal = u_Material.useNormalMap ? getNormal(texCoords, fragment.position, fragment.normal) : fragment.normal;
     g_PBR.F0 = getF0(g_PBR.albedo, g_PBR.metallic);
@@ -650,19 +650,40 @@ vec4 computeLighting() {
 
     vec3 color = ambient + L0;
 
-    // HDR tonemapping
-    //color /= (color + vec3(1.0));
-
-    // Gamma correct
-    color = pow(color, vec3(1.0 / 2.2));
-
     return vec4(color, 1.0);
 }
 
+// Based on http://www.oscars.org/science-technology/sci-tech-projects/aces
+vec3 ACESTonemap(vec3 color) {
+    mat3 m1 = mat3(
+    0.59719, 0.07600, 0.02840,
+    0.35458, 0.90834, 0.13383,
+    0.04823, 0.01566, 0.83777
+    );
+
+    mat3 m2 = mat3(
+    1.60475, -0.10208, -0.00327,
+    -0.53108, 1.10813, -0.07276,
+    -0.07367, -0.00605, 1.07602
+    );
+
+    vec3 v = m1 * color;
+    vec3 a = v * (v + 0.0245786) - 0.000090537;
+    vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081;
+    return clamp(m2 * (a / b), 0.0, 1.0);
+}
+
 void main() {
+
     vec4 color = computeLighting();
     vec4 emissive = u_Material.emissiveColor * texture(u_EmissiveMap, fragment.texCoords);
     out_FragColor = color + emissive;
+
+    // HDR tonemapping
+    out_FragColor = vec4(ACESTonemap(out_FragColor.rgb), out_FragColor.a);
+
+    // Gamma correct
+    out_FragColor = pow(out_FragColor, vec4(1.0 / 2.2));
 
     if (u_ShowCascades) {
         switch (cascadeIndex) {

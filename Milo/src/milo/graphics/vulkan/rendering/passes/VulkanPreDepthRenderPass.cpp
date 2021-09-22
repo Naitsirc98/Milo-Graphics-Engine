@@ -80,12 +80,13 @@ namespace milo {
 		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
 		beginInfo.framebuffer = m_Framebuffers[imageIndex].get();
 
-		VkClearValue clearValues[2];
+		VkClearValue clearValues[3];
 		clearValues[0].color = {0, 0, 0, 0};
-		clearValues[1].depthStencil = {1, 0};
+		clearValues[1].color = {0, 0, 0, 0};
+		clearValues[2].depthStencil = {1, 0};
 
 		beginInfo.clearValues = clearValues;
-		beginInfo.clearValuesCount = 2;
+		beginInfo.clearValuesCount = 3;
 
 		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
 		renderMeshViews(imageIndex, commandBuffer, scene);
@@ -139,6 +140,7 @@ namespace milo {
 	void VulkanPreDepthRenderPass::createRenderPass() {
 
 		RenderPass::Description desc;
+		desc.colorAttachments.push_back({PixelFormat::R32F, 1, RenderPass::LoadOp::Clear});
 		desc.colorAttachments.push_back({PixelFormat::RGBA32F, 1, RenderPass::LoadOp::Clear});
 		desc.depthAttachment = {PixelFormat::DEPTH32, 1, RenderPass::LoadOp::Clear};
 
@@ -206,6 +208,8 @@ namespace milo {
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
 
+		pipelineInfo.colorBlendAttachments.push_back(pipelineInfo.colorBlendAttachments[0]);
+
 		pipelineInfo.shaders.push_back({"resources/shaders/pre_depth/pre_depth.vert", VK_SHADER_STAGE_VERTEX_BIT});
 		pipelineInfo.shaders.push_back({"resources/shaders/pre_depth/pre_depth.frag", VK_SHADER_STAGE_FRAGMENT_BIT});
 
@@ -232,6 +236,7 @@ namespace milo {
 
 		Framebuffer::CreateInfo createInfo{};
 		createInfo.size = size;
+		createInfo.colorAttachments.push_back(PixelFormat::R32F);
 		createInfo.colorAttachments.push_back(PixelFormat::RGBA32F);
 		createInfo.depthAttachments.push_back(PixelFormat::DEPTH32);
 		createInfo.apiInfo = &apiInfo;

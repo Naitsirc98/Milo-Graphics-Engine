@@ -35,14 +35,6 @@ namespace milo {
 			ImGui::End();
 		}
 
-		ImGui::Begin("Pre-Depth buffer");
-
-		auto* texture = WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle())->colorAttachments()[0];
-
-		UI::image(*texture, texture->size());
-
-		ImGui::End();
-
 		int uniqueId = 450;
 		renderSceneViewport();
 
@@ -87,8 +79,6 @@ namespace milo {
 		ImGui::PopStyleVar();
 		ImGui::PopStyleVar(2);
 
-		setupMenuBar();
-
 		ImGuiIO& io = ImGui::GetIO();
 		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
 
@@ -125,21 +115,44 @@ namespace milo {
 
 				ImGui::DockBuilderFinish(dockspace_id);
 			}
+
+			setupMenuBar();
 		}
 
 		ImGui::End();
 	}
 
 	void MiloEditor::setupMenuBar() {
+
 		if(ImGui::BeginMainMenuBar()) {
 
-			if(ImGui::BeginMenu("File")) {
-				ImGui::MenuItem("New");
-				ImGui::MenuItem("Open");
-				ImGui::MenuItem("Save");
-				ImGui::MenuItem("Save as");
+			static bool depthBufferOpened = false;
+
+			if(ImGui::BeginMenu("Options")) {
+
+				bool selected = false;
+				if(ImGui::MenuItem("Show Pre-Depth Buffer", nullptr, &selected)) {
+					depthBufferOpened = true;
+				}
+
+				if(ImGui::MenuItem("1 Pre-Depth Buffer")) {
+					depthBufferOpened = true;
+				}
+
+				if(ImGui::MenuItem("More...")) {
+
+				}
 
 				ImGui::EndMenu();
+			}
+
+			if(depthBufferOpened) {
+				if(ImGui::Begin("Pre-Depth buffer", &depthBufferOpened)) {
+					auto* texture = WorldRenderer::get().resources().getFramebuffer(
+							PreDepthRenderPass::getFramebufferHandle())->colorAttachments()[1];
+					UI::image(*texture, texture->size());
+					ImGui::End();
+				}
 			}
 
 			ImGui::EndMainMenuBar();
