@@ -45,7 +45,7 @@ namespace milo {
 		ImGui::Begin("SceneViewportPanel", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		Texture2D* texture = nullptr;
 		if(true) {
-			texture = WorldRenderer::get().resources().getTexture2D(ShadowMapRenderPass::getDepthMap(0)).get();
+			texture = WorldRenderer::get().resources().getFramebuffer(PreDepthRenderPass::getFramebufferHandle())->colorAttachments()[0];
 		} else {
 			texture = WorldRenderer::get().getFramebuffer().colorAttachments()[0];
 		}

@@ -34,6 +34,11 @@ namespace milo {
 		return static_cast<float>(duration_cast<nanoseconds>(now - s_StartTimeSeconds).count());
 	}
 
+	float Time::micro() noexcept {
+		const TimePoint now = std::chrono::high_resolution_clock::now();
+		return static_cast<float>(duration_cast<microseconds>(now - s_StartTimeSeconds).count());
+	}
+
 	float Time::rawDeltaTime() noexcept {
 		return s_RawDeltaTime;
 	}

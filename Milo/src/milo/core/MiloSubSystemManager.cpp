@@ -7,6 +7,7 @@
 #include "milo/assets/AssetManager.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/editor/MiloEditor.h"
+#include "milo/time/Profiler.h"
 
 #define INIT(system) Log::info("Initializing {}...", #system); system::init(); Log::info("{} initialized", #system)
 #define SHUTDOWN(system) Log::info("Terminating {}...", #system); system::shutdown(); Log::info("{} terminated", #system)
@@ -17,6 +18,7 @@ namespace milo {
 		MemoryTracker::init();
 		Log::init();
 		INIT(Time);
+		INIT(Profiler);
 		INIT(EventSystem);
 		INIT(Graphics);
 		INIT(Input);
@@ -34,6 +36,7 @@ namespace milo {
 		SHUTDOWN(Input);
 		SHUTDOWN(Graphics);
 		SHUTDOWN(EventSystem);
+		SHUTDOWN(Profiler);
 		SHUTDOWN(Time);
 		Log::shutdown();
 		MemoryTracker::shutdown();

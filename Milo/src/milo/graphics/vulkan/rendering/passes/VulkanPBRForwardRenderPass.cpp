@@ -60,6 +60,8 @@ namespace milo {
 
 	void VulkanPBRForwardRenderPass::execute(Scene* scene) {
 
+		MILO_PROFILE_FUNCTION;
+
 		const uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
 		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
 		VulkanQueue* queue = m_Device->graphicsQueue();
@@ -146,7 +148,8 @@ namespace milo {
 
 	void VulkanPBRForwardRenderPass::pushConstants(VkCommandBuffer commandBuffer, const Matrix4& transform) const {
 		PushConstants pushConstants = {transform};
-		VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT,
+		VK_CALLV(vkCmdPushConstants(commandBuffer, m_GraphicsPipeline->pipelineLayout(),
+									VK_SHADER_STAGE_VERTEX_BIT,
 									0, sizeof(PushConstants), &pushConstants));
 	}
 

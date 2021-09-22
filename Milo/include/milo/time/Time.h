@@ -60,6 +60,7 @@ namespace milo {
 		static float now() noexcept;
 		static float seconds() noexcept;
 		static float millis() noexcept;
+		static float micro() noexcept;
 		static float nanos() noexcept;
 		static float rawDeltaTime() noexcept;
 		static float deltaTime() noexcept;

@@ -2,6 +2,9 @@
 
 #define PI 3.1415926536
 
+const ivec2 TILE_SIZE = ivec2(16, 16);
+const uint MAX_POINT_LIGHTS = 256;
+
 layout(std140, set = 0, binding = 0) uniform CameraData {
     mat4 viewProjectionMatrix;
     mat4 viewMatrix;
@@ -33,7 +36,7 @@ struct PointLight {
 };
 
 layout(std140, set = 0, binding = 2) uniform PointLights {
-    PointLight u_PointLights[128];
+    PointLight u_PointLights[MAX_POINT_LIGHTS];
     uint u_PointLightsCount;
 };
 
@@ -116,15 +119,12 @@ layout(location = 0) in Fragment {
 
 layout(location = 0) out vec4 out_FragColor;
 
-const ivec2 TILE_SIZE = ivec2(16, 16);
-const uint MAX_POINT_LIGHTS = 128;
-
 int GetLightBufferIndex(int i) {
 
     ivec2 tileID = ivec2(gl_FragCoord) / TILE_SIZE;
     uint index = tileID.y * u_TilesCountX + tileID.x;
 
-    uint offset = index * 128;
+    uint offset = index * MAX_POINT_LIGHTS;
 
     return u_VisibleLightIndices[offset + i];
 }
@@ -134,8 +134,9 @@ int GetPointLightCount() {
     int result = 0;
     for (int i = 0; i < u_PointLightsCount; i++) {
         uint lightIndex = GetLightBufferIndex(i);
-        if (lightIndex == -1)
-        break;
+        if (lightIndex == -1) {
+            break;
+        }
 
         result++;
     }
@@ -264,10 +265,14 @@ vec3 computePointLights() {
 
     vec3 L0 = vec3(0.0);
 
-    for(int i = 0; i < u_PointLightsCount; ++i) {
+    ivec2 location = ivec2(gl_FragCoord.xy);
+    ivec2 tileID = location / ivec2(16, 16);
+    uint index = tileID.y * u_TilesCountX + tileID.x;
+    uint offset = index * MAX_POINT_LIGHTS;
+
+    for(int i = 0; i < MAX_POINT_LIGHTS && u_VisibleLightIndices[offset + i] != -1; ++i) {
 
         uint lightIndex = GetLightBufferIndex(i);
-        if(lightIndex == -1) continue;
 
         PointLight light = u_PointLights[lightIndex];
 

@@ -4,6 +4,7 @@
 #include "GraphicsAPI.h"
 #include "Window.h"
 #include "Vertex.h"
+#include "milo/time/Profiler.h"
 
 namespace milo {
 

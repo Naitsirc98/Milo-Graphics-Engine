@@ -3,6 +3,7 @@
 #include "milo/scenes/Entity.h"
 #include "milo/editor/MiloEditor.h"
 #include <algorithm>
+#include "milo/time/Profiler.h"
 
 namespace milo {
 
@@ -45,6 +46,8 @@ namespace milo {
 	}
 
 	void WorldRenderer::generateDrawCommands(Scene* scene) {
+
+		MILO_PROFILE_FUNCTION;
 
 		auto& drawCommands = s_Instance->m_DrawCommands;
 		auto& shadowsDrawCommands = s_Instance->m_ShadowDrawCommands;

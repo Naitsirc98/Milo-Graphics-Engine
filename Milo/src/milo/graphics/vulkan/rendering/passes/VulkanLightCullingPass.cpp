@@ -118,8 +118,8 @@ namespace milo {
 										&pushConstants));
 
 			const Size viewport = scene->viewportSize();
-			const uint32_t workGroupsX = (viewport.width + viewport.width % TILE_SIZE) / TILE_SIZE;
-			const uint32_t workGroupsY = (viewport.height + viewport.height % TILE_SIZE) / TILE_SIZE;
+			const uint32_t workGroupsX = (viewport.width + (viewport.width % TILE_SIZE)) / TILE_SIZE;
+			const uint32_t workGroupsY = (viewport.height + (viewport.height % TILE_SIZE)) / TILE_SIZE;
 
 			VK_CALLV(vkCmdDispatch(commandBuffer, workGroupsX, workGroupsY, 1));
 		}

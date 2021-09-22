@@ -47,7 +47,7 @@ shared uint visibleLightCount;
 shared vec4 frustumPlanes[6];
 
 // Shared local storage for visible indices, will be written out to the global buffer at the end
-shared int visibleLightIndices[1024];
+shared int visibleLightIndices[MAX_POINT_LIGHTS];
 
 layout(local_size_x = TILE_SIZE, local_size_y = TILE_SIZE, local_size_z = 1) in;
 void main() {
@@ -71,7 +71,7 @@ void main() {
     vec2 tc = vec2(location) / u_ScreenSize;
     float depth = texture(u_PreDepthMap, tc).r;
     // Linearize depth value (keeping in mind Vulkan depth is 0->1 and we're using GLM_FORCE_DEPTH_ZERO_TO_ONE)
-    depth = u_ProjectionMatrix[3][2] / (depth + u_ProjectionMatrix[2][2]);
+    depth = (0.5 * u_ProjectionMatrix[3][2]) / (depth + 0.5 * u_ProjectionMatrix[2][2] - 0.5);
 
     // Convert depth to uint so we can do atomic min and max comparisons between the threads
     uint depthInt = floatBitsToUint(depth);
@@ -126,7 +126,7 @@ void main() {
 
         vec4 position = vec4(u_PointLights[lightIndex].position.rgb, 1.0f);
         float radius = u_PointLights[lightIndex].radius;
-        radius += radius * 0.3f;
+        //radius += radius * 0.3f;
 
         // Check if light radius is in frustum
         float distance = 0.0;
@@ -148,23 +148,15 @@ void main() {
 
     // One thread should fill the global light buffer
     if (gl_LocalInvocationIndex == 0) {
-        uint offset = index * 1024; // Determine bosition in global buffer
+        uint offset = index * MAX_POINT_LIGHTS; // Determine bosition in global buffer
         for (uint i = 0; i < visibleLightCount; i++) {
             visibleLightIndicesBuffer.indices[offset + i] = visibleLightIndices[i];
         }
 
-        if (visibleLightCount != 1024) {
+        if (visibleLightCount != MAX_POINT_LIGHTS) {
             // Unless we have totally filled the entire array, mark it's end with -1
             // Final shader step will use this to determine where to stop (without having to pass the light count)
             visibleLightIndicesBuffer.indices[offset + visibleLightCount] = -1;
         }
-    }
-
-    // ======
-
-    barrier();
-
-    if(gl_LocalInvocationIndex == 0) {
-        visibleLightIndicesBuffer.indices[0] = int(u_PointLightsCount);
     }
 }

@@ -2,6 +2,7 @@
 #include "milo/scenes/SceneManager.h"
 #include "milo/graphics/rendering/passes/AllRenderPasses.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
+#include "milo/time/Profiler.h"
 
 namespace milo {
 
@@ -21,6 +22,8 @@ namespace milo {
 	}
 
 	void FrameGraph::setup(Scene* scene) {
+
+		MILO_PROFILE_FUNCTION;
 
 		const WorldRenderer& renderer = WorldRenderer::get();
 
@@ -48,6 +51,7 @@ namespace milo {
 	}
 
 	void FrameGraph::compile(Scene* scene) {
+		MILO_PROFILE_FUNCTION;
 		m_ResourcePool->compile(scene);
 		for(RenderPass* pass : m_RenderPassExecutionList) {
 			if(pass->shouldCompile(scene)) {
@@ -59,6 +63,8 @@ namespace milo {
 	}
 
 	void FrameGraph::execute(Scene* scene) {
+
+		MILO_PROFILE_FUNCTION;
 
 		for(RenderPass* renderPass : m_RenderPassExecutionList) {
 			renderPass->execute(scene);
