@@ -57,11 +57,15 @@ namespace milo {
 		bool m_ShowGrid{false};
 		bool m_ShadowsEnabled{true};
 		bool m_ShowBoundingVolumes{false};
+		bool m_ShowShadowCascades{false};
+		bool m_SoftShadows{false};
+		bool m_ShadowCascadeFading{false};
+		float m_CascadeFading{1};
 		ArrayList<DrawCommand> m_DrawCommands;
 		ArrayList<DrawCommand> m_ShadowDrawCommands;
 		CameraInfo m_Camera{};
 		LightEnvironment m_LightEnvironment{};
-		float m_ShadowsMaxDistance{10000};
+		float m_ShadowsMaxDistance{200};
 		Size m_ShadowsMapSize{4096, 4096};
 		Array<ShadowCascade, 4> m_ShadowCascades{};
 	private:
@@ -77,6 +81,14 @@ namespace milo {
 		void setShadowsEnabled(bool shadowsEnabled);
 		bool showBoundingVolumes() const;
 		void setShowBoundingVolumes(bool value);
+		bool showShadowCascades() const;
+		void setShowShadowCascades(bool value);
+		bool softShadows() const;
+		void setSoftShadows(bool value);
+		bool shadowCascadeFading() const;
+		void setShadowCascadeFading(bool value);
+		bool shadowCascadeFadingValue() const;
+		void setShadowCascadeFadingValue(float value);
 		void submit(DrawCommand drawCommand, bool castShadows);
 		const ArrayList<DrawCommand>& drawCommands() const;
 		const ArrayList<DrawCommand>& shadowsDrawCommands() const;

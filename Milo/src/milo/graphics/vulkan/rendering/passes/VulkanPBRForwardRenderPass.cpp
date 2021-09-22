@@ -215,13 +215,6 @@ namespace milo {
 
 		{
 			PointLightsData pointLightsData{};
-
-			for(uint32_t i = 0;i < MAX_POINT_LIGHTS;++i) {
-				PointLight l{};
-				l.color = {1, 0, 0, 1};
-				pointLightsData.pointLights[i] = l;
-			}
-
 			uint32_t pointLightsCount = std::min(lights.pointLights.size(), (size_t)MAX_POINT_LIGHTS);
 			memcpy(pointLightsData.pointLights, lights.pointLights.data(), sizeof(PointLight) * pointLightsCount);
 			pointLightsData.u_PointLightsCount = pointLightsCount;
@@ -307,16 +300,16 @@ namespace milo {
 			const auto& cascades = WorldRenderer::get().shadowCascades();
 
 			ShadowDetails shadows{};
-			shadows.u_SoftShadows[0] = true;
+			shadows.u_SoftShadows[0] = WorldRenderer::get().softShadows();
 			shadows.u_ShadowFade = 1;
-			shadows.u_MaxShadowDistance = 200;
+			shadows.u_MaxShadowDistance = WorldRenderer::get().shadowsMaxDistance();
 			shadows.u_LightSize = 0.5f;
-			shadows.u_CascadeFading[0] = true;
-			shadows.u_CascadeTransitionFade = 1;
+			shadows.u_CascadeFading[0] = WorldRenderer::get().shadowCascadeFading();
+			shadows.u_CascadeTransitionFade = WorldRenderer::get().shadowCascadeFadingValue();
 			shadows.u_TilesCountX = (uint32_t) (scene->viewportSize().width / TILE_SIZE);
 			shadows.u_ShowLightComplexity[0] = false;
-			shadows.u_ShadowsEnabled[0] = true;
-			shadows.u_ShowCascades[0] = false;
+			shadows.u_ShadowsEnabled[0] = WorldRenderer::get().shadowsEnabled();
+			shadows.u_ShowCascades[0] = WorldRenderer::get().showShadowCascades();
 
 			for(int32_t i = 0;i < cascades.size();++i) {
 				shadows.u_LightMatrix[i] = cascades[i].viewProj;

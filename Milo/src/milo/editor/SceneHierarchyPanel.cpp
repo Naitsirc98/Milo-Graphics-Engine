@@ -192,10 +192,6 @@ namespace milo {
 			if (ImGui::MenuItem("Delete"))
 				entityDeleted = true;
 
-			if(ImGui::MenuItem("Duplicate")) {
-
-			}
-
 			ImGui::EndPopup();
 		}
 

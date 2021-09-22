@@ -6,7 +6,7 @@ namespace milo {
 
 	bool BoundingSphere::isVisible(const Matrix4& transform, const Plane* planes, uint32_t planeCount) const {
 		// Assume uniform scale
-		float r = this->radius * getScale(transform).x;
+		float r = this->radius;
 		for(int32_t i = 0;i < planeCount;++i) {
 			if(dot(planes[i].xyz, center) <= -r) return false;
 		}
@@ -14,7 +14,7 @@ namespace milo {
 	}
 
 	bool AxisAlignedBoundingBox::isVisible(const Matrix4& transform, const Plane* planes, uint32_t planeCount) const {
-		Vector3 size = this->size * getScale(transform);
+		Vector3 size = this->size;
 		for(int32_t i = 0;i < planeCount;++i) {
 			const Plane& g = planes[i];
 			float rg = fabs(g.x * size.x) + fabs(g.y * size.y) + fabs(g.z * size.z);
@@ -24,7 +24,7 @@ namespace milo {
 	}
 
 	bool OrientedBoundingBox::isVisible(const Matrix4& transform, const Plane* planes, uint32_t planeCount) const {
-		Vector3 size = this->size * getScale(transform);
+		Vector3 size = this->size;
 		for(int32_t i = 0;i < planeCount;++i) {
 			const Plane& g = planes[i];
 			float rg = fabs(dot(g.xyz, xAxis) * size.x) + fabs(dot(g.xyz, yAxis) * size.y) + fabs(dot(g.xyz, zAxis) * size.z);
@@ -175,7 +175,7 @@ namespace milo {
 
 		OBB obb;
 		obb.center = center;
-		obb.size = size;
+		obb.size = size * 2.0f;
 		obb.xAxis = axis[0];
 		obb.yAxis = axis[1];
 		obb.zAxis = axis[2];

@@ -90,7 +90,9 @@ namespace milo {
 	}
 
 	void WorldRenderer::getCameraInfo(Scene* scene) {
+
 		CameraInfo& c = s_Instance->m_Camera;
+
 		if(getSimulationState() == SimulationState::Editor) {
 			const auto& camera = MiloEditor::camera();
 			float fov, znear, zfar;
@@ -115,6 +117,7 @@ namespace milo {
 			c.position = position;
 			c.aspect = aspect;
 		}
+
 	}
 
 	void WorldRenderer::generateLightEnvironment(Scene* scene) {
@@ -181,8 +184,7 @@ namespace milo {
 
 		// Calculate split depths based on view camera frustum
 		// Based on method presented in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
-		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
-		{
+		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
 			float p = (i + 1.0f) / static_cast<float>(SHADOW_MAP_CASCADE_COUNT);
 			float log = minZ * std::pow(ratio, p);
 			float uniform = minZ + range * p;
@@ -192,38 +194,35 @@ namespace milo {
 
 		// Calculate orthographic projection matrix for each cascade
 		float lastSplitDist = 0.0;
-		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++)
-		{
+		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
 			float splitDist = cascadeSplits[i];
 
-			glm::vec3 frustumCorners[8] = {
-					glm::vec3(-1.0f,  1.0f, -1.0f),
-					glm::vec3(1.0f,  1.0f, -1.0f),
-					glm::vec3(1.0f, -1.0f, -1.0f),
-					glm::vec3(-1.0f, -1.0f, -1.0f),
-					glm::vec3(-1.0f,  1.0f,  1.0f),
-					glm::vec3(1.0f,  1.0f,  1.0f),
-					glm::vec3(1.0f, -1.0f,  1.0f),
-					glm::vec3(-1.0f, -1.0f,  1.0f),
+			Vector3 frustumCorners[8] = {
+					Vector3(-1.0f,  1.0f, -1.0f),
+					Vector3(1.0f,  1.0f, -1.0f),
+					Vector3(1.0f, -1.0f, -1.0f),
+					Vector3(-1.0f, -1.0f, -1.0f),
+					Vector3(-1.0f,  1.0f,  1.0f),
+					Vector3(1.0f,  1.0f,  1.0f),
+					Vector3(1.0f, -1.0f,  1.0f),
+					Vector3(-1.0f, -1.0f,  1.0f),
 			};
 
 			// Project frustum corners into world space
-			glm::mat4 invCam = glm::inverse(viewProjection);
-			for (uint32_t i = 0; i < 8; i++)
-			{
-				glm::vec4 invCorner = invCam * glm::vec4(frustumCorners[i], 1.0f);
+			Matrix4 invCam = glm::inverse(viewProjection);
+			for (uint32_t i = 0; i < 8; i++) {
+				Vector4 invCorner = invCam * Vector4(frustumCorners[i], 1.0f);
 				frustumCorners[i] = invCorner / invCorner.w;
 			}
 
-			for (uint32_t i = 0; i < 4; i++)
-			{
-				glm::vec3 dist = frustumCorners[i + 4] - frustumCorners[i];
+			for (uint32_t i = 0; i < 4; i++) {
+				Vector3 dist = frustumCorners[i + 4] - frustumCorners[i];
 				frustumCorners[i + 4] = frustumCorners[i] + (dist * splitDist);
 				frustumCorners[i] = frustumCorners[i] + (dist * lastSplitDist);
 			}
 
 			// Get frustum center
-			glm::vec3 frustumCenter = glm::vec3(0.0f);
+			Vector3 frustumCenter = Vector3(0.0f);
 			for (uint32_t i = 0; i < 8; i++)
 				frustumCenter += frustumCorners[i];
 
@@ -232,26 +231,25 @@ namespace milo {
 			//frustumCenter *= 0.1f;
 
 			float radius = 0.0f;
-			for (uint32_t i = 0; i < 8; i++)
-			{
+			for (uint32_t i = 0; i < 8; i++) {
 				float distance = glm::length(frustumCorners[i] - frustumCenter);
 				radius = glm::max(radius, distance);
 			}
 			radius = std::ceil(radius * 16.0f) / 16.0f;
 
-			glm::vec3 maxExtents = glm::vec3(radius);
-			glm::vec3 minExtents = -maxExtents;
+			Vector3 maxExtents = Vector3(radius);
+			Vector3 minExtents = -maxExtents;
 
-			glm::vec3 lightDir = -glm::normalize(s_Instance->m_LightEnvironment.dirLight->direction);
-			glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 0.0f, 1.0f));
-			glm::mat4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f + CascadeNearPlaneOffset, maxExtents.z - minExtents.z + CascadeFarPlaneOffset);
+			Vector3 lightDir = -glm::normalize(s_Instance->m_LightEnvironment.dirLight->direction);
+			Matrix4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, Vector3(0.0f, 0.0f, 1.0f));
+			Matrix4 lightOrthoMatrix = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f + CascadeNearPlaneOffset, maxExtents.z - minExtents.z + CascadeFarPlaneOffset);
 
 			// Offset to texel space to avoid shimmering (from https://stackoverflow.com/questions/33499053/cascaded-shadow-map-shimmering)
-			glm::mat4 shadowMatrix = lightOrthoMatrix * lightViewMatrix;
+			Matrix4 shadowMatrix = lightOrthoMatrix * lightViewMatrix;
 			const float ShadowMapResolution = 4096.0f;
-			glm::vec4 shadowOrigin = (shadowMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) * ShadowMapResolution / 2.0f;
-			glm::vec4 roundedOrigin = glm::round(shadowOrigin);
-			glm::vec4 roundOffset = roundedOrigin - shadowOrigin;
+			Vector4 shadowOrigin = (shadowMatrix * Vector4(0.0f, 0.0f, 0.0f, 1.0f)) * ShadowMapResolution / 2.0f;
+			Vector4 roundedOrigin = glm::round(shadowOrigin);
+			Vector4 roundOffset = roundedOrigin - shadowOrigin;
 			roundOffset = roundOffset * 2.0f / ShadowMapResolution;
 			roundOffset.z = 0.0f;
 			roundOffset.w = 0.0f;
@@ -316,6 +314,38 @@ namespace milo {
 
 	void WorldRenderer::setShowBoundingVolumes(bool value) {
 		m_ShowBoundingVolumes = value;
+	}
+
+	bool WorldRenderer::showShadowCascades() const {
+		return m_ShowShadowCascades;
+	}
+
+	void WorldRenderer::setShowShadowCascades(bool value) {
+		m_ShowShadowCascades = value;
+	}
+
+	bool WorldRenderer::softShadows() const {
+		return m_SoftShadows;
+	}
+
+	void WorldRenderer::setSoftShadows(bool value) {
+		m_SoftShadows = value;
+	}
+
+	bool WorldRenderer::shadowCascadeFading() const {
+		return m_ShadowCascadeFading;
+	}
+
+	void WorldRenderer::setShadowCascadeFading(bool value) {
+		m_ShadowCascadeFading = value;
+	}
+
+	bool WorldRenderer::shadowCascadeFadingValue() const {
+		return m_CascadeFading;
+	}
+
+	void WorldRenderer::setShadowCascadeFadingValue(float value) {
+		m_CascadeFading = value;
 	}
 
 	void WorldRenderer::submit(DrawCommand drawCommand, bool castShadows) {

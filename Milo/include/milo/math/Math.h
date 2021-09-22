@@ -112,6 +112,7 @@ namespace milo {
 		inline Plane& operator*(const Matrix4& m) {
 			Vector4 v(xyz, w);
 			v = m * v;
+			v = normalize(v);
 			xyz = {v.x, v.y, v.z};
 			w = v.w;
 			return *this;

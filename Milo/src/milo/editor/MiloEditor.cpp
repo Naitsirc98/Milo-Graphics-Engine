@@ -127,20 +127,16 @@ namespace milo {
 		if(ImGui::BeginMainMenuBar()) {
 
 			static bool depthBufferOpened = false;
+			static bool settingsPanelOpened = false;
 
 			if(ImGui::BeginMenu("Options")) {
 
-				bool selected = false;
-				if(ImGui::MenuItem("Show Pre-Depth Buffer", nullptr, &selected)) {
-					depthBufferOpened = true;
-				}
-
-				if(ImGui::MenuItem("1 Pre-Depth Buffer")) {
+				if(ImGui::MenuItem("Show Pre-Depth Buffer")) {
 					depthBufferOpened = true;
 				}
 
 				if(ImGui::MenuItem("More...")) {
-
+					settingsPanelOpened = true;
 				}
 
 				ImGui::EndMenu();
@@ -151,6 +147,47 @@ namespace milo {
 					auto* texture = WorldRenderer::get().resources().getFramebuffer(
 							PreDepthRenderPass::getFramebufferHandle())->colorAttachments()[1];
 					UI::image(*texture, texture->size());
+					ImGui::End();
+				}
+			}
+
+			if(settingsPanelOpened) {
+				if(ImGui::Begin("Settings", &settingsPanelOpened)) {
+
+					bool shadowsEnabled = WorldRenderer::get().shadowsEnabled();
+					bool showBoundingVolumes = WorldRenderer::get().showBoundingVolumes();
+					bool showGrid = WorldRenderer::get().showGrid();
+					bool showShadowCascades = WorldRenderer::get().showShadowCascades();
+					bool softshadows = WorldRenderer::get().softShadows();
+					bool cascadeFadingEnabled = WorldRenderer::get().shadowCascadeFading();
+					bool cascadeFadingValue = WorldRenderer::get().shadowCascadeFadingValue();
+
+					float shadowsMaxDistance = WorldRenderer::get().shadowsMaxDistance();
+
+					uint32_t drawCommandsCount = WorldRenderer::get().drawCommands().size();
+
+					ImGui::Checkbox("Shadows enabled", &shadowsEnabled);
+					ImGui::Checkbox("Show shadow cascades", &showShadowCascades);
+					ImGui::Checkbox("Show bounding volumes", &showBoundingVolumes);
+					ImGui::Checkbox("Show grid", &showGrid);
+					ImGui::Checkbox("Soft Shadows", &softshadows);
+					ImGui::Checkbox("Cascade fading enabled", &cascadeFadingEnabled);
+					ImGui::Checkbox("Cascade fading value", &cascadeFadingValue);
+
+					ImGui::DragFloat("Shadows max distance", &shadowsMaxDistance);
+
+					ImGui::Text("Draw commands count: %i", drawCommandsCount);
+
+					WorldRenderer::get().setShadowsEnabled(shadowsEnabled);
+					WorldRenderer::get().setShowBoundingVolumes(showBoundingVolumes);
+					WorldRenderer::get().setShowGrid(showGrid);
+					WorldRenderer::get().setShowShadowCascades(showShadowCascades);
+					WorldRenderer::get().setSoftShadows(softshadows);
+					WorldRenderer::get().setShadowCascadeFading(cascadeFadingEnabled);
+					WorldRenderer::get().setShadowCascadeFadingValue(cascadeFadingValue);
+
+					WorldRenderer::get().setShadowsMaxDistance(shadowsMaxDistance);
+
 					ImGui::End();
 				}
 			}

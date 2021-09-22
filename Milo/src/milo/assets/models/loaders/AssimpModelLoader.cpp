@@ -38,10 +38,10 @@ namespace milo {
 
 		memcpy(&outNode->transform, &aiNode->mTransformation, sizeof(Matrix4));
 
-		if(outNode->parent >= 0) {
-			const Model::Node* parent = outNode->model->get(outNode->parent);
-			outNode->transform = parent->transform * outNode->transform;
-		}
+		//if(outNode->parent >= 0) {
+		//	const Model::Node* parent = outNode->model->get(outNode->parent);
+		//	outNode->transform = parent->transform * outNode->transform;
+		//}
 
 		for(uint32_t i = 0;i < aiNode->mNumMeshes;++i) {
 			processNodeMeshes(aiScene, aiNode, outNode);
