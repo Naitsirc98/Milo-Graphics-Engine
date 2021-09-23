@@ -348,6 +348,14 @@ namespace milo {
 		m_CascadeFading = value;
 	}
 
+	bool WorldRenderer::useMultithreading() const {
+		return m_UseMultithreading;
+	}
+
+	void WorldRenderer::setUseMultithreading(bool useMultithreading) {
+		m_UseMultithreading = useMultithreading;
+	}
+
 	void WorldRenderer::submit(DrawCommand drawCommand, bool castShadows) {
 		m_DrawCommands.push_back(drawCommand);
 		if(castShadows) m_ShadowDrawCommands.push_back(drawCommand);

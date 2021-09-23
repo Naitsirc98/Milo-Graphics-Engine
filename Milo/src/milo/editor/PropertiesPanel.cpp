@@ -40,7 +40,7 @@ namespace milo {
 
 	template<typename T>
 	static String nameof() {
-		static const uint32_t offset = strlen("milo::");
+		static const size_t offset = strlen("class milo::");
 		const String name = typeid(T).name();
 		return name.substr(offset);
 	}
@@ -48,7 +48,8 @@ namespace milo {
 	template<typename T>
 	static void addComponentButton(Entity entity) {
 		if(!entity.hasComponent<T>()) {
-			if(ImGui::Button(nameof<T>().c_str()))
+			String name = nameof<T>();
+			if(ImGui::Button(name.c_str()))
 			{
 				entity.addComponent<T>();
 				ImGui::CloseCurrentPopup();

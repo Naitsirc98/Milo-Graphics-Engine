@@ -5,6 +5,7 @@
 #include "milo/graphics/vulkan/descriptors/VulkanDescriptorPool.h"
 #include "milo/graphics/vulkan/buffers/VulkanShaderBuffer.h"
 #include "milo/graphics/vulkan/rendering/VulkanGraphicsPipeline.h"
+#include <concurrent_queue.h>
 
 namespace milo {
 
@@ -55,6 +56,18 @@ namespace milo {
 			Matrix4 modelMatrix;
 		};
 
+		struct ThreadData {
+
+			Thread thread;
+			AtomicBool running{true};
+			VulkanCommandPool* commandPool{nullptr};
+			Concurrency::concurrent_queue<Function<void>> queue;
+			Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> commandBuffers{};
+
+			ThreadData();
+			~ThreadData();
+		};
+
 	private:
 		VulkanDevice* m_Device = nullptr;
 
@@ -79,6 +92,9 @@ namespace milo {
 		Array<VkSemaphore, MAX_SWAPCHAIN_IMAGE_COUNT> m_SignalSemaphores{};
 
 		Array<uint32_t, MAX_SWAPCHAIN_IMAGE_COUNT> m_LastSkyboxModificationCount{0};
+
+		ArrayList<ThreadData*> m_ThreadPool;
+		ArrayList<VkCommandBuffer> m_SecondaryCommandBuffers;
 
 	private:
 		VulkanPBRForwardRenderPass();
@@ -114,5 +130,11 @@ namespace milo {
 
 		void createGraphicsPipeline();
 		void createSemaphores();
+
+		void renderSceneSingleThread(uint32_t imageIndex, VkCommandBuffer commandBuffer,
+									 const VulkanMaterialResourcePool& materialResources);
+
+		void renderSceneMultithreading(uint32_t imageIndex, VkCommandBuffer commandBuffer,
+									   const VulkanMaterialResourcePool& materialResources);
 	};
 }

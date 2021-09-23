@@ -3,6 +3,8 @@
 
 namespace milo {
 
+	using namespace std::chrono;
+
 	Profiler::Profiler() {
 
 	}
@@ -49,6 +51,9 @@ namespace milo {
 
 	void Profiler::writeProfile(Profiler::Session* session, const ProfileResult& result) {
 
+		uint64_t start = duration_cast<microseconds>(result.startTime.time_since_epoch()).count();
+		uint64_t end = duration_cast<microseconds>(result.endTime.time_since_epoch()).count();
+
 		if (session->count++ > 0)
 			session->output << ",";
 
@@ -57,12 +62,12 @@ namespace milo {
 
 		session->output << "{";
 		session->output << R"("cat":"function",)";
-		session->output << "\"dur\":" << (result.endTime - result.startTime) << ',';
+		session->output << "\"dur\":" << (end - start) << ',';
 		session->output << R"("name":")" << name << "\",";
 		session->output << R"("ph":"X",)";
 		session->output << "\"pid\":0,";
 		session->output << "\"tid\":" << result.threadId << ",";
-		session->output << "\"ts\":" << (uint64_t)result.startTime;
+		session->output << "\"ts\":" << start;
 		session->output << "}";
 
 		session->output.flush();
@@ -83,7 +88,7 @@ namespace milo {
 	}
 
 	ProfileTimer::ProfileTimer(const String& name, const String& session)
-		: name(name), session(session), start(Time::micro()) {
+		: name(name), session(session), start(high_resolution_clock::now()) {
 	}
 
 	ProfileTimer::~ProfileTimer() {
@@ -91,7 +96,7 @@ namespace milo {
 		ProfileResult result;
 		result.name = std::move(name);
 		result.startTime = start;
-		result.endTime = Time::micro();
+		result.endTime = high_resolution_clock::now();
 		result.threadId = (size_t)std::hash<std::thread::id>{}(std::this_thread::get_id());
 
 		Profiler::get().writeProfile(session, result);

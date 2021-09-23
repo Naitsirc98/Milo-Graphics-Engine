@@ -8,6 +8,7 @@ namespace milo {
 	class Material : public Asset {
 		friend class MaterialManager;
 		friend class MaterialResourcePool;
+		friend class VulkanMaterialResourcePool;
 		friend class AssimpModelLoader;
 	public:
 		struct Data {
@@ -36,6 +37,8 @@ namespace milo {
 		Ref<Texture2D> m_OcclusionMap{nullptr};
 		Ref<Texture2D> m_EmissiveMap{nullptr};
 		Ref<Texture2D> m_NormalMap{nullptr};
+		bool m_Dirty = false;
+		size_t m_Index = -1;
 	private:
 		explicit Material(String name, String filename);
 		~Material() override;
@@ -75,5 +78,6 @@ namespace milo {
 		Material* metallicRoughnessMap(Ref<Texture2D> texture);
 		Ref<Texture2D> occlusionMap() const;
 		Material* occlusionMap(Ref<Texture2D> texture);
+		bool dirty() const;
 	};
 }

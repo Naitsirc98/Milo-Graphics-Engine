@@ -31,6 +31,28 @@ namespace milo {
 		return m_Materials.at(DEFAULT_MATERIAL_NAME);
 	}
 
+	Material* MaterialManager::create(const String& name, const String& filename) {
+		if(exists(name)) return find(name);
+
+		String file = filename;
+
+		if(file == "") {
+			file = str("resources/materials/") + name + ".mat";
+		}
+
+		Material* material = new Material(name, file);
+
+		m_Materials[name] = material;
+		m_ResourcePool->allocateMaterialResources(material);
+		if(name == DEFAULT_MATERIAL_NAME) {
+			material->m_Icon = Assets::textures().getIcon("DefaultMaterialIcon");
+		} else {
+			material->m_Icon = Assets::textures().createIcon(name, Assets::meshes().getSphere(), material);
+		}
+
+		return material;
+	}
+
 	Material* MaterialManager::load(const String& name, const String& filename) {
 		Material* material = nullptr;
 		m_Mutex.lock();
@@ -104,6 +126,20 @@ namespace milo {
 			material->m_Data.albedo = {color[0], color[1], color[2], color[3]};
 		}
 
+		if(json.contains("metallic")) {
+			material->m_Data.metallic = json["metallic"].get<float>();
+		}
+
+		if(json.contains("roughness")) {
+			material->m_Data.roughness = json["roughness"].get<float>();
+		}
+
+		if(json.contains("emissive")) {
+			float color[4];
+			json["emissive"].get_to(color);
+			material->m_Data.emissiveColor = {color[0], color[1], color[2], color[3]};
+		}
+
 		material->m_AlbedoMap = loadTexture2D(&json, "albedoMap", filename);
 		material->m_NormalMap = loadTexture2D(&json, "normalMap", filename);
 		material->m_MetallicMap = loadTexture2D(&json, "metallicMap", filename);
@@ -151,4 +187,12 @@ namespace milo {
 		return texture;
 	}
 
+	void MaterialManager::update() {
+		for(auto& [name, material] : m_Materials) {
+			if(material->dirty()) {
+				m_ResourcePool->updateMaterial(material);
+				material->m_Dirty = false;
+			}
+		}
+	}
 }

@@ -22,11 +22,13 @@ file(GLOB_RECURSE ENGINE_SOURCE_FILES
         src/*.c
         dependencies/glad/*.c
         dependencies/stb/*.c
+        examples/*.cpp
         )
 
 file(GLOB_RECURSE ENGINE_HEADER_FILES
         include/*.h
         include/*.hpp
+        examples/*.h
         )
 
 file(GLOB_RECURSE IMGUI_SOURCE_FILES
@@ -79,6 +81,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC $ENV{BOOST_HOME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/tiny_obj_loader)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/assimp/include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_DEPENDENCIES_DIR}/imgui-node-editor)
+target_include_directories(${PROJECT_NAME} PUBLIC "examples")
 
 message("Boost = $ENV{BOOST_HOME}")
 

@@ -4,6 +4,7 @@
 #include "milo/io/Files.h"
 
 #define MILO_PROFILE_FUNCTION milo::ProfileTimer _profileTimer(__FUNCTION__, milo::DEFAULT_PROFILER_SESSION_NAME)
+#define MILO_PROFILE_FUNCTION2(sessionName) milo::ProfileTimer _profileTimer(__FUNCTION__, sessionName)
 
 namespace milo {
 
@@ -11,8 +12,8 @@ namespace milo {
 
 	struct ProfileResult {
 		String name;
-		float startTime;
-		float endTime;
+		TimePoint startTime;
+		TimePoint endTime;
 		size_t threadId;
 	};
 
@@ -50,7 +51,7 @@ namespace milo {
 
 		String session;
 		String name;
-		float start;
+		TimePoint start;
 
 		ProfileTimer(const String& name, const String& session = DEFAULT_PROFILER_SESSION_NAME);
 		~ProfileTimer();

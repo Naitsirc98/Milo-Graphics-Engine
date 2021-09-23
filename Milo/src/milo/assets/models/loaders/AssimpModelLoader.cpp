@@ -36,7 +36,7 @@ namespace milo {
 
 		outNode->name = aiNode->mName.C_Str();
 
-		memcpy(&outNode->transform, &aiNode->mTransformation, sizeof(Matrix4));
+		//memcpy(&outNode->transform, &aiNode->mTransformation, sizeof(Matrix4));
 
 		//if(outNode->parent >= 0) {
 		//	const Model::Node* parent = outNode->model->get(outNode->parent);

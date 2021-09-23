@@ -81,8 +81,8 @@ namespace milo {
 		beginInfo.framebuffer = m_Framebuffers[imageIndex].get();
 
 		VkClearValue clearValues[3];
-		clearValues[0].color = {0, 0, 0, 0};
-		clearValues[1].color = {0, 0, 0, 0};
+		clearValues[0].color = {1, 1, 1, 1};
+		clearValues[1].color = {1, 1, 1, 1};
 		clearValues[2].depthStencil = {1, 0};
 
 		beginInfo.clearValues = clearValues;
@@ -207,6 +207,7 @@ namespace milo {
 		pipelineInfo.setLayouts.push_back(m_DescriptorSetLayout);
 
 		pipelineInfo.depthStencil.depthTestEnable = VK_TRUE;
+		pipelineInfo.rasterizationState.depthClampEnable = true;
 
 		pipelineInfo.colorBlendAttachments.push_back(pipelineInfo.colorBlendAttachments[0]);
 

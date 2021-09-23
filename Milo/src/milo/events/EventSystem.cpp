@@ -1,5 +1,6 @@
 #include "milo/events/EventSystem.h"
 #include <GLFW/glfw3.h>
+#include "milo/time/Profiler.h"
 
 #define MAX_EVENT_COUNT (16 * 1024)
 
@@ -17,6 +18,8 @@ namespace milo {
 	}
 
 	void EventSystem::update() {
+
+		MILO_PROFILE_FUNCTION;
 
 		pollEvents();
 

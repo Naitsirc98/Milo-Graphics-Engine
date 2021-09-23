@@ -17,6 +17,7 @@ namespace milo {
 	void ModelManager::init() {
 		// TODO
 		//Model* sponza = load("Sponza", "resources/models/Sponza/Sponza.gltf");
+		//sponza->m_Nodes[0]->transform = scale(Matrix4(1.0), {0.1f, 0.1f, 0.1f});
 		//sponza->setCanBeCulled(false);
 		Model* damagedHelmet = load("DamagedHelmet", "resources/models/DamagedHelmet/DamagedHelmet.gltf");
 		damagedHelmet->setCanBeCulled(true);

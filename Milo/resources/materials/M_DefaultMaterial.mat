@@ -1,3 +1,5 @@
 {
-  "albedo": [0.7, 0.7, 0.7, 1]
+  "albedo": [0.8, 0.8, 0.8, 1],
+  "metallic": 0,
+  "roughness": 1
 }

@@ -5,7 +5,7 @@ namespace milo {
 
 	Material::Material(String name, String filename) : Asset(name, filename) {
 		m_AlbedoMap = Assets::textures().whiteTexture();
-		m_EmissiveMap = Assets::textures().blackTexture();
+		m_EmissiveMap = Assets::textures().whiteTexture();
 		m_NormalMap = Assets::textures().whiteTexture();
 		m_MetallicMap = Assets::textures().whiteTexture();
 		m_RoughnessMap = Assets::textures().whiteTexture();
@@ -21,6 +21,7 @@ namespace milo {
 
 	Material* Material::albedo(const Color& color) {
 		m_Data.albedo = color;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -30,6 +31,7 @@ namespace milo {
 
 	Material* Material::emissiveColor(const Color& color) {
 		m_Data.emissiveColor = color;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -39,6 +41,7 @@ namespace milo {
 
 	Material* Material::alpha(float value) {
 		m_Data.alpha = value;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -48,6 +51,7 @@ namespace milo {
 
 	Material* Material::metallic(float value) {
 		m_Data.metallic = value;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -57,6 +61,7 @@ namespace milo {
 
 	Material* Material::roughness(float value) {
 		m_Data.roughness = value;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -66,6 +71,7 @@ namespace milo {
 
 	Material* Material::occlusion(float value) {
 		m_Data.occlusion = value;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -75,6 +81,7 @@ namespace milo {
 
 	Material* Material::fresnel0(float value) {
 		m_Data.fresnel0 = value;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -84,6 +91,7 @@ namespace milo {
 
 	Material* Material::normalScale(float value) {
 		m_Data.normalScale = value;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -93,6 +101,7 @@ namespace milo {
 
 	Material* Material::useNormalMap(bool value) {
 		m_Data.useNormalMap = value;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -102,6 +111,7 @@ namespace milo {
 
 	Material* Material::albedoMap(Ref<Texture2D> texture) {
 		m_AlbedoMap = texture;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -111,6 +121,7 @@ namespace milo {
 
 	Material* Material::emissiveMap(Ref<Texture2D> texture) {
 		m_EmissiveMap = texture;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -120,6 +131,7 @@ namespace milo {
 
 	Material* Material::normalMap(Ref<Texture2D> texture) {
 		m_NormalMap = texture;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -129,6 +141,7 @@ namespace milo {
 
 	Material* Material::metallicMap(Ref<Texture2D> texture) {
 		m_MetallicMap = texture;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -138,6 +151,7 @@ namespace milo {
 
 	Material* Material::occlusionMap(Ref<Texture2D> texture) {
 		m_OcclusionMap = texture;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -147,6 +161,7 @@ namespace milo {
 
 	Material* Material::roughnessMap(Ref<Texture2D> texture) {
 		m_RoughnessMap = texture;
+		m_Dirty = true;
 		return this;
 	}
 
@@ -164,10 +179,15 @@ namespace milo {
 
 	Material* Material::metallicRoughnessMap(Ref<Texture2D> texture) {
 		m_MetallicRoughnessMap = texture;
+		m_Dirty = true;
 		return this;
 	}
 
 	const Material::Data& Material::data() const {
 		return m_Data;
+	}
+
+	bool Material::dirty() const {
+		return m_Dirty;
 	}
 }

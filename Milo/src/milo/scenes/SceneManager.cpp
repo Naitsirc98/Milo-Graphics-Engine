@@ -1,4 +1,5 @@
 #include "milo/scenes/SceneManager.h"
+#include "milo/time/Profiler.h"
 
 namespace milo {
 
@@ -9,6 +10,7 @@ namespace milo {
 	}
 
 	void SceneManager::update() {
+		MILO_PROFILE_FUNCTION;
 		s_ActiveScene->update();
 	}
 

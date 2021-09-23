@@ -59,7 +59,7 @@ namespace milo {
 		void createSemaphores();
 
 		void buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
-		void renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
+		void renderScene(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
 	};
 
 }

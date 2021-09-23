@@ -42,62 +42,24 @@ namespace milo {
 
 		m_UniformBuffer->update(index, material->data());
 
-		VkDescriptorSet descriptorSet = m_DescriptorPool->get(index);
+		{
+			VkDescriptorSet descriptorSet = m_DescriptorPool->get(index);
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = m_UniformBuffer->vkBuffer();
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(Material::Data);
+			auto descriptorWrite = mvk::WriteDescriptorSet::createDynamicUniformBufferWrite(0, descriptorSet, 1, &bufferInfo);
+			VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &descriptorWrite, 0, nullptr));
+		}
 
-		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = m_UniformBuffer->vkBuffer();
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(Material::Data);
+		updateTextures(material);
+	}
 
-		VkDescriptorImageInfo albedoInfo{};
-		albedoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		albedoInfo.imageView = getImageView(material->albedoMap());
-		albedoInfo.sampler = getSampler(material->albedoMap());
-
-		VkDescriptorImageInfo emissiveInfo{};
-		emissiveInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		emissiveInfo.imageView = getImageView(material->emissiveMap());
-		emissiveInfo.sampler = getSampler(material->emissiveMap());
-
-		VkDescriptorImageInfo normalInfo{};
-		normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		normalInfo.imageView = getImageView(material->normalMap());
-		normalInfo.sampler = getSampler(material->normalMap());
-
-		VkDescriptorImageInfo metallicInfo{};
-		metallicInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		metallicInfo.imageView = getImageView(material->metallicMap());
-		metallicInfo.sampler = getSampler(material->metallicMap());
-
-		VkDescriptorImageInfo roughnessInfo{};
-		roughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		roughnessInfo.imageView = getImageView(material->roughnessMap());
-		roughnessInfo.sampler = getSampler(material->roughnessMap());
-
-		VkDescriptorImageInfo metallicRoughnessInfo{};
-		metallicRoughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		metallicRoughnessInfo.imageView = getImageView(material->metallicRoughnessMap());
-		metallicRoughnessInfo.sampler = getSampler(material->metallicRoughnessMap());
-
-		VkDescriptorImageInfo occlusionInfo{};
-		occlusionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		occlusionInfo.imageView = getImageView(material->occlusionMap());
-		occlusionInfo.sampler = getSampler(material->occlusionMap());
-
-		using namespace mvk::WriteDescriptorSet;
-
-		VkWriteDescriptorSet writeDescriptors[] = {
-				createDynamicUniformBufferWrite(0, descriptorSet, 1, &bufferInfo),
-				createCombineImageSamplerWrite(1, descriptorSet, 1, &albedoInfo),
-				createCombineImageSamplerWrite(2, descriptorSet, 1, &emissiveInfo),
-				createCombineImageSamplerWrite(3, descriptorSet, 1, &normalInfo),
-				createCombineImageSamplerWrite(4, descriptorSet, 1, &metallicInfo),
-				createCombineImageSamplerWrite(5, descriptorSet, 1, &roughnessInfo),
-				createCombineImageSamplerWrite(6, descriptorSet, 1, &metallicRoughnessInfo),
-				createCombineImageSamplerWrite(7, descriptorSet, 1, &occlusionInfo),
-		};
-
-		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1 + Material::TEXTURE_COUNT, writeDescriptors, 0, nullptr));
+	void VulkanMaterialResourcePool::updateMaterial(Material* material) {
+		m_Device->awaitTermination();
+		uint32_t index = m_MaterialIndices[material->name()];
+		m_UniformBuffer->update(index, material->data());
+		updateTextures(material);
 	}
 
 	void VulkanMaterialResourcePool::freeMaterialResources(Material* material) {
@@ -143,5 +105,61 @@ namespace milo {
 
 	void VulkanMaterialResourcePool::createDescriptorSets() {
 		m_DescriptorPool->allocate(m_MaxMaterialCount);
+	}
+
+	void VulkanMaterialResourcePool::updateTextures(Material* material) {
+
+		uint32_t index = m_MaterialIndices[material->name()];
+
+		VkDescriptorSet descriptorSet = m_DescriptorPool->get(index);
+
+		VkDescriptorImageInfo albedoInfo{};
+		albedoInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		albedoInfo.imageView = getImageView(material->albedoMap());
+		albedoInfo.sampler = getSampler(material->albedoMap());
+
+		VkDescriptorImageInfo emissiveInfo{};
+		emissiveInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		emissiveInfo.imageView = getImageView(material->emissiveMap());
+		emissiveInfo.sampler = getSampler(material->emissiveMap());
+
+		VkDescriptorImageInfo normalInfo{};
+		normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		normalInfo.imageView = getImageView(material->normalMap());
+		normalInfo.sampler = getSampler(material->normalMap());
+
+		VkDescriptorImageInfo metallicInfo{};
+		metallicInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		metallicInfo.imageView = getImageView(material->metallicMap());
+		metallicInfo.sampler = getSampler(material->metallicMap());
+
+		VkDescriptorImageInfo roughnessInfo{};
+		roughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		roughnessInfo.imageView = getImageView(material->roughnessMap());
+		roughnessInfo.sampler = getSampler(material->roughnessMap());
+
+		VkDescriptorImageInfo metallicRoughnessInfo{};
+		metallicRoughnessInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		metallicRoughnessInfo.imageView = getImageView(material->metallicRoughnessMap());
+		metallicRoughnessInfo.sampler = getSampler(material->metallicRoughnessMap());
+
+		VkDescriptorImageInfo occlusionInfo{};
+		occlusionInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		occlusionInfo.imageView = getImageView(material->occlusionMap());
+		occlusionInfo.sampler = getSampler(material->occlusionMap());
+
+		using namespace mvk::WriteDescriptorSet;
+
+		VkWriteDescriptorSet writeDescriptors[] = {
+				createCombineImageSamplerWrite(1, descriptorSet, 1, &albedoInfo),
+				createCombineImageSamplerWrite(2, descriptorSet, 1, &emissiveInfo),
+				createCombineImageSamplerWrite(3, descriptorSet, 1, &normalInfo),
+				createCombineImageSamplerWrite(4, descriptorSet, 1, &metallicInfo),
+				createCombineImageSamplerWrite(5, descriptorSet, 1, &roughnessInfo),
+				createCombineImageSamplerWrite(6, descriptorSet, 1, &metallicRoughnessInfo),
+				createCombineImageSamplerWrite(7, descriptorSet, 1, &occlusionInfo),
+		};
+
+		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), Material::TEXTURE_COUNT, writeDescriptors, 0, nullptr));
 	}
 }

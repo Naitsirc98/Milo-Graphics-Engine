@@ -7,6 +7,7 @@
 namespace milo {
 
 	struct AllocationInfo {
+		String type;
 		StackTrace stacktrace;
 	};
 
@@ -31,10 +32,10 @@ namespace milo {
 	VulkanAllocator::~VulkanAllocator() {
 
 		if(!g_Allocations.empty()) {
-			Log::error("[VULKAN ALLOCATOR] The following allocations ({}) have not been freed:", g_Allocations.size());
+			Log::error("[VULKAN ALLOCATOR] The following allocations ({}) have not been released:", g_Allocations.size());
 			uint32_t i = 1;
 			for(const auto& [allocation, allocInfo] : g_Allocations) {
-				Log::error("  {}º:\n{}:\n", i++, str(allocInfo.stacktrace));
+				Log::error("  {} allocation 0x{:x}:\n{}:\n", allocInfo.type, (uint64_t)allocation, str(allocInfo.stacktrace));
 			}
 		}
 
@@ -60,7 +61,7 @@ namespace milo {
 
 	void VulkanAllocator::allocateBuffer(const VkBufferCreateInfo& bufferInfo, const VmaAllocationCreateInfo& allocInfo, VkBuffer& vkBuffer, VmaAllocation& vmaAllocation) {
 		VK_CALL(vmaCreateBuffer(m_VmaAllocator, &bufferInfo, &allocInfo, &vkBuffer, &vmaAllocation, nullptr));
-		g_Allocations[vmaAllocation] = {getStackTrace()};
+		g_Allocations[vmaAllocation] = {"Buffer", getStackTrace()};
 	}
 
 	void VulkanAllocator::freeBuffer(VkBuffer vkBuffer, VmaAllocation vmaAllocation) {
@@ -71,7 +72,7 @@ namespace milo {
 	void VulkanAllocator::allocateImage(const VkImageCreateInfo& imageInfo, const VmaAllocationCreateInfo& allocInfo,
 										VkImage& vkImage, VmaAllocation& vmaAllocation) {
 		VK_CALL(vmaCreateImage(m_VmaAllocator, &imageInfo, &allocInfo, &vkImage, &vmaAllocation, nullptr));
-		g_Allocations[vmaAllocation] = {getStackTrace()};
+		g_Allocations[vmaAllocation] = {"Image", getStackTrace()};
 	}
 
 	void VulkanAllocator::freeImage(VkImage vkImage, VmaAllocation vmaAllocation) {

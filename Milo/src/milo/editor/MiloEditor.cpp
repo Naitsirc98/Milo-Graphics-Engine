@@ -8,6 +8,7 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <imgui_node_editor.h>
+#include "milo/time/Profiler.h"
 
 namespace milo {
 
@@ -18,10 +19,13 @@ namespace milo {
 	MaterialEditor MiloEditor::s_MaterialEditor{};
 
 	void MiloEditor::update() {
+		MILO_PROFILE_FUNCTION;
 		s_Camera.update();
 	}
 
 	void MiloEditor::render() {
+
+		MILO_PROFILE_FUNCTION;
 
 		s_Renderer->begin();
 

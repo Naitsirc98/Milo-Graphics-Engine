@@ -1,0 +1,8 @@
+{
+  "albedo": [1, 1, 1, 1],
+  "albedoMap": "../../textures/RustedIron/albedo.png",
+  "normalMap": "../../textures/RustedIron/normal.png",
+  "metallicMap": "../../textures/RustedIron/metallic.png",
+  "roughnessMap": "../../textures/RustedIron/roughness.png",
+  "occlusionMap": "../../textures/RustedIron/ao.png"
+}

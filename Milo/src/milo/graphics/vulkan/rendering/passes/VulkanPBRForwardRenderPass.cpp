@@ -8,6 +8,7 @@
 #include "milo/graphics/vulkan/textures/VulkanCubemap.h"
 #include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/graphics/rendering/passes/AllRenderPasses.h"
+#include "milo/time/Profiler.h"
 
 namespace milo {
 
@@ -27,6 +28,10 @@ namespace milo {
 		createSemaphores();
 
 		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_CommandBuffers.size(), m_CommandBuffers.data());
+
+		for(uint32_t i = 0;i < 10;++i) {
+			m_ThreadPool.push_back(new ThreadData());
+		}
 	}
 
 	VulkanPBRForwardRenderPass::~VulkanPBRForwardRenderPass() {
@@ -48,6 +53,10 @@ namespace milo {
 			VK_CALLV(vkDestroySemaphore(device, m_SignalSemaphores[i], nullptr));
 		}
 
+		for(ThreadData* t : m_ThreadPool) {
+			DELETE_PTR(t);
+		}
+
 		m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());
 	}
 
@@ -59,8 +68,6 @@ namespace milo {
 	}
 
 	void VulkanPBRForwardRenderPass::execute(Scene* scene) {
-
-		MILO_PROFILE_FUNCTION;
 
 		const uint32_t imageIndex = VulkanContext::get()->vulkanPresenter()->currentImageIndex();
 		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
@@ -87,23 +94,17 @@ namespace milo {
 
 	void VulkanPBRForwardRenderPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
 
-		mvk::CommandBuffer::BeginGraphicsRenderPassInfo beginInfo{};
-		beginInfo.renderPass = m_RenderPass;
-		beginInfo.graphicsPipeline = m_GraphicsPipeline->vkPipeline();
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		VkClearValue clearValues[2];
-		clearValues[0].color = {0, 0, 0, 0};
-		clearValues[1].depthStencil = {1.0f, 0};
-
-		beginInfo.clearValues = clearValues;
-		beginInfo.clearValuesCount = 2;
-
-		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
+		VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 		{
 			renderScene(imageIndex, commandBuffer, scene);
 		}
-		mvk::CommandBuffer::endGraphicsRenderPass(commandBuffer);
+		VK_CALLV(vkEndCommandBuffer(commandBuffer));
 	}
+
+	static const uint32_t BATCH_SIZE = 100;
 
 	inline void VulkanPBRForwardRenderPass::renderScene(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
 
@@ -111,6 +112,189 @@ namespace milo {
 
 		updateSceneUniformData(imageIndex, scene);
 		updateShadowsUniformData(imageIndex, scene);
+
+		if(false && WorldRenderer::get().useMultithreading() && WorldRenderer::get().drawCommands().size() > BATCH_SIZE) {
+			renderSceneMultithreading(imageIndex, commandBuffer, materialResources);
+		} else {
+			renderSceneSingleThread(imageIndex, commandBuffer, materialResources);
+		}
+	}
+
+	void VulkanPBRForwardRenderPass::renderSceneMultithreading(uint32_t imageIndex, VkCommandBuffer commandBuffer,
+															   const VulkanMaterialResourcePool& materialResources) {
+
+		Framebuffer& defaultFramebuffer = WorldRenderer::get().getFramebuffer();
+		VkFramebuffer framebuffer = dynamic_cast<VulkanFramebuffer&>(defaultFramebuffer).get(m_RenderPass);
+
+		const ArrayList<DrawCommand>& drawCommands = WorldRenderer::get().drawCommands();
+
+		uint32_t numDrawCommands = 100;//drawCommands.size();
+		uint32_t batchCount = (uint32_t) std::ceil((float)numDrawCommands / (float) BATCH_SIZE);
+
+		VkClearValue clearValues[2];
+		clearValues[0].color = {0, 0, 0, 0};
+		clearValues[1].depthStencil = {1.0f, 0};
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = m_RenderPass;
+		renderPassInfo.framebuffer = framebuffer;
+		renderPassInfo.renderArea.offset = {0, 0};
+		renderPassInfo.renderArea.extent = {(uint32_t)defaultFramebuffer.size().width, (uint32_t)defaultFramebuffer.size().height};
+		renderPassInfo.pClearValues = clearValues;
+		renderPassInfo.clearValueCount = 2;
+
+		VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS));
+
+		VkViewport viewport;
+		viewport.x = 0;
+		viewport.y = 0;
+		viewport.width = (float)defaultFramebuffer.size().width;
+		viewport.height = (float)defaultFramebuffer.size().height;
+		viewport.minDepth = 0;
+		viewport.maxDepth = 1;
+
+		VkRect2D scissor;
+		scissor.offset = renderPassInfo.renderArea.offset;
+		scissor.extent = renderPassInfo.renderArea.extent;
+
+		VkCommandBufferInheritanceInfo inheritanceInfo{};
+		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+		inheritanceInfo.framebuffer = framebuffer;
+		inheritanceInfo.renderPass = m_RenderPass;
+		inheritanceInfo.subpass = 0;
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pInheritanceInfo = &inheritanceInfo;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+		uint32_t elementsRemaining = numDrawCommands;
+
+		uint32_t offset = 0;
+
+		auto maint = std::this_thread::get_id();
+
+		static AtomicUInt threadsRunningCount = batchCount;
+		static std::mutex mtx;
+		static std::condition_variable cv;
+
+		for(uint32_t i = 0;i < batchCount;++i) {
+
+			uint32_t batchSize = std::min(elementsRemaining, BATCH_SIZE);
+			uint32_t start = offset;
+			offset += batchSize;
+			elementsRemaining -= batchSize;
+
+			ThreadData* t = m_ThreadPool[i];
+
+			t->queue.push([&]() {
+
+				try {
+					VkCommandBuffer cmd = t->commandBuffers[imageIndex];
+
+					VK_CALL(vkBeginCommandBuffer(cmd, &beginInfo));
+					{
+						VK_CALLV(vkCmdSetViewport(cmd, 0, 1, &viewport));
+						VK_CALLV(vkCmdSetScissor(cmd, 0, 1, &scissor));
+
+						VK_CALLV(vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
+
+						bindDescriptorSets(imageIndex, cmd);
+
+						Mesh* lastMesh = nullptr;
+						Material* lastMaterial = nullptr;
+
+						for (uint32_t j = start; j < start + batchSize; ++j) {
+
+							const DrawCommand& drawCommand = drawCommands[j];
+
+							const Matrix4& transform = drawCommand.transform;
+							Mesh* mesh = drawCommand.mesh;
+							Material* material = drawCommand.material;
+
+							if (lastMaterial != material) {
+								bindMaterial(cmd, materialResources, material);
+								lastMaterial = material;
+							}
+
+							if (lastMesh != mesh) {
+								bindMesh(cmd, mesh);
+								lastMesh = mesh;
+							}
+
+							pushConstants(cmd, transform);
+
+							drawMesh(cmd, mesh);
+						}
+					}
+					VK_CALLV(vkEndCommandBuffer(cmd));
+
+				} catch(...) {
+					try {
+						std::rethrow_exception(std::current_exception());
+					} catch(const std::exception& e) {
+						Log::error("Error in thread {}: {}", 0, e.what());
+					}
+				}
+
+				if(--threadsRunningCount == 0) {
+					cv.notify_all();
+				}
+			});
+
+			m_SecondaryCommandBuffers.push_back(t->commandBuffers[imageIndex]);
+		}
+
+		std::unique_lock<std::mutex> lock(mtx);
+		cv.wait(lock);
+
+		VK_CALLV(vkCmdExecuteCommands(commandBuffer, m_SecondaryCommandBuffers.size(), m_SecondaryCommandBuffers.data()));
+		m_SecondaryCommandBuffers.clear();
+
+		VK_CALLV(vkCmdEndRenderPass(commandBuffer));
+	}
+
+	void VulkanPBRForwardRenderPass::renderSceneSingleThread(uint32_t imageIndex, VkCommandBuffer commandBuffer,
+															 const VulkanMaterialResourcePool& materialResources) {
+
+		MILO_PROFILE_FUNCTION;
+
+		Framebuffer& defaultFramebuffer = WorldRenderer::get().getFramebuffer();
+		VkFramebuffer framebuffer = dynamic_cast<VulkanFramebuffer&>(defaultFramebuffer).get(m_RenderPass);
+
+		VkClearValue clearValues[2];
+		clearValues[0].color = {0, 0, 0, 0};
+		clearValues[1].depthStencil = {1.0f, 0};
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = m_RenderPass;
+		renderPassInfo.framebuffer = framebuffer;
+		renderPassInfo.renderArea.offset = {0, 0};
+		renderPassInfo.renderArea.extent = {(uint32_t)defaultFramebuffer.size().width, (uint32_t)defaultFramebuffer.size().height};
+		renderPassInfo.pClearValues = clearValues;
+		renderPassInfo.clearValueCount = 2;
+
+		VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE));
+
+		VK_CALLV(vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
+
+		VkViewport viewport;
+		viewport.x = 0;
+		viewport.y = 0;
+		viewport.width = (float)defaultFramebuffer.size().width;
+		viewport.height = (float)defaultFramebuffer.size().height;
+		viewport.minDepth = 0;
+		viewport.maxDepth = 1;
+
+		VkRect2D scissor;
+		scissor.offset = renderPassInfo.renderArea.offset;
+		scissor.extent = renderPassInfo.renderArea.extent;
+
+		VK_CALLV(vkCmdSetViewport(commandBuffer, 0, 1, &viewport));
+		VK_CALLV(vkCmdSetScissor(commandBuffer, 0, 1, &scissor));
+
 		bindDescriptorSets(imageIndex, commandBuffer);
 
 		Mesh* lastMesh = nullptr;
@@ -136,6 +320,8 @@ namespace milo {
 
 			drawMesh(commandBuffer, mesh);
 		}
+
+		VK_CALLV(vkCmdEndRenderPass(commandBuffer));
 	}
 
 	void VulkanPBRForwardRenderPass::drawMesh(VkCommandBuffer commandBuffer, const Mesh* mesh) const {
@@ -355,7 +541,7 @@ namespace milo {
 
 		const VulkanStorageBuffer<VisibleLightsBuffer>* visibleLightsBuffer =
 				(const VulkanStorageBuffer<VisibleLightsBuffer>*)WorldRenderer::get().resources()
-				.getBuffer(LightCullingPass::getVisibleLightsBufferHandle()).get();
+						.getBuffer(LightCullingPass::getVisibleLightsBufferHandle()).get();
 
 		uint32_t dynamicOffsets[] = {
 				imageIndex * m_CameraUniformBuffer->elementSize(),
@@ -531,5 +717,31 @@ namespace milo {
 
 	void VulkanPBRForwardRenderPass::createSemaphores() {
 		mvk::Semaphore::create(m_SignalSemaphores.size(), m_SignalSemaphores.data());
+	}
+
+	VulkanPBRForwardRenderPass::ThreadData::ThreadData() {
+		running = true;
+		thread = Thread([&]() {
+
+			auto* device = VulkanContext::get()->device();
+			commandPool = new VulkanCommandPool(device->graphicsQueue(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+			commandPool->allocate(VK_COMMAND_BUFFER_LEVEL_SECONDARY, commandBuffers.size(), commandBuffers.data());
+
+			while(running) {
+				Function<void> task;
+				if(queue.try_pop(task)) {
+					task();
+				}
+			}
+		});
+	}
+
+	VulkanPBRForwardRenderPass::ThreadData::~ThreadData() {
+		queue.push([&]() {
+			commandPool->free(commandBuffers.size(), commandBuffers.data());
+			DELETE_PTR(commandPool);
+			running = false;
+		});
+		thread.join();
 	}
 }

@@ -95,13 +95,13 @@ namespace milo {
 		beginInfo.clearValuesCount = 2;
 
 		mvk::CommandBuffer::beginGraphicsRenderPass(commandBuffer, beginInfo);
-		{
-			renderMeshViews(imageIndex, commandBuffer, scene);
-		}
+
+		renderScene(imageIndex, commandBuffer, scene);
+
 		mvk::CommandBuffer::endGraphicsRenderPass(commandBuffer);
 	}
 
-	void VulkanGeometryRenderPass::renderMeshViews(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
+	void VulkanGeometryRenderPass::renderScene(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
 
 		CameraData cameraData{};
 

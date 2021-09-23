@@ -1,4 +1,5 @@
 #include "milo/input/Input.h"
+#include "milo/time/Profiler.h"
 
 namespace milo {
 
@@ -170,6 +171,7 @@ namespace milo {
 	}
 
 	void Input::update() {
+		MILO_PROFILE_FUNCTION;
 		s_Instance->m_Mouse.scrollOffset = {0, 0};
 	}
 

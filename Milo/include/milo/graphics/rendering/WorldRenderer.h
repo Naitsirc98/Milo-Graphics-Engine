@@ -58,9 +58,10 @@ namespace milo {
 		bool m_ShadowsEnabled{true};
 		bool m_ShowBoundingVolumes{false};
 		bool m_ShowShadowCascades{false};
-		bool m_SoftShadows{false};
+		bool m_SoftShadows{true};
 		bool m_ShadowCascadeFading{false};
 		float m_CascadeFading{1};
+		bool m_UseMultithreading{true};
 		ArrayList<DrawCommand> m_DrawCommands;
 		ArrayList<DrawCommand> m_ShadowDrawCommands;
 		CameraInfo m_Camera{};
@@ -89,6 +90,8 @@ namespace milo {
 		void setShadowCascadeFading(bool value);
 		bool shadowCascadeFadingValue() const;
 		void setShadowCascadeFadingValue(float value);
+		bool useMultithreading() const;
+		void setUseMultithreading(bool useMultithreading);
 		void submit(DrawCommand drawCommand, bool castShadows);
 		const ArrayList<DrawCommand>& drawCommands() const;
 		const ArrayList<DrawCommand>& shadowsDrawCommands() const;

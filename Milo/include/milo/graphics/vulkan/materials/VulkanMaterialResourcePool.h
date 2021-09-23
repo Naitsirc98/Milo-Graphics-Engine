@@ -25,6 +25,7 @@ namespace milo {
 		~VulkanMaterialResourcePool();
 	public:
 		void allocateMaterialResources(Material* material) override;
+		void updateMaterial(Material* material) override;
 		void freeMaterialResources(Material* material) override;
 		VkDescriptorSet descriptorSetOf(Material* material, uint32_t& dynamicOffset) const;
 		VkDescriptorSetLayout materialDescriptorSetLayout() const;
@@ -32,6 +33,7 @@ namespace milo {
 		void createUniformBuffer();
 		void createDescriptorSetLayoutAndPool();
 		void createDescriptorSets();
+		void updateTextures(Material* material);
 	};
 
 }
