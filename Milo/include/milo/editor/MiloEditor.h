@@ -5,6 +5,7 @@
 #include "SceneHierarchyPanel.h"
 #include "PropertiesPanel.h"
 #include "EditorCamera.h"
+#include "MaterialEditor.h"
 
 namespace milo {
 
@@ -19,6 +20,7 @@ namespace milo {
 		static EditorCamera s_Camera;
 		static SceneHierarchyPanel s_SceneHierarchyPanel;
 		static PropertiesPanel s_PropertiesPanel;
+		static MaterialEditor s_MaterialEditor;
 	public:
 		static void update();
 		static void render();

@@ -51,78 +51,56 @@ namespace milo {
 
 		Polyhedron poly;
 
-		poly.vertexCount = 8;
-		poly.edgeCount = 12;
-		poly.faceCount = 6;
+		Plane* planes = poly.plane;
 
-		// Generate vertices for the near side
-		float y = n / g;
-		float x = y * s;
+		bool allowTestSpheres = true;
 
-		poly.vertex[0] = cameraMatrix * Vector4(x, y, n, 1);
-		poly.vertex[1] = cameraMatrix * Vector4(x, -y, n, 1);
-		poly.vertex[2] = cameraMatrix * Vector4(-x, -y, n, 1);
-		poly.vertex[3] = cameraMatrix * Vector4(-x, y, n, 1);
+		const Matrix4& m = cameraMatrix;
 
-		// Generate vertices for the far side
-		y = f / g;
-		x = y * s;
-		poly.vertex[4] = cameraMatrix * Vector4(x, y, f, 1);
-		poly.vertex[5] = cameraMatrix * Vector4(x, -y, f, 1);
-		poly.vertex[6] = cameraMatrix * Vector4(-x, -y, f, 1);
-		poly.vertex[7] = cameraMatrix * Vector4(-x, y, f, 1);
+		float nxX, nxY, nxZ, nxW;
+		float pxX, pxY, pxZ, pxW;
+		float nyX, nyY, nyZ, nyW;
+		float pyX, pyY, pyZ, pyW;
+		float nzX, nzY, nzZ, nzW;
+		float pzX, pzY, pzZ, pzW;
 
-		// Generate lateral planes
-		Matrix4 inverse = glm::inverse(cameraMatrix);
-		float mx = 1.0f / sqrtf(g * g * s);
-		float my = 1.0f / sqrtf(g * g + 1.0f);
-		poly.plane[0] = Plane(-g * mx, 0, s * mx, 0) * inverse;
-		poly.plane[1] = Plane(0, g * my, my, 0) * inverse;
-		poly.plane[2] = Plane(g * mx, 0, s * mx, 0) * inverse;
-		poly.plane[3] = Plane(0, -g * my, my, 0) * inverse;
-
-		// Generate near and far planes
-		float d = dot(cameraMatrix[2], cameraMatrix[3]);
-		poly.plane[4] = Plane(cameraMatrix[2], -(d + n));
-		poly.plane[5] = Plane(-cameraMatrix[2], d + f);
-
-		// Generate all edges and lateral faces
-		Edge* edge = poly.edge;
-		Face* face = poly.face;
-		for(int32_t i = 0;i < 4;++i, ++edge, ++face) {
-
-			edge[0].vertexIndex[0] = i;
-			edge[0].vertexIndex[1] = i + 4;
-			edge[0].faceIndex[0] = i;
-			edge[0].faceIndex[1] = (i - 1) & 3;
-
-			edge[4].vertexIndex[0] = i;
-			edge[4].vertexIndex[1] = (i + 1) & 3;
-			edge[4].faceIndex[0] = 4;
-			edge[4].faceIndex[1] = i;
-
-			edge[8].vertexIndex[0] = ((i + 1) & 3) + 4;
-			edge[8].vertexIndex[1] = i + 4;
-			edge[8].faceIndex[0] = 5;
-			edge[8].faceIndex[1] = i;
-
-			face->edgeCount = 4;
-			face->edgeIndex[0] = i;
-			face->edgeIndex[1] = (i + 1) & 3;
-			face->edgeIndex[2] = i + 4;
-			face->edgeIndex[3] = i + 8;
+		float invl;
+		nxX = m[0][3] + m[0][0]; nxY = m[1][3] + m[1][0]; nxZ = m[2][3] + m[2][0]; nxW = m[3][3] + m[3][0];
+		if (allowTestSpheres) {
+			invl = (float) (1.0 / sqrtf(nxX * nxX + nxY * nxY + nxZ * nxZ));
+			nxX *= invl; nxY *= invl; nxZ *= invl; nxW *= invl;
 		}
-
-		// Generate near and far faces
-		face[0].edgeCount = face[1].edgeCount = 4;
-		face[0].edgeIndex[0] = 4;
-		face[0].edgeIndex[1] = 5;
-		face[0].edgeIndex[2] = 6;
-		face[0].edgeIndex[3] = 7;
-		face[1].edgeIndex[0] = 8;
-		face[1].edgeIndex[1] = 9;
-		face[1].edgeIndex[2] = 10;
-		face[1].edgeIndex[3] = 11;
+		planes[0] = Plane(nxX, nxY, nxZ, nxW);
+		pxX = m[0][3] - m[0][0]; pxY = m[1][3] - m[1][0]; pxZ = m[2][3] - m[2][0]; pxW = m[3][3] - m[3][0];
+		if (allowTestSpheres) {
+			invl = (float) (1.0 / sqrtf(pxX * pxX + pxY * pxY + pxZ * pxZ));
+			pxX *= invl; pxY *= invl; pxZ *= invl; pxW *= invl;
+		}
+		planes[1] = Plane(pxX, pxY, pxZ, pxW);
+		nyX = m[0][3] + m[0][1]; nyY = m[1][3] + m[1][1]; nyZ = m[2][3] + m[2][1]; nyW = m[3][3] + m[3][1];
+		if (allowTestSpheres) {
+			invl = (float) (1.0 / sqrtf(nyX * nyX + nyY * nyY + nyZ * nyZ));
+			nyX *= invl; nyY *= invl; nyZ *= invl; nyW *= invl;
+		}
+		planes[2] = Plane(nyX, nyY, nyZ, nyW);
+		pyX = m[0][3] - m[0][1]; pyY = m[1][3] - m[1][1]; pyZ = m[2][3] - m[2][1]; pyW = m[3][3] - m[3][1];
+		if (allowTestSpheres) {
+			invl = (float) (1.0 / sqrtf(pyX * pyX + pyY * pyY + pyZ * pyZ));
+			pyX *= invl; pyY *= invl; pyZ *= invl; pyW *= invl;
+		}
+		planes[3] = Plane(pyX, pyY, pyZ, pyW);
+		nzX = m[0][3] + m[0][2]; nzY = m[1][3] + m[1][2]; nzZ = m[2][3] + m[2][2]; nzW = m[3][3] + m[3][2];
+		if (allowTestSpheres) {
+			invl = (float) (1.0 / sqrtf(nzX * nzX + nzY * nzY + nzZ * nzZ));
+			nzX *= invl; nzY *= invl; nzZ *= invl; nzW *= invl;
+		}
+		planes[4] = Plane(nzX, nzY, nzZ, nzW);
+		pzX = m[0][3] - m[0][2]; pzY = m[1][3] - m[1][2]; pzZ = m[2][3] - m[2][2]; pzW = m[3][3] - m[3][2];
+		if (allowTestSpheres) {
+			invl = (float) (1.0 / sqrtf(pzX * pzX + pzY * pzY + pzZ * pzZ));
+			pzX *= invl; pzY *= invl; pzZ *= invl; pzW *= invl;
+		}
+		planes[5] = Plane(pzX, pzY, pzZ, pzW);
 
 		return poly;
 	}

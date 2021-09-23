@@ -15,6 +15,7 @@ namespace milo {
 	EditorCamera MiloEditor::s_Camera{};
 	SceneHierarchyPanel MiloEditor::s_SceneHierarchyPanel{};
 	PropertiesPanel MiloEditor::s_PropertiesPanel{};
+	MaterialEditor MiloEditor::s_MaterialEditor{};
 
 	void MiloEditor::update() {
 		s_Camera.update();
@@ -35,8 +36,11 @@ namespace milo {
 			ImGui::End();
 		}
 
-		int uniqueId = 450;
 		renderSceneViewport();
+
+		//if(true) {
+		//	s_MaterialEditor.render(Assets::materials().getDefault());
+		//}
 
 		s_Renderer->end();
 	}

@@ -4,10 +4,10 @@
 
 using namespace milo;
 
-class MiloApplication : public Application {
+class MyApplication : public Application {
 public:
 
-	MiloApplication(const AppConfiguration& config) : Application(config) {}
+	MyApplication(const AppConfiguration& config) : Application(config) {}
 
 	void onStart() override {
 
@@ -15,10 +15,35 @@ public:
 
 		Skybox* skybox = Assets::skybox().getPreethamSky();
 
-		Entity skyboxEntity = scene->createEntity("Skybox");
+		Entity skyboxEntity = scene->createEntity("Sky");
 		SkyboxView& skyboxView = skyboxEntity.addComponent<SkyboxView>();
 		skyboxView.skybox = skybox;
 		skyboxView.type = SkyType::Dynamic;
+		scene->setSkyEntity(skyboxEntity.id());
+
+		Entity model = scene->createEntity("Model");
+		MeshView& meshView = model.addComponent<MeshView>();
+		meshView.mesh = Assets::meshes().getCylinder();
+		meshView.material = Assets::materials().load("MyMaterial", "assets/materials/MyMaterial.mat");
+		model.getComponent<Transform>().rotate(radians(45.0f), {1, 0, 0});
+
+		Entity light1 = createSphere(scene, {0, 0, 0}, Assets::materials().getDefault());
+		light1.setName("Point Light 1");
+		light1.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
+		PointLight& p1 = light1.addComponent<PointLight>();
+		p1.color = {0, 1, 0, 0};
+	}
+
+	void onStart() override {
+
+		Scene* scene = SceneManager::activeScene();
+
+		Skybox* skybox = Assets::skybox().getIndoorSkybox();
+
+		Entity skyboxEntity = scene->createEntity("Skybox");
+		SkyboxView& skyboxView = skyboxEntity.addComponent<SkyboxView>();
+		skyboxView.skybox = skybox;
+		skyboxView.type = SkyType::Static;
 
 		scene->setSkyEntity(skyboxEntity.id());
 
@@ -94,9 +119,9 @@ public:
 int main() {
 
 	AppConfiguration config;
-	config.applicationName = "Milo Engine";
+	config.applicationName = "My Application";
 
-	MiloApplication app(config);
+	MyApplication app(config);
 
 	MiloExitResult exitResult = MiloEngine::launch(app);
 

@@ -12,10 +12,10 @@ namespace milo {
 	public:
 		struct Data {
 			Color albedo{Colors::WHITE};
-			Color emissiveColor{Colors::WHITE};
+			Color emissiveColor{Colors::BLACK};
 			// Values
 			float alpha{1.0f};
-			float metallic{0.0f};
+			float metallic{1.0f};
 			float roughness{0.85f};
 			float occlusion{1.0f};
 			float fresnel0{0.04f};

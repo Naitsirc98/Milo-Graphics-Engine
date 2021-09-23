@@ -16,7 +16,7 @@ namespace milo {
 
 	void ModelManager::init() {
 		// TODO
-		Model* sponza = load("Sponza", "resources/models/Sponza/Sponza.gltf");
+		//Model* sponza = load("Sponza", "resources/models/Sponza/Sponza.gltf");
 		//sponza->setCanBeCulled(false);
 		Model* damagedHelmet = load("DamagedHelmet", "resources/models/DamagedHelmet/DamagedHelmet.gltf");
 		damagedHelmet->setCanBeCulled(true);
