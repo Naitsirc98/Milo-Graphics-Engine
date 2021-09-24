@@ -115,8 +115,6 @@ namespace milo {
 		static void getCameraInfo(Scene* scene);
 		static void generateLightEnvironment(Scene* scene);
 		static void calculateShadowCascades(Scene* scene);
-		static void calculateShadowCascadeRanges(float cascadeRanges[5], float zNear, float zFar);
-		static Vector3 getFrustumCorner(const Matrix4& projView, uint32_t corner);
 	};
 
 }

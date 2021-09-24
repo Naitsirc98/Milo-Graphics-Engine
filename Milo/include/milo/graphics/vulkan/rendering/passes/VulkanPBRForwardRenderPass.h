@@ -56,16 +56,21 @@ namespace milo {
 			Matrix4 modelMatrix;
 		};
 
+		static inline const uint32_t THREAD_POOL_SIZE = 2;
+
 		struct ThreadData {
 
+			String name;
 			Thread thread;
 			AtomicBool running{true};
 			VulkanCommandPool* commandPool{nullptr};
-			Concurrency::concurrent_queue<Function<void>> queue;
+			Queue<Function<void>> queue;
 			Array<VkCommandBuffer, MAX_SWAPCHAIN_IMAGE_COUNT> commandBuffers{};
 
-			ThreadData();
+			ThreadData(uint32_t index);
 			~ThreadData();
+
+			size_t threadId() const;
 		};
 
 	private:
@@ -93,7 +98,7 @@ namespace milo {
 
 		Array<uint32_t, MAX_SWAPCHAIN_IMAGE_COUNT> m_LastSkyboxModificationCount{0};
 
-		ArrayList<ThreadData*> m_ThreadPool;
+		Array<ThreadData*, THREAD_POOL_SIZE> m_ThreadPool;
 		ArrayList<VkCommandBuffer> m_SecondaryCommandBuffers;
 
 	private:

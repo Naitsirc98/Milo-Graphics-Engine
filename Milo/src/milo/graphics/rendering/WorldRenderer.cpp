@@ -169,27 +169,26 @@ namespace milo {
 		const int SHADOW_MAP_CASCADE_COUNT = 4;
 		float cascadeSplits[SHADOW_MAP_CASCADE_COUNT];
 
-		// TODO: less hard-coding!
-		float nearClip = 0.1f;
-		float farClip = 1000.0f;
-		float clipRange = farClip - nearClip;
+		float fov, zNear, zFar;
+		decomposeProjectionMatrix(s_Instance->camera().proj, fov, zNear, zFar);
 
-		float minZ = nearClip;
-		float maxZ = nearClip + clipRange;
+		float zRange = zFar - zNear;
+
+		float minZ = zNear;
+		float maxZ = zNear + zRange;
 
 		float range = maxZ - minZ;
 		float ratio = maxZ / minZ;
 
 		auto& cascades = s_Instance->m_ShadowCascades;
 
-		// Calculate split depths based on view camera frustum
 		// Based on method presented in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
 		for (uint32_t i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
 			float p = (i + 1.0f) / static_cast<float>(SHADOW_MAP_CASCADE_COUNT);
 			float log = minZ * std::pow(ratio, p);
 			float uniform = minZ + range * p;
 			float d = CascadeSplitLambda * (log - uniform) + uniform;
-			cascadeSplits[i] = (d - nearClip) / clipRange;
+			cascadeSplits[i] = (d - zNear) / zRange;
 		}
 
 		// Calculate orthographic projection matrix for each cascade
@@ -228,8 +227,6 @@ namespace milo {
 
 			frustumCenter /= 8.0f;
 
-			//frustumCenter *= 0.1f;
-
 			float radius = 0.0f;
 			for (uint32_t i = 0; i < 8; i++) {
 				float distance = glm::length(frustumCorners[i] - frustumCenter);
@@ -257,31 +254,12 @@ namespace milo {
 			lightOrthoMatrix[3] += roundOffset;
 
 			// Store split distance and matrix in cascade
-			cascades[i].splitDepth = (nearClip + splitDist * clipRange) * -1.0f;
+			cascades[i].splitDepth = (zNear + splitDist * zRange) * -1.0f;
 			cascades[i].viewProj = lightOrthoMatrix * lightViewMatrix;
 			cascades[i].view = lightViewMatrix;
 
 			lastSplitDist = cascadeSplits[i];
 		}
-	}
-
-	void WorldRenderer::calculateShadowCascadeRanges(float* cascadeRanges, float zNear, float zFar) {
-
-		float splitFactor = 0.75f;
-
-		const int32_t cascadesCount = (int32_t)s_Instance->m_ShadowCascades.size();
-		for(int32_t i = 1;i < cascadesCount;++i) {
-
-			float inv = (float)i / (float)cascadesCount;
-			float a = zNear + (inv * (zFar - zNear));
-			float b = zNear * powf(zFar / zNear, inv);
-			float z = lerp(a, b, splitFactor);
-
-			cascadeRanges[i] = z;
-		}
-
-		cascadeRanges[0] = zNear;
-		cascadeRanges[cascadesCount] = zFar;
 	}
 
 	FrameGraphResourcePool& WorldRenderer::resources() const {
@@ -409,147 +387,5 @@ namespace milo {
 
 	void WorldRenderer::shutdown() {
 		DELETE_PTR(s_Instance);
-	}
-
-	Vector3 WorldRenderer::getFrustumCorner(const Matrix4& m, uint32_t corner) {
-		float d1, d2, d3;
-		float n1x, n1y, n1z, n2x, n2y, n2z, n3x, n3y, n3z;
-		switch (corner) {
-			case 0: // left, bottom, near
-				n1x = m[0][3] + m[0][0];
-				n1y = m[1][3] + m[1][0];
-				n1z = m[2][3] + m[2][0];
-				d1 = m[3][3] + m[3][0]; // left
-				n2x = m[0][3] + m[0][1];
-				n2y = m[1][3] + m[1][1];
-				n2z = m[2][3] + m[2][1];
-				d2 = m[3][3] + m[3][1]; // bottom
-				n3x = m[0][3] + m[0][2];
-				n3y = m[1][3] + m[1][2];
-				n3z = m[2][3] + m[2][2];
-				d3 = m[3][3] + m[3][2]; // near
-				break;
-			case 1: // right, bottom, near
-				n1x = m[0][3] - m[0][0];
-				n1y = m[1][3] - m[1][0];
-				n1z = m[2][3] - m[2][0];
-				d1 = m[3][3] - m[3][0]; // right
-				n2x = m[0][3] + m[0][1];
-				n2y = m[1][3] + m[1][1];
-				n2z = m[2][3] + m[2][1];
-				d2 = m[3][3] + m[3][1]; // bottom
-				n3x = m[0][3] + m[0][2];
-				n3y = m[1][3] + m[1][2];
-				n3z = m[2][3] + m[2][2];
-				d3 = m[3][3] + m[3][2]; // near
-				break;
-			case 2: // right, top, near
-				n1x = m[0][3] - m[0][0];
-				n1y = m[1][3] - m[1][0];
-				n1z = m[2][3] - m[2][0];
-				d1 = m[3][3] - m[3][0]; // right
-				n2x = m[0][3] - m[0][1];
-				n2y = m[1][3] - m[1][1];
-				n2z = m[2][3] - m[2][1];
-				d2 = m[3][3] - m[3][1]; // top
-				n3x = m[0][3] + m[0][2];
-				n3y = m[1][3] + m[1][2];
-				n3z = m[2][3] + m[2][2];
-				d3 = m[3][3] + m[3][2]; // near
-				break;
-			case 3: // left, top, near
-				n1x = m[0][3] + m[0][0];
-				n1y = m[1][3] + m[1][0];
-				n1z = m[2][3] + m[2][0];
-				d1 = m[3][3] + m[3][0]; // left
-				n2x = m[0][3] - m[0][1];
-				n2y = m[1][3] - m[1][1];
-				n2z = m[2][3] - m[2][1];
-				d2 = m[3][3] - m[3][1]; // top
-				n3x = m[0][3] + m[0][2];
-				n3y = m[1][3] + m[1][2];
-				n3z = m[2][3] + m[2][2];
-				d3 = m[3][3] + m[3][2]; // near
-				break;
-			case 4: // right, bottom, far
-				n1x = m[0][3] - m[0][0];
-				n1y = m[1][3] - m[1][0];
-				n1z = m[2][3] - m[2][0];
-				d1 = m[3][3] - m[3][0]; // right
-				n2x = m[0][3] + m[0][1];
-				n2y = m[1][3] + m[1][1];
-				n2z = m[2][3] + m[2][1];
-				d2 = m[3][3] + m[3][1]; // bottom
-				n3x = m[0][3] - m[0][2];
-				n3y = m[1][3] - m[1][2];
-				n3z = m[2][3] - m[2][2];
-				d3 = m[3][3] - m[3][2]; // far
-				break;
-			case 5: // left, bottom, far
-				n1x = m[0][3] + m[0][0];
-				n1y = m[1][3] + m[1][0];
-				n1z = m[2][3] + m[2][0];
-				d1 = m[3][3] + m[3][0]; // left
-				n2x = m[0][3] + m[0][1];
-				n2y = m[1][3] + m[1][1];
-				n2z = m[2][3] + m[2][1];
-				d2 = m[3][3] + m[3][1]; // bottom
-				n3x = m[0][3] - m[0][2];
-				n3y = m[1][3] - m[1][2];
-				n3z = m[2][3] - m[2][2];
-				d3 = m[3][3] - m[3][2]; // far
-				break;
-			case 6: // left, top, far
-				n1x = m[0][3] + m[0][0];
-				n1y = m[1][3] + m[1][0];
-				n1z = m[2][3] + m[2][0];
-				d1 = m[3][3] + m[3][0]; // left
-				n2x = m[0][3] - m[0][1];
-				n2y = m[1][3] - m[1][1];
-				n2z = m[2][3] - m[2][1];
-				d2 = m[3][3] - m[3][1]; // top
-				n3x = m[0][3] - m[0][2];
-				n3y = m[1][3] - m[1][2];
-				n3z = m[2][3] - m[2][2];
-				d3 = m[3][3] - m[3][2]; // far
-				break;
-			case 7: // right, top, far
-				n1x = m[0][3] - m[0][0];
-				n1y = m[1][3] - m[1][0];
-				n1z = m[2][3] - m[2][0];
-				d1 = m[3][3] - m[3][0]; // right
-				n2x = m[0][3] - m[0][1];
-				n2y = m[1][3] - m[1][1];
-				n2z = m[2][3] - m[2][1];
-				d2 = m[3][3] - m[3][1]; // top
-				n3x = m[0][3] - m[0][2];
-				n3y = m[1][3] - m[1][2];
-				n3z = m[2][3] - m[2][2];
-				d3 = m[3][3] - m[3][2]; // far
-				break;
-			default:
-				throw MILO_RUNTIME_EXCEPTION("Invalid corner value");
-		}
-		float c23x, c23y, c23z;
-		c23x = n2y * n3z - n2z * n3y;
-		c23y = n2z * n3x - n2x * n3z;
-		c23z = n2x * n3y - n2y * n3x;
-		float c31x, c31y, c31z;
-		c31x = n3y * n1z - n3z * n1y;
-		c31y = n3z * n1x - n3x * n1z;
-		c31z = n3x * n1y - n3y * n1x;
-		float c12x, c12y, c12z;
-		c12x = n1y * n2z - n1z * n2y;
-		c12y = n1z * n2x - n1x * n2z;
-		c12z = n1x * n2y - n1y * n2x;
-		float invDot = 1.0f / (n1x * c23x + n1y * c23y + n1z * c23z);
-
-		Vector3 result;
-
-		result.x = (- c23x * d1 - c31x * d2 - c12x * d3) * invDot;
-		result.y = (- c23y * d1 - c31y * d2 - c12y * d3) * invDot;
-		result.z = (- c23z * d1 - c31z * d2 - c12z * d3) * invDot;
-
-		return result;
 	}
 }
