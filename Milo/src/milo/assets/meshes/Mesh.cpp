@@ -8,7 +8,7 @@ namespace milo {
 	const int ASSIMP_FLAGS = aiProcess_OptimizeGraph
 							 | aiProcess_CalcTangentSpace
 							 | aiProcess_Triangulate
-							 //| aiProcess_GenSmoothNormals
+							 | aiProcess_GenSmoothNormals
 							 //| aiProcess_GenUVCoords
 							 //| aiProcess_FlipUVs
 							 | aiProcess_JoinIdenticalVertices;

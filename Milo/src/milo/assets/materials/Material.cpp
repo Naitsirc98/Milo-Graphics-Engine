@@ -5,7 +5,7 @@ namespace milo {
 
 	Material::Material(String name, String filename) : Asset(name, filename) {
 		m_AlbedoMap = Assets::textures().whiteTexture();
-		m_EmissiveMap = Assets::textures().whiteTexture();
+		m_EmissiveMap = Assets::textures().blackTexture();
 		m_NormalMap = Assets::textures().whiteTexture();
 		m_MetallicMap = Assets::textures().whiteTexture();
 		m_RoughnessMap = Assets::textures().whiteTexture();

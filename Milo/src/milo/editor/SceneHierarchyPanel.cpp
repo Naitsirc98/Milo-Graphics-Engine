@@ -95,8 +95,12 @@ namespace milo {
 
 				if(ImGui::MenuItem("Point Light")) {
 					auto newEntity = scene->createEntity("Point Light");
+					newEntity.getComponent<Transform>().scale({0.2f, 0.2f, 0.2f});
 					PointLight& p = newEntity.addComponent<PointLight>();
 					p.position = Vector4(newEntity.getComponent<Transform>().translation(), 1);
+					MeshView& m = newEntity.addComponent<MeshView>();
+					m.mesh = Assets::meshes().getPlane();
+					m.material = Assets::materials().getDefault();
 					selectEntity(newEntity);
 				}
 

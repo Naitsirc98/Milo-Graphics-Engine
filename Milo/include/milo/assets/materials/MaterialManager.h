@@ -20,7 +20,7 @@ namespace milo {
 	public:
 		Material* getDefault() const;
 		Material* create(const String& name, const String& filename = "");
-		Material* load(const String& name, const String& filename);
+		Material* load(const String& name, const String& filename, bool replace = false);
 		bool exists(const String& name);
 		Material* find(const String& name);
 		void destroy(const String& name);

@@ -15,7 +15,9 @@ public:
 
 		Scene* scene = SceneManager::activeScene();
 
-		Skybox* skybox = Assets::skybox().getPreethamSky();
+		Skybox* skybox = Assets::skybox().getPreethamSky();//.load("Landscape", "C:\\Users\\naits\\Downloads\\evening_meadow_2k.hdr");//.getIndoorSkybox();
+		skybox->prefilterLODBias(4);
+		skybox->maxPrefilterLOD(-1.5);
 
 		Entity skyboxEntity = scene->createEntity("Skybox");
 		SkyboxView& skyboxView = skyboxEntity.addComponent<SkyboxView>();
@@ -27,7 +29,7 @@ public:
 		{
 			Entity floor = scene->createEntity("Floor");
 			Transform& t = floor.getComponent<Transform>();
-			t.translation({0, -8, 0});
+			t.translation({0, -4, 0});
 			t.scale({100, 0.2f, 100});
 			MeshView& meshView = floor.addComponent<MeshView>();
 			meshView.mesh = Assets::meshes().getCube();
@@ -40,32 +42,35 @@ public:
 		materials.push_back(Assets::materials().load("Gold", "resources/materials/Gold/M_Gold.mat"));
 		materials.push_back(Assets::materials().load("Rusted Iron", "resources/materials/RustedIron/M_RustedIron.mat"));
 
-		for(uint32_t i = 0;i < 1000;++i) {
-			Vector3 pos = {Random::nextInt(0, 100), Random::nextInt(0, 100), Random::nextInt(0, 100)};
-			uint32_t mat = Random::nextInt(0) % (uint32_t)materials.size();
-			Entity s1 = createSphere(scene, pos, materials[mat], i + 1);
-		}
+		createSphere(scene, {-3, 0, -4.5}, materials[1]);
+		createSphere(scene, {3, 0, -4.5}, materials[2]);
 
-		Entity light1 = createSphere(scene, {0, 0, 0}, Assets::materials().load("EmissiveWhite", "resources/materials/M_WhiteEmissive.mat"));
-		light1.setName("Point Light 1");
-		light1.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
-		light1.getComponent<Transform>().translation({0.0f, 0.0f, 1.0f});
-		PointLight& p1 = light1.addComponent<PointLight>();
-		p1.multiplier = 3;
+		//for(uint32_t i = 0;i < 1000;++i) {
+		//	Vector3 pos = {Random::nextInt(0, 100), Random::nextInt(0, 100), Random::nextInt(0, 100)};
+		//	uint32_t mat = Random::nextInt(0) % (uint32_t)materials.size();
+		//	Entity s1 = createSphere(scene, pos, materials[mat], i + 1);
+		//}
+//
+		//Entity light1 = createSphere(scene, {0, 0, 0}, Assets::materials().load("EmissiveWhite", "resources/materials/M_WhiteEmissive.mat"));
+		//light1.setName("Point Light 1");
+		//light1.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
+		//light1.getComponent<Transform>().translation({0.0f, 0.0f, 1.0f});
+		//PointLight& p1 = light1.addComponent<PointLight>();
+		//p1.multiplier = 3;
+//
+		//Entity light2 = createSphere(scene, {7, 3, 0}, Assets::materials().load("EmissiveWhite", "resources/materials/M_WhiteEmissive.mat"));
+		//light2.setName("Point Light 2");
+		//light2.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
+		//light2.getComponent<Transform>().translation({0.0f, 1.0f, 0.0f});
+		//PointLight& p2 = light2.addComponent<PointLight>();
+		//p2.multiplier = 3;
 
-		Entity light2 = createSphere(scene, {7, 3, 0}, Assets::materials().load("EmissiveWhite", "resources/materials/M_WhiteEmissive.mat"));
-		light2.setName("Point Light 2");
-		light2.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
-		light2.getComponent<Transform>().translation({0.0f, 1.0f, 0.0f});
-		PointLight& p2 = light2.addComponent<PointLight>();
-		p2.multiplier = 3;
-
-		Entity sun = createSphere(scene, {0, 12, 0}, Assets::materials().getDefault());
+		Entity sun = scene->createEntity();
 		sun.setName("Sun");
 		sun.getComponent<Transform>().scale({0.1f, 0.1f, 0.1f});
 		DirectionalLight& dirLight = sun.addComponent<DirectionalLight>();
-		dirLight.direction = {0.2f, 0.8f, 0};
-		dirLight.color = {5, 5, 5};
+		dirLight.direction = {0.0f, 1.0f, 0};
+		dirLight.color = {7, 7, 7};
 
 		//ModelUtils::createModelEntityTree(scene, Assets::models().getSponza());
 

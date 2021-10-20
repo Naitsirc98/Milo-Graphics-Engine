@@ -71,7 +71,7 @@ namespace milo {
 			Mesh* mesh = meshView.mesh;
 			Material* material = meshView.material;
 			if(mesh == nullptr || material == nullptr) continue;
-			if(mesh->canBeCulled() && !mesh->boundingVolume().isVisible(modelMatrix, camera.frustum.plane, 6)) continue; // TODO
+			if(false && mesh->canBeCulled() && !mesh->boundingVolume().isVisible(modelMatrix, camera.frustum.plane, 6)) continue; // TODO
 
 			DrawCommand drawCommand;
 			drawCommand.transform = modelMatrix;

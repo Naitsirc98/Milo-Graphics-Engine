@@ -184,7 +184,7 @@ namespace milo {
 
 					ImGui::DragFloat("Shadows max distance", &shadowsMaxDistance);
 
-					ImGui::Text("Draw commands count: %i", drawCommandsCount);
+					//ImGui::Text("Draw commands count: %i", drawCommandsCount);
 
 					WorldRenderer::get().setShadowsEnabled(shadowsEnabled);
 					WorldRenderer::get().setShowBoundingVolumes(showBoundingVolumes);

@@ -88,7 +88,7 @@ namespace milo {
 				}
 			}
 
-			if(unused) {
+			if(false) {
 				uint32_t& count = m_RenderPassUnusedCount[renderPass->getId()];
 				if(++count >= MAX_RENDER_PASS_UNUSED_COUNT) {
 					DELETE_PTR(renderPass);

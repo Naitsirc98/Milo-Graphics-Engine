@@ -211,7 +211,7 @@ namespace milo {
 				if(file.has_value()) {
 					if(file.has_value()) {
 						String& filename = file.value();
-						material = Assets::materials().load(Files::getName(filename, true), filename);
+						material = Assets::materials().load(Files::getName(filename, true), filename, true);
 						meshView.material = material;
 					}
 				}

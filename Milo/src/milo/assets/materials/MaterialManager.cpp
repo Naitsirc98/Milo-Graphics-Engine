@@ -53,12 +53,15 @@ namespace milo {
 		return material;
 	}
 
-	Material* MaterialManager::load(const String& name, const String& filename) {
+	Material* MaterialManager::load(const String& name, const String& filename, bool replace) {
 		Material* material = nullptr;
 		m_Mutex.lock();
 		{
 			if(exists(name)) {
 				material = find(name);
+				if(replace) {
+					load(name, filename, material);
+				}
 			} else {
 				if(load(name, filename, material)) {
 					m_Materials[name] = material;
@@ -114,41 +117,44 @@ namespace milo {
 
 		material = new Material(name, filename);
 
-		nlohmann::json json;
-		{
-			InputStream inputStream(filename);
-			inputStream >> json;
+		try {
+			nlohmann::json json;
+			{
+				InputStream inputStream(filename);
+				inputStream >> json;
+			}
+
+			if(json.contains("albedo")) {
+				float color[4];
+				json["albedo"].get_to(color);
+				material->m_Data.albedo = {color[0], color[1], color[2], color[3]};
+			}
+
+			if(json.contains("metallic")) {
+				material->m_Data.metallic = json["metallic"].get<float>();
+			}
+
+			if(json.contains("roughness")) {
+				material->m_Data.roughness = json["roughness"].get<float>();
+			}
+
+			if(json.contains("emissive")) {
+				float color[4];
+				json["emissive"].get_to(color);
+				material->m_Data.emissiveColor = {color[0], color[1], color[2], color[3]};
+			}
+
+			material->m_AlbedoMap = loadTexture2D(&json, "albedoMap", filename);
+			material->m_NormalMap = loadTexture2D(&json, "normalMap", filename);
+			material->m_MetallicMap = loadTexture2D(&json, "metallicMap", filename);
+			material->m_RoughnessMap = loadTexture2D(&json, "roughnessMap", filename);
+			material->m_OcclusionMap = loadTexture2D(&json, "occlusionMap", filename);
+
+			material->useNormalMap(material->m_NormalMap != nullptr);
+		} catch(...) {
+			Log::error("Failed to parse material {}", material->name());
+			return false;
 		}
-
-		if(json.contains("albedo")) {
-			float color[4];
-			json["albedo"].get_to(color);
-			material->m_Data.albedo = {color[0], color[1], color[2], color[3]};
-		}
-
-		if(json.contains("metallic")) {
-			material->m_Data.metallic = json["metallic"].get<float>();
-		}
-
-		if(json.contains("roughness")) {
-			material->m_Data.roughness = json["roughness"].get<float>();
-		}
-
-		if(json.contains("emissive")) {
-			float color[4];
-			json["emissive"].get_to(color);
-			material->m_Data.emissiveColor = {color[0], color[1], color[2], color[3]};
-		}
-
-		material->m_AlbedoMap = loadTexture2D(&json, "albedoMap", filename);
-		material->m_NormalMap = loadTexture2D(&json, "normalMap", filename);
-		material->m_MetallicMap = loadTexture2D(&json, "metallicMap", filename);
-		material->m_RoughnessMap = loadTexture2D(&json, "roughnessMap", filename);
-		material->m_OcclusionMap = loadTexture2D(&json, "occlusionMap", filename);
-
-		material->useNormalMap(material->m_NormalMap != nullptr);
-
-		// TODO
 
 		return true;
 	}
