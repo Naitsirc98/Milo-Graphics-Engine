@@ -31,6 +31,7 @@ namespace milo {
 		IconFactory* m_IconFactory{nullptr};
 		HashMap<String, Ref<Texture2D>> m_Cache;
 		HashMap<String, Ref<Texture2D>> m_Icons;
+		HashMap<uint64_t, uint64_t> m_IconHandles;
 	private:
 		TextureManager();
 		~TextureManager();

@@ -29,7 +29,7 @@ namespace milo {
 		}
 
 		ImGui::SameLine();
-		ImGui::TextDisabled("ID: %llx", (uint64_t)entity.id());
+		ImGui::TextDisabled("id: %llx", (uint64_t)entity.id());
 
 		ImGui::Separator();
 

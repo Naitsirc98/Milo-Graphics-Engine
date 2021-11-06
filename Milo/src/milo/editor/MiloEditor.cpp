@@ -18,6 +18,8 @@ namespace milo {
 	PropertiesPanel MiloEditor::s_PropertiesPanel{};
 	MaterialEditor MiloEditor::s_MaterialEditor{};
 
+	bool MiloEditor::s_MaterialEditorShouldOpen = false;
+
 	void MiloEditor::update() {
 		MILO_PROFILE_FUNCTION;
 		s_Camera.update();
@@ -42,9 +44,9 @@ namespace milo {
 
 		renderSceneViewport();
 
-		//if(true) {
-		//	s_MaterialEditor.render(Assets::materials().getDefault());
-		//}
+		if(s_MaterialEditorShouldOpen) {
+			s_MaterialEditor.render(Assets::materials().getDefault());
+		}
 
 		s_Renderer->end();
 	}
@@ -147,6 +149,13 @@ namespace milo {
 					settingsPanelOpened = true;
 				}
 
+				ImGui::EndMenu();
+			}
+
+			if(ImGui::BeginMenu("Create")) {
+				if(ImGui::MenuItem("Material")) {
+					s_MaterialEditorShouldOpen = true;
+				}
 				ImGui::EndMenu();
 			}
 

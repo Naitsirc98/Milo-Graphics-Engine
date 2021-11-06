@@ -17,18 +17,29 @@
 
 namespace milo::UI {
 
+	ImTextureID getIconId(const Texture2D& texture) {
+
+		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
+
+			auto& vkTexture = (VulkanTexture2D&) (texture);
+
+			if (vkTexture.layout() != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+				vkTexture.setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			}
+
+			return ImGui_ImplVulkan_AddTexture(vkTexture.id(), vkTexture.vkSampler(),
+																vkTexture.vkImageView(), vkTexture.layout());
+		}
+
+		return nullptr;
+	}
+
 	void image(const Texture2D& texture, const Size& size, const ImVec2& uv0, const ImVec2& uv1,
 			   const ImVec4& tint_col, const ImVec4& border_col) {
 
 		if(Graphics::graphicsAPI() == GraphicsAPI::Vulkan) {
 
-			auto& vkTexture = (VulkanTexture2D&)(texture);
-
-			if(vkTexture.layout() != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-				vkTexture.setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			}
-
-			auto textureId = ImGui_ImplVulkan_AddTexture(vkTexture.id(), vkTexture.vkSampler(), vkTexture.vkImageView(), vkTexture.layout());
+			ImTextureID textureId = getIconId(texture);
 
 			ImVec2 imageSize;
 			if(size.isZero()) {

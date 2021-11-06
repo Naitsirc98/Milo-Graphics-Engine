@@ -77,14 +77,14 @@ namespace milo {
 			uint32_t mipLevelSize = static_cast<uint32_t>(mapSize * powf(0.5f, i));
 
 			PushConstants pushConstants{};
-			pushConstants.roughness = (float)i / (float)(mipLevels);
+			pushConstants.roughness = 0;//(float)i / (float)(mipLevels - 1);
 			pushConstants.envMapResolution = envMapResolution;
 			pushConstants.mipLevel = i;
 			pushConstants.numSamples = 1024;
 			VK_CALLV(vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT,
 										0, sizeof(PushConstants), &pushConstants));
 
-			VK_CALLV(vkCmdDispatch(commandBuffer, mapSize / 32, mapSize / 32, 6));
+			VK_CALLV(vkCmdDispatch(commandBuffer, mipLevelSize / 32, mipLevelSize / 32, 6));
 		}
 
 		prefilterMap->setLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,

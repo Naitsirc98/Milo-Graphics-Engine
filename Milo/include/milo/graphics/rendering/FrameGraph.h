@@ -10,20 +10,20 @@ namespace milo {
 
 	class FrameGraph {
 		friend class WorldRenderer;
-	private:
+	protected:
 		ArrayList<RenderPass*> m_RenderPasses;
 		ArrayList<RenderPass*> m_RenderPassExecutionList;
 		HashMap<RenderPassId, uint32_t> m_RenderPassUnusedCount;
 		FrameGraphResourcePool* m_ResourcePool = nullptr;
-	private:
+	protected:
 		FrameGraph();
 		~FrameGraph();
 		void init(FrameGraphResourcePool* resourcePool);
 	public:
-		void setup(Scene* scene);
-		void compile(Scene* scene);
-		void execute(Scene* scene);
-	private:
+		virtual void setup(Scene* scene);
+		virtual void compile(Scene* scene);
+		virtual void execute(Scene* scene);
+	protected:
 
 #define RENDER_PASS_NAME(T) #T
 

@@ -21,6 +21,8 @@ namespace milo {
 		static SceneHierarchyPanel s_SceneHierarchyPanel;
 		static PropertiesPanel s_PropertiesPanel;
 		static MaterialEditor s_MaterialEditor;
+
+		static bool s_MaterialEditorShouldOpen;
 	public:
 		static void update();
 		static void render();
