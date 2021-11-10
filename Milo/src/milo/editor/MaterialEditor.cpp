@@ -40,6 +40,22 @@ namespace milo {
 		//createIcon(m_BlueprintBuilder.getHeaderBackground(), "");
 		//createIcon(m_BlueprintBuilder.getSaveIcon(), "");
 		//createIcon(m_BlueprintBuilder.getRestoreIcon(), "");
+
+		m_DockSpaceRenderer.setDockSpaceWindowName("MaterialEditorDockSpaceWindow");
+		m_DockSpaceRenderer.setDockSpaceName("MaterialEditorDockSpace");
+		m_DockSpaceRenderer.setOnFirstFrame([&](ImGuiID dockSpaceId) {
+
+			ImGuiID left = NULL;
+			ImGuiID right = NULL;
+
+			// Split screen into left and right sections
+			ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Left, 0.25f, &left, &right);
+
+			ImGui::DockBuilderDockWindow("MaterialViewer", left);
+			ImGui::DockBuilderDockWindow("MaterialNodeEditor", right);
+
+			ImGui::DockBuilderFinish(dockSpaceId);
+		});
 	}
 
 	MaterialEditor::~MaterialEditor() {
@@ -47,26 +63,31 @@ namespace milo {
 		ed::DestroyEditor(m_Context);
 	}
 
+	bool MaterialEditor::isOpen() const {
+		return m_Open;
+	}
+
+	void MaterialEditor::setOpen(bool open) {
+		m_Open = open;
+	}
+
 	void MaterialEditor::render(Material* material) {
 		if(material == nullptr) return;
 
 		auto& io = ImGui::GetIO();
 
-		static bool open = true;
-		bool openThisFrame = open;
+		bool openThisFrame = m_Open;
 
-		if(openThisFrame && ImGui::Begin("Material Editor", &open)) {
+		if(openThisFrame && ImGui::Begin("Material Editor", &m_Open)) {
 
-			ImGui::Text("Material: %s", material->name().c_str());
-
-			// TODO: render this material
+			renderMaterialViewer(material);
 
 			ImGui::Separator();
 
 			ed::SetCurrentEditor(m_Context);
 
 			// Start interaction with editor.
-			ed::Begin("My Editor", ImVec2(0.0f, 0.0f));
+			ed::Begin("MaterialNodeEditor", ImVec2(0.0f, 0.0f));
 
 			int uniqueId = 1;
 
@@ -207,6 +228,7 @@ namespace milo {
 			ed::SetCurrentEditor(nullptr);
 
 			m_FirstFrame = false;
+
 		}
 
 		if(openThisFrame) ImGui::End();
@@ -244,6 +266,31 @@ namespace milo {
 
 		icon.texture = texture;
 		icon.iconId = UI::getIconId(*texture);
+	}
+
+	void MaterialEditor::renderMaterialViewer(Material* material) {
+
+		ImGui::Begin("MaterialViewer");
+
+		//TODO: real time render of the material
+		auto icon = Assets::textures().getIcon("MaterialViewerIcon");
+		if(icon == nullptr) {
+			icon = Assets::textures().createIcon("MaterialViewerIcon", Assets::meshes().getSphere(), material);
+		}
+		UI::image(*icon);
+
+		ImGui::Separator();
+		ImGui::Text("Name: %s", material->name().c_str());
+
+		ImGui::Separator();
+		ImGui::Text("File: %s", material->filename().c_str());
+
+		ImGui::End();
+
+		if(material->dirty()) { // TODO: recreate icon when material is modified
+			Assets::textures().removeIcon("MaterialViewerIcon");
+			Assets::textures().createIcon("MaterialViewerIcon", Assets::meshes().getSphere(), material);
+		}
 	}
 
 }

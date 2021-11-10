@@ -6,6 +6,7 @@
 #include "PropertiesPanel.h"
 #include "EditorCamera.h"
 #include "MaterialEditor.h"
+#include "DockSpaceRenderer.h"
 
 namespace milo {
 
@@ -21,6 +22,7 @@ namespace milo {
 		static SceneHierarchyPanel s_SceneHierarchyPanel;
 		static PropertiesPanel s_PropertiesPanel;
 		static MaterialEditor s_MaterialEditor;
+		static DockSpaceRenderer s_DockSpaceRenderer;
 
 		static bool s_MaterialEditorShouldOpen;
 	public:
@@ -33,5 +35,7 @@ namespace milo {
 		static void init();
 		static void shutdown();
 		static void setupMenuBar();
+
+		static void setupDockSpace(const char* dockSpaceWindowName, const char* dockSpaceName, bool& firstTime);
 	};
 }
