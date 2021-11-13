@@ -28,8 +28,9 @@ namespace milo {
 
 	void VulkanMaterialPBRRenderer::render(Material* material) {
 
-		if(m_Material == nullptr || m_Material->name() != material->name() || material->dirty()) {
+		if(m_Material == nullptr || m_Material->name() != material->name() || m_LastVersion != material->version()) {
 			m_Material = material;
+			m_LastVersion = material->version();
 			buildCommandBuffer();
 		}
 

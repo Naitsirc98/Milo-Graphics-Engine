@@ -35,6 +35,7 @@ namespace milo {
 
 	private:
 		Material* m_Material{nullptr};
+		uint32_t m_LastVersion{0};
 
 		VulkanDevice* m_Device = nullptr;
 

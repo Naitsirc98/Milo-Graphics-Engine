@@ -198,6 +198,7 @@ namespace milo {
 			if(material->dirty()) {
 				m_ResourcePool->updateMaterial(material);
 				material->m_Dirty = false;
+				material->m_Version++;
 			}
 		}
 	}

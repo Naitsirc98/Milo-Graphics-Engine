@@ -187,7 +187,7 @@ namespace milo {
 							// Draw new link.
 							ed::Link(m_Links.back().id, m_Links.back().inputId, m_Links.back().outputId);
 
-							//Assets::materials().getDefault()->albedo(Color(1, 0, 0, 1)); //FIXME
+							Assets::materials().getDefault()->albedo(Color(1, 0, 0, 1)); //FIXME
 						}
 
 						// You may choose to reject connection between these nodes

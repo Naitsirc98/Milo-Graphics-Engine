@@ -190,4 +190,8 @@ namespace milo {
 	bool Material::dirty() const {
 		return m_Dirty;
 	}
+
+	uint32_t Material::version() const {
+		return m_Version;
+	}
 }

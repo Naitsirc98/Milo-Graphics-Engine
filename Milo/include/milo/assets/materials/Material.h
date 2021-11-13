@@ -38,6 +38,7 @@ namespace milo {
 		Ref<Texture2D> m_EmissiveMap{nullptr};
 		Ref<Texture2D> m_NormalMap{nullptr};
 		bool m_Dirty = false;
+		uint32_t m_Version = 0;
 		size_t m_Index = -1;
 	private:
 		explicit Material(String name, String filename);
@@ -79,5 +80,6 @@ namespace milo {
 		Ref<Texture2D> occlusionMap() const;
 		Material* occlusionMap(Ref<Texture2D> texture);
 		bool dirty() const;
+		uint32_t version() const;
 	};
 }
