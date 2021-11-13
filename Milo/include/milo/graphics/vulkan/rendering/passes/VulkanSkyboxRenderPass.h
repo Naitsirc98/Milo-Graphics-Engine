@@ -36,7 +36,7 @@ namespace milo {
 
 		Size m_LastFramebufferSize{};
 
-	private:
+	public:
 		VulkanSkyboxRenderPass();
 		~VulkanSkyboxRenderPass() override;
 	public:

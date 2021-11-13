@@ -101,7 +101,7 @@ namespace milo {
 		Array<ThreadData*, THREAD_POOL_SIZE> m_ThreadPool;
 		ArrayList<VkCommandBuffer> m_SecondaryCommandBuffers;
 
-	private:
+	public:
 		VulkanPBRForwardRenderPass();
 		~VulkanPBRForwardRenderPass() override;
 	public:
@@ -109,19 +109,19 @@ namespace milo {
 		void compile(Scene* scene, FrameGraphResourcePool* resourcePool) override;
 		void execute(Scene* scene) override;
 	private:
-		void buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
-		void renderScene(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene);
+		void buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer);
+		void renderScene(uint32_t imageIndex, VkCommandBuffer commandBuffer);
 
 		void drawMesh(VkCommandBuffer commandBuffer, const Mesh* mesh) const;
 		void pushConstants(VkCommandBuffer commandBuffer, const Matrix4& transform) const;
 		void bindMesh(VkCommandBuffer commandBuffer, const Mesh* mesh) const;
 		void bindMaterial(VkCommandBuffer commandBuffer, const VulkanMaterialResourcePool& materialResources, Material* material) const;
 
-		void updateSceneUniformData(uint32_t imageIndex, Scene* scene);
+		void updateSceneUniformData(uint32_t imageIndex);
 		void setSkyboxUniformData(uint32_t imageIndex, Skybox* skybox);
 		void setNullSkyboxUniformData(uint32_t imageIndex);
 
-		void updateShadowsUniformData(uint32_t imageIndex, Scene* scene);
+		void updateShadowsUniformData(uint32_t imageIndex, uint32_t viewportWidth);
 
 		void bindDescriptorSets(uint32_t imageIndex, VkCommandBuffer commandBuffer);
 

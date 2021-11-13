@@ -9,6 +9,7 @@
 #include "milo/graphics/rendering/WorldRenderer.h"
 #include "milo/graphics/rendering/passes/AllRenderPasses.h"
 #include "milo/time/Profiler.h"
+#include "milo/scenes/SceneManager.h"
 
 namespace milo {
 
@@ -73,7 +74,7 @@ namespace milo {
 		VkCommandBuffer commandBuffer = m_CommandBuffers[imageIndex];
 		VulkanQueue* queue = m_Device->graphicsQueue();
 
-		buildCommandBuffer(imageIndex, commandBuffer, scene);
+		buildCommandBuffer(imageIndex, commandBuffer);
 
 		VkPipelineStageFlags waitStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
@@ -92,26 +93,26 @@ namespace milo {
 		queue->setFence(fence);
 	}
 
-	void VulkanPBRForwardRenderPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
+	void VulkanPBRForwardRenderPass::buildCommandBuffer(uint32_t imageIndex, VkCommandBuffer commandBuffer) {
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		VK_CALL(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 		{
-			renderScene(imageIndex, commandBuffer, scene);
+			renderScene(imageIndex, commandBuffer);
 		}
 		VK_CALLV(vkEndCommandBuffer(commandBuffer));
 	}
 
 	constexpr uint32_t MIN_SIZE_FOR_MULTITHREADING = 100;
 
-	inline void VulkanPBRForwardRenderPass::renderScene(uint32_t imageIndex, VkCommandBuffer commandBuffer, Scene* scene) {
+	inline void VulkanPBRForwardRenderPass::renderScene(uint32_t imageIndex, VkCommandBuffer commandBuffer) {
 
 		auto& materialResources = dynamic_cast<VulkanMaterialResourcePool&>(Assets::materials().resourcePool());
 
-		updateSceneUniformData(imageIndex, scene);
-		updateShadowsUniformData(imageIndex, scene);
+		updateSceneUniformData(imageIndex);
+		updateShadowsUniformData(imageIndex, SceneManager::activeScene()->viewportSize().width);
 
 		// Multithreading not supported for now
 		if(false && WorldRenderer::get().useMultithreading() && WorldRenderer::get().drawCommands().size() > MIN_SIZE_FOR_MULTITHREADING) {
@@ -367,7 +368,7 @@ namespace milo {
 										 2, 1, descriptorSets, 1, &dynamicOffset));
 	}
 
-	inline void VulkanPBRForwardRenderPass::updateSceneUniformData(uint32_t imageIndex, Scene* scene) {
+	inline void VulkanPBRForwardRenderPass::updateSceneUniformData(uint32_t imageIndex) {
 
 		// ==== CAMERA
 		const auto& camera = WorldRenderer::get().camera();
@@ -483,7 +484,7 @@ namespace milo {
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 3, writeDescriptors, 0, nullptr));
 	}
 
-	void VulkanPBRForwardRenderPass::updateShadowsUniformData(uint32_t imageIndex, Scene* scene) {
+	void VulkanPBRForwardRenderPass::updateShadowsUniformData(uint32_t imageIndex, uint32_t viewportWidth) {
 
 		{
 			const auto& cascades = WorldRenderer::get().shadowCascades();
@@ -495,7 +496,7 @@ namespace milo {
 			shadows.u_LightSize = 0.5f;
 			shadows.u_CascadeFading[0] = WorldRenderer::get().shadowCascadeFading();
 			shadows.u_CascadeTransitionFade = WorldRenderer::get().shadowCascadeFadingValue();
-			shadows.u_TilesCountX = (uint32_t) (scene->viewportSize().width / TILE_SIZE);
+			shadows.u_TilesCountX = (uint32_t) (viewportWidth / TILE_SIZE);
 			shadows.u_ShowLightComplexity[0] = false;
 			shadows.u_ShadowsEnabled[0] = WorldRenderer::get().shadowsEnabled();
 			shadows.u_ShowCascades[0] = WorldRenderer::get().showShadowCascades();

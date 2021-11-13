@@ -49,7 +49,7 @@ namespace milo {
 			ImGuiID right = NULL;
 
 			// Split screen into left and right sections
-			ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Left, 0.25f, &left, &right);
+			ImGui::DockBuilderSplitNode(dockSpaceId, ImGuiDir_Up, 0.25f, &left, &right);
 
 			ImGui::DockBuilderDockWindow("MaterialViewer", left);
 			ImGui::DockBuilderDockWindow("MaterialNodeEditor", right);
@@ -59,6 +59,7 @@ namespace milo {
 	}
 
 	MaterialEditor::~MaterialEditor() {
+		DELETE_PTR(m_MaterialViewerRenderer);
 		ed::SetCurrentEditor(nullptr);
 		ed::DestroyEditor(m_Context);
 	}
@@ -73,6 +74,10 @@ namespace milo {
 
 	void MaterialEditor::render(Material* material) {
 		if(material == nullptr) return;
+
+		if(m_MaterialViewerRenderer == nullptr) {
+			m_MaterialViewerRenderer = MaterialViewerRenderer::create();
+		}
 
 		auto& io = ImGui::GetIO();
 
@@ -181,6 +186,8 @@ namespace milo {
 
 							// Draw new link.
 							ed::Link(m_Links.back().id, m_Links.back().inputId, m_Links.back().outputId);
+
+							//Assets::materials().getDefault()->albedo(Color(1, 0, 0, 1)); //FIXME
 						}
 
 						// You may choose to reject connection between these nodes
@@ -273,24 +280,27 @@ namespace milo {
 		ImGui::Begin("MaterialViewer");
 
 		//TODO: real time render of the material
-		auto icon = Assets::textures().getIcon("MaterialViewerIcon");
-		if(icon == nullptr) {
-			icon = Assets::textures().createIcon("MaterialViewerIcon", Assets::meshes().getSphere(), material);
-		}
-		UI::image(*icon);
+		//auto icon = Assets::textures().getIcon("MaterialViewerIcon");
+		//if(icon == nullptr) {
+		//	icon = Assets::textures().createIcon("MaterialViewerIcon", Assets::meshes().getSphere(), material);
+		//}
+		//UI::image(*icon);
 
-		ImGui::Separator();
-		ImGui::Text("Name: %s", material->name().c_str());
+		const auto& texture = m_MaterialViewerRenderer->render(material);
+		UI::image(texture, {1920/3, 1080/3});
 
-		ImGui::Separator();
-		ImGui::Text("File: %s", material->filename().c_str());
+		//ImGui::Separator();
+		//ImGui::Text("Name: %s", material->name().c_str());
+//
+		//ImGui::Separator();
+		//ImGui::Text("File: %s", material->filename().c_str());
 
 		ImGui::End();
 
-		if(material->dirty()) { // TODO: recreate icon when material is modified
-			Assets::textures().removeIcon("MaterialViewerIcon");
-			Assets::textures().createIcon("MaterialViewerIcon", Assets::meshes().getSphere(), material);
-		}
+		//if(material->dirty()) { // TODO: recreate icon when material is modified
+		//	Assets::textures().removeIcon("MaterialViewerIcon");
+		//	Assets::textures().createIcon("MaterialViewerIcon", Assets::meshes().getSphere(), material);
+		//}
 	}
 
 }

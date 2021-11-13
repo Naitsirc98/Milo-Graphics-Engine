@@ -6,6 +6,7 @@
 #include <imgui/imgui_internal.h>
 #include "milo/editor/blueprints/Blueprints.h"
 #include "milo/editor/DockSpaceRenderer.h"
+#include "MaterialViewerRenderer.h"
 
 namespace ed = ax::NodeEditor;
 
@@ -26,6 +27,7 @@ namespace milo {
 		int32_t m_NextLinkId{100};
 		bp::BlueprintBuilder m_BlueprintBuilder;
 		DockSpaceRenderer m_DockSpaceRenderer;
+		MaterialViewerRenderer* m_MaterialViewerRenderer;
 	public:
 		MaterialEditor();
 		~MaterialEditor();
