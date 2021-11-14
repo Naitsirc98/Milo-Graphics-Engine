@@ -25,10 +25,14 @@ namespace milo::bp {
 		Bool,
 		Int,
 		Float,
+		Float2,
+		Float3,
+		Float4,
+		Texture2D,
 		String,
 		Object,
 		Function,
-		Delegate,
+		Delegate
 	};
 
 	enum class PinKind {
@@ -70,8 +74,17 @@ namespace milo::bp {
 		NodeType type;
 		ImVec2 size;
 
+		bool deletable = true;
+
 		String state;
 		String savedState;
+
+		Function<void> drawContent = [](){};
+		Function<int8_t*> output = [&]() {return data;};
+
+		void* userData{nullptr};
+
+		int8_t data[256]{0};
 
 		Node(int id, const char* name, ImColor color = ImColor(255, 255, 255)):
 				id(id), name(name), color(color), type(NodeType::Blueprint), size(0, 0)
@@ -119,7 +132,7 @@ namespace milo::bp {
 		BlueprintBuilder();
 		~BlueprintBuilder();
 	public:
-		int32_t nextId();
+		int32_t getNextId();
 		ed::LinkId getNextLinkId();
 		void touchNode(ed::NodeId id);
 		float getTouchProgress(ed::NodeId id);
@@ -129,7 +142,24 @@ namespace milo::bp {
 		Pin* findPin(ed::PinId id);
 		bool isPinLinked(ed::PinId id);
 		bool canCreateLink(Pin* a, Pin* b);
+		const ArrayList<Link>& links() const;
+		const ArrayList<Node>& nodes() const;
+		void addNode(Node node);
 		void buildNode(Node* node);
+		void draw();
+		Node* spawnFloatNode();
+		Node* spawnFloat2Node();
+		Node* spawnFloat3Node();
+		Node* spawnFloat4Node();
+		Node* spawnTextureNode();
+		Node* spawnAddFloatNode();
+		Node* spawnAddFloatFloat2Node();
+		Node* spawnAddFloatFloat3Node();
+		Node* spawnAddFloatFloat4Node();
+		Node* spawnMultiplyFloatNode();
+		Node* spawnMultiplyFloatFloat2Node();
+		Node* spawnMultiplyFloatFloat3Node();
+		Node* spawnMultiplyFloatFloat4Node();
 		Node* spawnInputActionNode();
 		Node* spawnBranchNode();
 		Node* spawnDoNNode();
@@ -147,11 +177,16 @@ namespace milo::bp {
 		Node* spawnHoudiniTransformNode();
 		Node* spawnHoudiniGroupNode();
 		Icon getHeaderBackground();
+		void setHeaderBackground(Icon icon);
 		Icon getSaveIcon();
 		Icon getRestoreIcon();
 		void drawPinIcon(const Pin& pin, bool connected, int alpha);
 		bool splitter(bool split_vertically, float thickness, float* size1, float* size2, float min_size1,
 					  float min_size2, float splitter_long_axis_size = -1.0f);
 		ImColor getIconColor(PinType type);
+
+		void buildNodes();
+		void reset();
+		Link* findLinkThatEndsAt(ed::PinId endPin);
 	};
 }

@@ -16,8 +16,13 @@ namespace milo {
 
 		m_Framebuffer = new VulkanFramebuffer(createInfo);
 
-		m_MaterialPBRRenderer = new VulkanMaterialPBRRenderer(m_Framebuffer);
-		m_MaterialSkyboxRenderer = new VulkanMaterialSkyboxRenderer(m_Framebuffer);
+		m_Camera.position = Vector4(0, 0, -10, 1);
+		m_Camera.view = glm::lookAt(Vector3(m_Camera.position), Vector3(0, 0, 0), Vector3(0, 1, 0));
+		m_Camera.proj = glm::perspective(radians(45.0f), m_Framebuffer->size().aspect(), 0.1f, 20.0f);
+		m_Camera.viewProjection = m_Camera.proj * m_Camera.view;
+
+		m_MaterialPBRRenderer = new VulkanMaterialPBRRenderer(m_Framebuffer, &m_Camera);
+		m_MaterialSkyboxRenderer = new VulkanMaterialSkyboxRenderer(m_Framebuffer, &m_Camera);
 	}
 
 	VulkanMaterialViewerRenderer::~VulkanMaterialViewerRenderer() {

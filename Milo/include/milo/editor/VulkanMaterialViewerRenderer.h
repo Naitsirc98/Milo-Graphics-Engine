@@ -11,6 +11,13 @@
 
 namespace milo {
 
+	struct MaterialViewerCameraData {
+		Matrix4 viewProjection{};
+		Matrix4 proj{};
+		Matrix4 view{};
+		Vector4 position{};
+	};
+
 	class VulkanMaterialPBRRenderer {
 	private:
 		struct CameraData {
@@ -18,7 +25,6 @@ namespace milo {
 			Matrix4 view{};
 			Vector4 position{};
 		};
-
 		struct EnvironmentData {
 			DirectionalLight dirLight{};
 			bool dirLightPresent[4]{false};
@@ -34,6 +40,8 @@ namespace milo {
 		};
 
 	private:
+		MaterialViewerCameraData* m_Camera;
+
 		Material* m_Material{nullptr};
 		uint32_t m_LastVersion{0};
 
@@ -54,7 +62,7 @@ namespace milo {
 		VulkanFramebuffer* m_Framebuffer{nullptr};
 
 	public:
-		VulkanMaterialPBRRenderer(VulkanFramebuffer* framebuffer);
+		VulkanMaterialPBRRenderer(VulkanFramebuffer* framebuffer, MaterialViewerCameraData* camera);
 		~VulkanMaterialPBRRenderer();
 		void render(Material* material);
 	private:
@@ -76,6 +84,8 @@ namespace milo {
 			float intensity;
 		};
 	private:
+		MaterialViewerCameraData* m_Camera;
+
 		VulkanDevice* m_Device{nullptr};
 
 		VkRenderPass m_RenderPass{VK_NULL_HANDLE};
@@ -90,7 +100,7 @@ namespace milo {
 
 		VulkanFramebuffer* m_Framebuffer = nullptr;
 	public:
-		VulkanMaterialSkyboxRenderer(VulkanFramebuffer* framebuffer);
+		VulkanMaterialSkyboxRenderer(VulkanFramebuffer* framebuffer, MaterialViewerCameraData* camera);
 		~VulkanMaterialSkyboxRenderer();
 		void render();
 	private:
@@ -105,6 +115,7 @@ namespace milo {
 
 	class VulkanMaterialViewerRenderer : public MaterialViewerRenderer {
 	private:
+		MaterialViewerCameraData m_Camera;
 		VulkanFramebuffer* m_Framebuffer;
 		VulkanMaterialPBRRenderer* m_MaterialPBRRenderer;
 		VulkanMaterialSkyboxRenderer* m_MaterialSkyboxRenderer;

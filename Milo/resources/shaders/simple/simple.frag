@@ -20,5 +20,6 @@ layout(location = 0) out vec4 out_FragColor;
 
 
 void main() {
+
     out_FragColor = u_Material.color * texture(u_Texture, fragment.uv);
 }

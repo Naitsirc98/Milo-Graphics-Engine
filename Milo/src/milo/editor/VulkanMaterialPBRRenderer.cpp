@@ -3,7 +3,8 @@
 
 namespace milo {
 
-	VulkanMaterialPBRRenderer::VulkanMaterialPBRRenderer(VulkanFramebuffer* framebuffer) : m_Framebuffer(framebuffer) {
+	VulkanMaterialPBRRenderer::VulkanMaterialPBRRenderer(VulkanFramebuffer* framebuffer, MaterialViewerCameraData* camera)
+		: m_Framebuffer(framebuffer), m_Camera(camera) {
 		m_Device = m_Framebuffer->device();
 		createRenderPass();
 		createUniformBuffers();
@@ -55,18 +56,6 @@ namespace milo {
 		queue->awaitTermination();
 	}
 
-	static Vector4 getCameraPosition() {
-		return {0, 0, -5, 1};
-	}
-
-	static Matrix4 getViewMatrix() {
-		return glm::lookAt(Vector3(getCameraPosition()), Vector3(0, 0, 0), Vector3(0, 1, 0));
-	}
-
-	static Matrix4 getViewProjectionMatrix(const Size& size) {
-		return glm::perspective(radians(45.0f), size.aspect(), 0.1f, 100.0f) * getViewMatrix();
-	}
-
 	static DirectionalLight getDirLight() {
 		DirectionalLight light{};
 		light.castShadows = false;
@@ -80,9 +69,9 @@ namespace milo {
 		m_CameraUniformBuffer->allocate(1);
 
 		CameraData camera{};
-		camera.view = getViewMatrix();
-		camera.viewProjection = getViewProjectionMatrix(m_Framebuffer->size());
-		camera.position = getCameraPosition();
+		camera.view = m_Camera->view;
+		camera.viewProjection = m_Camera->viewProjection;
+		camera.position = m_Camera->position;
 
 		m_CameraUniformBuffer->update(0, camera);
 

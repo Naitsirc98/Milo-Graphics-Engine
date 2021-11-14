@@ -63,6 +63,8 @@ namespace milo {
 
 		Texture2D* texture = Texture2D::create();
 
+		texture->setName(filename);
+
 		Texture2D::AllocInfo allocInfo{};
 		allocInfo.width = image->width();
 		allocInfo.height = image->height();

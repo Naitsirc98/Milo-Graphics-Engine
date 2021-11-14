@@ -3,6 +3,90 @@
 
 namespace milo {
 
+	template<typename T>
+	class Modifiable {
+	private:
+		T m_Value;
+		bool m_Modified = false;
+	public:
+		Modifiable() = default;
+		Modifiable(const T& initialValue) : m_Value(initialValue) {}
+
+		Modifiable& operator=(const T& value) {
+			set(value);
+			return *this;
+		}
+
+		const T& get() const {return m_Value;}
+
+		void set(const T& value) {
+			if(m_Value != value) {
+				m_Value = value;
+				m_Modified = true;
+			}
+		}
+
+		bool isModified() const {return m_Modified;}
+
+		void reset() {m_Modified = false;}
+	};
+
+	struct MaterialNodeData {
+
+		Modifiable<Color> albedo{Colors::WHITE};
+		Modifiable<Color> emissiveColor{Colors::WHITE};
+		// Values
+		Modifiable<float> alpha{1.0f};
+		Modifiable<float> metallic{1.0f};
+		Modifiable<float> roughness{1.0f};
+		Modifiable<float> occlusion{1.0f};
+		// Textures
+		Modifiable<String> albedoMap;
+		Modifiable<String> metallicMap;
+		Modifiable<String> roughnessMap;
+		Modifiable<String> occlusionMap;
+		Modifiable<String> emissiveMap;
+		Modifiable<String> normalMap;
+
+		bool isModified() const {
+			return albedo.isModified() || emissiveColor.isModified() || alpha.isModified()
+				|| metallic.isModified() || roughness.isModified() || occlusion.isModified()
+				|| albedoMap.isModified() || metallicMap.isModified() || roughnessMap.isModified()
+				|| occlusionMap.isModified() || emissiveMap.isModified() || normalMap.isModified();
+		}
+
+		void reset() {
+			(albedo = Colors::WHITE).reset();
+			(emissiveColor = Colors::WHITE).reset();
+			(alpha = 1.0f).reset();
+			(metallic = 1.0f).reset();
+			(roughness = 1.0f).reset();
+			(occlusion = 1.0f).reset();
+			(albedoMap = "").reset();
+			(metallicMap = "").reset();
+			(roughnessMap = "").reset();
+			(occlusionMap = "").reset();
+			(emissiveMap = "").reset();
+			(normalMap = "").reset();
+		}
+	};
+
+	static const int32_t MATERIAL_NODE_ID = 10101010;
+	static const int32_t PIN_ALBEDO_ID = MATERIAL_NODE_ID + 1;
+	static const int32_t PIN_EMISSIVE_ID = MATERIAL_NODE_ID + 2;
+	static const int32_t PIN_ALPHA_ID = MATERIAL_NODE_ID + 3;
+	static const int32_t PIN_METALLIC_ID = MATERIAL_NODE_ID + 4;
+	static const int32_t PIN_ROUGHNESS_ID = MATERIAL_NODE_ID + 5;
+	static const int32_t PIN_OCCLUSION_ID = MATERIAL_NODE_ID + 6;
+	static const int32_t PIN_ALBEDO_TEXTURE_ID = MATERIAL_NODE_ID + 7;
+	static const int32_t PIN_EMISSIVE_TEXTURE_ID = MATERIAL_NODE_ID + 8;
+	static const int32_t PIN_NORMAL_TEXTURE_ID = MATERIAL_NODE_ID + 9;
+	static const int32_t PIN_METALLIC_TEXTURE_ID = MATERIAL_NODE_ID + 10;
+	static const int32_t PIN_ROUGHNESS_TEXTURE_ID = MATERIAL_NODE_ID + 11;
+	static const int32_t PIN_OCCLUSION_TEXTURE_ID = MATERIAL_NODE_ID + 12;
+
+	static MaterialNodeData g_MaterialData{};
+
 	MaterialEditor::MaterialEditor() {
 
 		ed::Config config;
@@ -38,7 +122,6 @@ namespace milo {
 		m_Context = ed::CreateEditor(&config);
 		//ed::SetCurrentEditor(m_Context);
 
-		//createIcon(m_BlueprintBuilder.getHeaderBackground(), "");
 		//createIcon(m_BlueprintBuilder.getSaveIcon(), "");
 		//createIcon(m_BlueprintBuilder.getRestoreIcon(), "");
 
@@ -60,6 +143,10 @@ namespace milo {
 	}
 
 	MaterialEditor::~MaterialEditor() {
+
+		auto* node = m_BlueprintBuilder.findNode(MATERIAL_NODE_ID);
+		DELETE_PTR(node);
+
 		DELETE_PTR(m_MaterialViewerRenderer);
 		ed::SetCurrentEditor(nullptr);
 		ed::DestroyEditor(m_Context);
@@ -73,11 +160,48 @@ namespace milo {
 		m_Open = open;
 	}
 
+	static bp::Node getMaterialNode() {
+
+		static bool firstTime = true;
+		static int id = MATERIAL_NODE_ID;
+		static bp::Node node(id, "Material");
+
+		if(firstTime) {
+			node.inputs.emplace_back(PIN_ALBEDO_ID, "Albedo color", bp::PinType::Float3);
+			node.inputs.emplace_back(PIN_EMISSIVE_ID, "Emissive color", bp::PinType::Float3);
+			node.inputs.emplace_back(PIN_ALPHA_ID, "Alpha value", bp::PinType::Float);
+			node.inputs.emplace_back(PIN_METALLIC_ID, "Metallic value", bp::PinType::Float);
+			node.inputs.emplace_back(PIN_ROUGHNESS_ID, "Roughness value", bp::PinType::Float);
+			node.inputs.emplace_back(PIN_OCCLUSION_ID, "Occlusion value", bp::PinType::Float);
+
+			node.inputs.emplace_back(PIN_ALBEDO_TEXTURE_ID, "Albedo Texture", bp::PinType::Texture2D);
+			node.inputs.emplace_back(PIN_EMISSIVE_TEXTURE_ID, "Emissive Texture", bp::PinType::Texture2D);
+			node.inputs.emplace_back(PIN_NORMAL_TEXTURE_ID, "Normal Texture", bp::PinType::Texture2D);
+			node.inputs.emplace_back(PIN_METALLIC_TEXTURE_ID, "Metallic Texture", bp::PinType::Texture2D);
+			node.inputs.emplace_back(PIN_ROUGHNESS_TEXTURE_ID, "Roughness Texture", bp::PinType::Texture2D);
+			node.inputs.emplace_back(PIN_OCCLUSION_TEXTURE_ID, "Occlusion Texture", bp::PinType::Texture2D);
+		}
+
+		return node;
+	}
+
 	void MaterialEditor::render(Material* material) {
 		if(material == nullptr) return;
 
+		if(m_LastMaterial != nullptr && material != m_LastMaterial) {
+			g_MaterialData.reset();
+			m_BlueprintBuilder.reset();
+		}
+
 		if(m_MaterialViewerRenderer == nullptr) {
+
 			m_MaterialViewerRenderer = MaterialViewerRenderer::create();
+
+			bp::Icon headerBackground{};
+			createIcon(headerBackground, "resources\\textures\\tree\\Bark_Color.png");
+			m_BlueprintBuilder.setHeaderBackground(headerBackground);
+
+			m_BlueprintBuilder.addNode(getMaterialNode());
 		}
 
 		auto& io = ImGui::GetIO();
@@ -92,180 +216,9 @@ namespace milo {
 
 			ed::SetCurrentEditor(m_Context);
 
-			// Start interaction with editor.
-			ed::Begin("MaterialNodeEditor", ImVec2(0.0f, 0.0f));
+			m_BlueprintBuilder.draw();
 
-			auto openPopupPosition = ImGui::GetMousePos();
-			ed::Suspend();
-			if(ed::ShowBackgroundContextMenu()) {
-				ImGui::OpenPopup("Create Node");
-			}
-			ed::Resume();
-
-			ed::Suspend();
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
-			if (ImGui::BeginPopup("Create Node")) {
-
-				if (ImGui::MenuItem("Float")) {
-				}
-
-				if (ImGui::MenuItem("Float2")) {
-				}
-
-				if (ImGui::MenuItem("Float3")) {
-				}
-
-				if (ImGui::MenuItem("Float4")) {
-				}
-
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("Texture")) {
-				}
-
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("Multiply")) {
-				}
-
-				ImGui::EndPopup();
-			}
-			ImGui::PopStyleVar();
-			ed::Resume();
-
-			int uniqueId = 1;
-
-			//
-			// 1) Commit known data to editor
-			//
-
-			bp::Node nodeA(uniqueId++, "Node A");
-			nodeA.id = uniqueId++;
-			nodeA.inputs.push_back(bp::Pin(uniqueId++, "Input 1", bp::PinType::Float));
-			nodeA.outputs.push_back(bp::Pin(uniqueId++, "Output 1", bp::PinType::Flow));
-
-			// Submit Node A
-			{
-				if (m_FirstFrame) ed::SetNodePosition(nodeA.id, ImVec2(0, 0));
-				ed::BeginNode(nodeA.id);
-				ImGui::Text("Node A");
-				ed::BeginPin(nodeA.inputs[0].id, ed::PinKind::Input);
-				m_BlueprintBuilder.drawPinIcon(nodeA.inputs[0], true, 255);
-				ImGui::Text("Float");
-				ed::EndPin();
-				ImGui::SameLine();
-				ed::BeginPin(nodeA.outputs[0].id, ed::PinKind::Output);
-				m_BlueprintBuilder.drawPinIcon(nodeA.outputs[0], true, 255);
-				//ImGui::Text("Out ->");
-				ed::EndPin();
-				ed::EndNode();
-			}
-
-			// Submit Node B
-			ed::NodeId nodeB_Id = uniqueId++;
-			ed::PinId  nodeB_InputPinId1 = uniqueId++;
-			ed::PinId  nodeB_InputPinId2 = uniqueId++;
-			ed::PinId  nodeB_OutputPinId = uniqueId++;
-
-			if (m_FirstFrame)
-				ed::SetNodePosition(nodeB_Id, ImVec2(210, 60));
-			ed::BeginNode(nodeB_Id);
-			ImGui::Text("Node B");
-			beginColumn();
-			ed::BeginPin(nodeB_InputPinId1, ed::PinKind::Input);
-			ImGui::Text("-> In1");
-			ed::EndPin();
-			ed::BeginPin(nodeB_InputPinId2, ed::PinKind::Input);
-			ImGui::Text("-> In2");
-			ed::EndPin();
-			nextColumn();
-			ed::BeginPin(nodeB_OutputPinId, ed::PinKind::Output);
-			ImGui::Text("Out ->");
-			ed::EndPin();
-			endColumn();
-			ed::EndNode();
-
-			if(m_FirstFrame) {
-				ed::NavigateToContent();
-			}
-
-			// Submit Links
-			for (auto& linkInfo : m_Links)
-				ed::Link(linkInfo.id, linkInfo.inputId, linkInfo.outputId);
-
-			//
-			// 2) Handle interactions
-			//
-
-			// Handle creation action, returns true if editor want to create new object (node or link)
-			if (ed::BeginCreate())
-			{
-
-				ed::PinId inputPinId, outputPinId;
-				if (ed::QueryNewLink(&inputPinId, &outputPinId))
-				{
-					// QueryNewLink returns true if editor want to create new link between pins.
-					//
-					// Link can be created only for two valid pins, it is up to you to
-					// validate if connection make sense. Editor is happy to make any.
-					//
-					// Link always goes from input to output. User may choose to drag
-					// link from output pin or input pin. This determine which pin ids
-					// are valid and which are not:
-					//   * input valid, output invalid - user started to drag new ling from input pin
-					//   * input invalid, output valid - user started to drag new ling from output pin
-					//   * input valid, output valid   - user dragged link over other pin, can be validated
-
-					if (inputPinId && outputPinId) // both are valid, let's accept link
-					{
-						// ed::AcceptNewItem() return true when user release mouse button.
-						if (ed::AcceptNewItem())
-						{
-							// Since we accepted new link, lets add one to our list of links.
-							m_Links.push_back({ ed::LinkId(m_NextLinkId++), inputPinId, outputPinId });
-
-							// Draw new link.
-							ed::Link(m_Links.back().id, m_Links.back().inputId, m_Links.back().outputId);
-						}
-
-						// You may choose to reject connection between these nodes
-						// by calling ed::RejectNewItem(). This will allow editor to give
-						// visual feedback by changing link thickness and color.
-					}
-				}
-			}
-			ed::EndCreate(); // Wraps up object creation action handling.
-
-
-			// Handle deletion action
-			if (ed::BeginDelete())
-			{
-				// There may be many links marked for deletion, let's loop over them.
-				ed::LinkId deletedLinkId;
-				while (ed::QueryDeletedLink(&deletedLinkId))
-				{
-					// If you agree that link can be deleted, accept deletion.
-					if (ed::AcceptDeletedItem())
-					{
-						// Then remove link from your data.
-						for (auto& link : m_Links)
-						{
-							if (link.id == deletedLinkId)
-							{
-								m_Links.erase(&link);
-								break;
-							}
-						}
-					}
-
-					// You may reject link deletion by calling:
-					// ed::RejectDeletedItem();
-				}
-			}
-			ed::EndDelete(); // Wrap up deletion action
-
-			// End of interaction with editor.
-			ed::End();
+			setMaterialData(material);
 
 			if (m_FirstFrame)
 				ed::NavigateToContent(0.0f);
@@ -273,7 +226,6 @@ namespace milo {
 			ed::SetCurrentEditor(nullptr);
 
 			m_FirstFrame = false;
-
 		}
 
 		if(openThisFrame) ImGui::End();
@@ -325,7 +277,7 @@ namespace milo {
 		//UI::image(*icon);
 
 		const auto& texture = m_MaterialViewerRenderer->render(material);
-		UI::image(texture, {1920/3, 1080/3});
+		UI::image(texture, {1920, 1080});
 
 		//ImGui::Separator();
 		//ImGui::Text("Name: %s", material->name().c_str());
@@ -341,4 +293,141 @@ namespace milo {
 		//}
 	}
 
+	int32_t MaterialEditor::getNextId() {
+		return m_NextId++;
+	}
+
+	void MaterialEditor::setMaterialData(Material* material) {
+
+		fetchMaterialDataFromNodes();
+
+		if(g_MaterialData.isModified()) {
+
+			if(g_MaterialData.albedo.isModified()) {
+				material->albedo(g_MaterialData.albedo.get());
+				g_MaterialData.albedo.reset();
+			}
+
+			if(g_MaterialData.emissiveColor.isModified()) {
+				material->emissiveColor(g_MaterialData.emissiveColor.get());
+				g_MaterialData.emissiveColor.reset();
+			}
+
+			if(g_MaterialData.metallic.isModified()) {
+				material->metallic(g_MaterialData.metallic.get());
+				g_MaterialData.metallic.reset();
+			}
+
+			if(g_MaterialData.roughness.isModified()) {
+				material->roughness(g_MaterialData.roughness.get());
+				g_MaterialData.roughness.reset();
+			}
+
+			if(g_MaterialData.occlusion.isModified()) {
+				material->occlusion(g_MaterialData.occlusion.get());
+				g_MaterialData.occlusion.reset();
+			}
+
+			if(g_MaterialData.albedoMap.isModified()) {
+				material->albedoMap(Assets::textures().load(g_MaterialData.albedoMap.get()));
+				g_MaterialData.albedoMap.reset();
+			}
+
+			if(g_MaterialData.emissiveMap.isModified()) {
+				material->emissiveMap(Assets::textures().load(g_MaterialData.emissiveMap.get()));
+				g_MaterialData.emissiveMap.reset();
+			}
+
+			if(g_MaterialData.normalMap.isModified()) {
+				material->normalMap(Assets::textures().load(g_MaterialData.normalMap.get()));
+				g_MaterialData.normalMap.reset();
+			}
+
+			if(g_MaterialData.metallicMap.isModified()) {
+				material->metallicMap(Assets::textures().load(g_MaterialData.metallicMap.get()));
+				g_MaterialData.metallicMap.reset();
+			}
+
+			if(g_MaterialData.roughnessMap.isModified()) {
+				material->roughnessMap(Assets::textures().load(g_MaterialData.roughnessMap.get()));
+				g_MaterialData.roughnessMap.reset();
+			}
+
+			if(g_MaterialData.occlusionMap.isModified()) {
+				material->occlusionMap(Assets::textures().load(g_MaterialData.occlusionMap.get()));
+				g_MaterialData.occlusionMap.reset();
+			}
+		}
+	}
+
+	void MaterialEditor::fetchMaterialDataFromNodes() {
+
+		for(const auto& link : m_BlueprintBuilder.links()) {
+
+			// Get links that ends at the material node
+
+			const auto* startPin = m_BlueprintBuilder.findPin(link.startPinID);
+			const auto* endPin = m_BlueprintBuilder.findPin(link.endPinID);
+
+			if(startPin == nullptr || endPin == nullptr) continue;
+			if(endPin->node->id != ed::NodeId(MATERIAL_NODE_ID)) continue;
+
+			const bp::Node* srcNode = startPin->node;
+
+			Vector3 color;
+			float value;
+			String str;
+
+			switch(endPin->id.Get()) {
+				case PIN_ALBEDO_ID:
+					color = ((Vector3*)srcNode->output())[0];
+					g_MaterialData.albedo = Color(color, 1);
+					break;
+				case PIN_EMISSIVE_ID:
+					color = ((Vector3*)srcNode->output())[0];
+					g_MaterialData.emissiveColor = Color(color, 1);
+					break;
+				case PIN_ALPHA_ID:
+					value = ((float*)srcNode->output())[0];
+					g_MaterialData.alpha = value;
+					break;
+				case PIN_METALLIC_ID:
+					value = ((float*)srcNode->output())[0];
+					g_MaterialData.metallic = value;
+					break;
+				case PIN_ROUGHNESS_ID:
+					value = ((float*)srcNode->output())[0];
+					g_MaterialData.roughness = value;
+					break;
+				case PIN_OCCLUSION_ID:
+					value = ((float*)srcNode->output())[0];
+					g_MaterialData.occlusion = value;
+					break;
+				case PIN_ALBEDO_TEXTURE_ID:
+					str = ((char*)srcNode->output());
+					g_MaterialData.albedoMap = str;
+					break;
+				case PIN_EMISSIVE_TEXTURE_ID:
+					str = ((char*)srcNode->output());
+					g_MaterialData.emissiveMap = str;
+					break;
+				case PIN_NORMAL_TEXTURE_ID:
+					str = ((char*)srcNode->output());
+					g_MaterialData.normalMap = str;
+					break;
+				case PIN_METALLIC_TEXTURE_ID:
+					str = ((char*)srcNode->output());
+					g_MaterialData.metallicMap = str;
+					break;
+				case PIN_ROUGHNESS_TEXTURE_ID:
+					str = ((char*)srcNode->output());
+					g_MaterialData.roughnessMap = str;
+					break;
+				case PIN_OCCLUSION_TEXTURE_ID:
+					str = ((char*)srcNode->output());
+					g_MaterialData.occlusionMap = str;
+					break;
+			}
+		}
+	}
 }

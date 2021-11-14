@@ -3,7 +3,8 @@
 
 namespace milo {
 
-	VulkanMaterialSkyboxRenderer::VulkanMaterialSkyboxRenderer(VulkanFramebuffer* framebuffer) : m_Framebuffer(framebuffer) {
+	VulkanMaterialSkyboxRenderer::VulkanMaterialSkyboxRenderer(VulkanFramebuffer* framebuffer, MaterialViewerCameraData* camera)
+		: m_Framebuffer(framebuffer), m_Camera(camera) {
 		m_Device = m_Framebuffer->device();
 		createRenderPass();
 		createUniformBuffers();
@@ -150,14 +151,6 @@ namespace milo {
 		VK_CALLV(vkUpdateDescriptorSets(m_Device->logical(), 1, &writeDescriptors, 0, nullptr));
 	}
 
-	static Matrix4 getViewMatrix() {
-		return glm::lookAt(Vector3(0, 0, -5), Vector3(0, 0, 0), Vector3(0, 1, 0));
-	}
-
-	static Matrix4 getProjMatrix(const Size& size) {
-		return glm::perspective(radians(45.0f), size.aspect(), 0.1f, 100.0f);
-	}
-
 	void VulkanMaterialSkyboxRenderer::buildCommandBuffer() {
 
 		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &m_CommandBuffer);
@@ -165,8 +158,8 @@ namespace milo {
 		Skybox* skybox = Assets::skybox().getIndoorSkybox();
 
 		UniformBuffer uniformBufferData{};
-		uniformBufferData.viewMatrix = getViewMatrix();
-		uniformBufferData.projMatrix = getProjMatrix(m_Framebuffer->size());
+		uniformBufferData.viewMatrix = m_Camera->view;
+		uniformBufferData.projMatrix = m_Camera->proj;
 		uniformBufferData.textureLOD = skybox->prefilterLODBias();
 		uniformBufferData.intensity = 1; // TODO
 

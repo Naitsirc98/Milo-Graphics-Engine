@@ -20,11 +20,12 @@ namespace milo {
 
 	class MaterialEditor {
 	private:
+		Material* m_LastMaterial{nullptr};
 		bool m_Open = false;
 		ed::EditorContext* m_Context{nullptr};
 		bool m_FirstFrame{true};
 		ImVector<LinkInfo> m_Links;
-		int32_t m_NextLinkId{100};
+		int32_t m_NextId{100};
 		bp::BlueprintBuilder m_BlueprintBuilder;
 		DockSpaceRenderer m_DockSpaceRenderer;
 		MaterialViewerRenderer* m_MaterialViewerRenderer;
@@ -40,6 +41,8 @@ namespace milo {
 		void endColumn();
 		void createIcon(bp::Icon& icon, const String& textureFile);
 		void renderMaterialViewer(Material* material);
+		int32_t getNextId();
+		void setMaterialData(Material* material);
+		void fetchMaterialDataFromNodes();
 	};
-
 }
