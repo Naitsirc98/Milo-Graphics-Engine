@@ -1,4 +1,5 @@
 #include "milo/editor/MaterialEditor.h"
+#include "milo/input/Input.h"
 
 namespace milo {
 
@@ -94,6 +95,44 @@ namespace milo {
 			// Start interaction with editor.
 			ed::Begin("MaterialNodeEditor", ImVec2(0.0f, 0.0f));
 
+			auto openPopupPosition = ImGui::GetMousePos();
+			ed::Suspend();
+			if(ed::ShowBackgroundContextMenu()) {
+				ImGui::OpenPopup("Create Node");
+			}
+			ed::Resume();
+
+			ed::Suspend();
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
+			if (ImGui::BeginPopup("Create Node")) {
+
+				if (ImGui::MenuItem("Float")) {
+				}
+
+				if (ImGui::MenuItem("Float2")) {
+				}
+
+				if (ImGui::MenuItem("Float3")) {
+				}
+
+				if (ImGui::MenuItem("Float4")) {
+				}
+
+				ImGui::Separator();
+
+				if (ImGui::MenuItem("Texture")) {
+				}
+
+				ImGui::Separator();
+
+				if (ImGui::MenuItem("Multiply")) {
+				}
+
+				ImGui::EndPopup();
+			}
+			ImGui::PopStyleVar();
+			ed::Resume();
+
 			int uniqueId = 1;
 
 			//
@@ -161,6 +200,7 @@ namespace milo {
 			// Handle creation action, returns true if editor want to create new object (node or link)
 			if (ed::BeginCreate())
 			{
+
 				ed::PinId inputPinId, outputPinId;
 				if (ed::QueryNewLink(&inputPinId, &outputPinId))
 				{
@@ -186,8 +226,6 @@ namespace milo {
 
 							// Draw new link.
 							ed::Link(m_Links.back().id, m_Links.back().inputId, m_Links.back().outputId);
-
-							Assets::materials().getDefault()->albedo(Color(1, 0, 0, 1)); //FIXME
 						}
 
 						// You may choose to reject connection between these nodes

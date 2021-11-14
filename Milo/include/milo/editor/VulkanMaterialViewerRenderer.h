@@ -110,7 +110,7 @@ namespace milo {
 		VulkanMaterialSkyboxRenderer* m_MaterialSkyboxRenderer;
 	public:
 		VulkanMaterialViewerRenderer();
-		~VulkanMaterialViewerRenderer();
+		~VulkanMaterialViewerRenderer() override;
 	public:
 		const Texture2D& render(Material* material) override;
 	};
