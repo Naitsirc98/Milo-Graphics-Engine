@@ -38,6 +38,10 @@ namespace milo {
 		ImGui::End();
 	}
 
+	void PropertiesPanel::setOnEditMaterialButtonClicked(Function<void, Material*> callback) {
+		m_OnEditMaterialButtonClicked = std::move(callback);
+	}
+
 	template<typename T>
 	static String nameof() {
 		static const size_t offset = strlen("class milo::");
@@ -215,6 +219,9 @@ namespace milo {
 						meshView.material = material;
 					}
 				}
+			}
+			if(ImGui::Button("Edit Material")) {
+				m_OnEditMaterialButtonClicked(material);
 			}
 		});
 

@@ -20,7 +20,7 @@ namespace milo {
 	MaterialEditor MiloEditor::s_MaterialEditor{};
 	DockSpaceRenderer MiloEditor::s_DockSpaceRenderer{};
 
-	bool MiloEditor::s_MaterialEditorShouldOpen = false;
+	Material* MiloEditor::s_MaterialToEdit = nullptr;
 
 	void MiloEditor::update() {
 		MILO_PROFILE_FUNCTION;
@@ -47,7 +47,7 @@ namespace milo {
 		renderSceneViewport();
 
 		if(s_MaterialEditor.isOpen()) {
-			s_MaterialEditor.render(Assets::materials().getDefault());
+			s_MaterialEditor.render(s_MaterialToEdit);
 		}
 
 		s_Renderer->end();
@@ -186,6 +186,11 @@ namespace milo {
 			//ImGui::DockBuilderDockWindow("ContentBrowserPanel", lowerRight);
 
 			ImGui::DockBuilderFinish(dockSpaceId);
+		});
+
+		s_PropertiesPanel.setOnEditMaterialButtonClicked([&](Material* material) {
+			s_MaterialToEdit = material;
+			s_MaterialEditor.setOpen(true);
 		});
 	}
 

@@ -6,11 +6,14 @@
 namespace milo {
 
 	class PropertiesPanel {
+	private:
+		Function<void, Material*> m_OnEditMaterialButtonClicked;
 	public:
 		PropertiesPanel();
 		~PropertiesPanel();
 	public:
 		void render(Entity selected);
+		void setOnEditMaterialButtonClicked(Function<void, Material*> callback);
 	private:
 		void handleAddComponents(Entity entity);
 	private:

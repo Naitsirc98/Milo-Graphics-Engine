@@ -24,7 +24,7 @@ namespace milo {
 		static MaterialEditor s_MaterialEditor;
 		static DockSpaceRenderer s_DockSpaceRenderer;
 
-		static bool s_MaterialEditorShouldOpen;
+		static Material* s_MaterialToEdit;
 	public:
 		static void update();
 		static void render();
