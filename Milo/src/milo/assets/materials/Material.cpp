@@ -110,7 +110,7 @@ namespace milo {
 	}
 
 	Material* Material::albedoMap(Ref<Texture2D> texture) {
-		m_AlbedoMap = texture;
+		m_AlbedoMap = std::move(texture);
 		m_Dirty = true;
 		return this;
 	}
@@ -120,7 +120,7 @@ namespace milo {
 	}
 
 	Material* Material::emissiveMap(Ref<Texture2D> texture) {
-		m_EmissiveMap = texture;
+		m_EmissiveMap = std::move(texture);
 		m_Dirty = true;
 		return this;
 	}
@@ -130,7 +130,7 @@ namespace milo {
 	}
 
 	Material* Material::normalMap(Ref<Texture2D> texture) {
-		m_NormalMap = texture;
+		m_NormalMap = std::move(texture);
 		m_Dirty = true;
 		return this;
 	}
@@ -140,7 +140,7 @@ namespace milo {
 	}
 
 	Material* Material::metallicMap(Ref<Texture2D> texture) {
-		m_MetallicMap = texture;
+		m_MetallicMap = std::move(texture);
 		m_Dirty = true;
 		return this;
 	}
@@ -150,7 +150,7 @@ namespace milo {
 	}
 
 	Material* Material::occlusionMap(Ref<Texture2D> texture) {
-		m_OcclusionMap = texture;
+		m_OcclusionMap = std::move(texture);
 		m_Dirty = true;
 		return this;
 	}
@@ -160,7 +160,7 @@ namespace milo {
 	}
 
 	Material* Material::roughnessMap(Ref<Texture2D> texture) {
-		m_RoughnessMap = texture;
+		m_RoughnessMap = std::move(texture);
 		m_Dirty = true;
 		return this;
 	}
@@ -178,7 +178,7 @@ namespace milo {
 	}
 
 	Material* Material::metallicRoughnessMap(Ref<Texture2D> texture) {
-		m_MetallicRoughnessMap = texture;
+		m_MetallicRoughnessMap = std::move(texture);
 		m_Dirty = true;
 		return this;
 	}

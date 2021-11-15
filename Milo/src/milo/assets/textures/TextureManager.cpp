@@ -57,7 +57,8 @@ namespace milo {
 
 	Ref<Texture2D> TextureManager::load(const String& filename, PixelFormat format, bool flipY, uint32_t mipLevels) {
 
-		if(m_Cache.find(filename) != m_Cache.end()) return m_Cache.at(filename);
+		if(m_Cache.find(filename) != m_Cache.end())
+			return m_Cache.at(filename);
 
 		Image* image = Image::loadImage(filename, format, flipY);
 
@@ -79,7 +80,7 @@ namespace milo {
 
 		auto result = Ref<Texture2D>(texture);
 
-		m_Cache[filename] = result;
+		m_Cache[Files::toAbsolutePath(filename)] = result;
 
 		return result;
 	}
@@ -158,6 +159,7 @@ namespace milo {
 		allocInfo.pixels = image->pixels();
 
 		texture->allocate(allocInfo);
+		texture->setName("White Texture 2D");
 
 		DELETE_PTR(image);
 
@@ -177,6 +179,7 @@ namespace milo {
 		allocInfo.pixels = image->pixels();
 
 		texture->allocate(allocInfo);
+		texture->setName("Black Texture 2D");
 
 		DELETE_PTR(image);
 
@@ -195,6 +198,7 @@ namespace milo {
 		allocInfo.format = PixelFormat::SRGBA;
 
 		texture->allocate(allocInfo);
+		texture->setName("White Cubemap");
 
 		Cubemap::UpdateInfo updateInfo{};
 		updateInfo.size = 4 * 6 * 6;
@@ -217,6 +221,7 @@ namespace milo {
 		allocInfo.format = PixelFormat::SRGBA;
 
 		texture->allocate(allocInfo);
+		texture->setName("Black Cubemap");
 
 		Cubemap::UpdateInfo updateInfo{};
 		updateInfo.size = 4 * 6 * 6;

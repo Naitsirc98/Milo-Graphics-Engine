@@ -172,22 +172,8 @@ namespace milo {
 				texturePath = Files::append(Files::parentOf(materialFile), texturePath);
 			}
 
-			if(Files::exists(texturePath)) {
-
-				Image* image = Image::loadImage(texturePath, PixelFormat::RGBA8);
-				texture = Ref<Texture2D>(Texture2D::create());
-
-				Texture2D::AllocInfo allocInfo = {};
-				allocInfo.width = image->width();
-				allocInfo.height = image->height();
-				allocInfo.format = image->format();
-				allocInfo.pixels = image->pixels();
-
-				texture->allocate(allocInfo);
-				texture->generateMipmaps();
-
-				DELETE_PTR(image);
-			}
+			texture = Assets::textures().load(texturePath, PixelFormat::RGBA8);
+			texture->generateMipmaps();
 		}
 
 		return texture;

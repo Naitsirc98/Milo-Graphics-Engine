@@ -4,6 +4,10 @@
 
 namespace milo {
 
+	String Files::toAbsolutePath(const String& filename) {
+		return std::filesystem::absolute(std::filesystem::path(filename)).string();
+	}
+
 	String Files::getName(const String& filename, bool removeExtension) {
 		String name = Path(filename).filename().string();
 		if(removeExtension) name = milo::replace(name, Regex(extension(name)), "");

@@ -210,9 +210,9 @@ namespace milo {
 
 		if(openThisFrame && ImGui::Begin("Material Editor", &m_Open)) {
 
-			renderMaterialViewer(material);
+			//renderMaterialViewer(material);
 
-			ImGui::Separator();
+			//ImGui::Separator();
 
 			ed::SetCurrentEditor(m_Context);
 
@@ -365,6 +365,10 @@ namespace milo {
 		for(const auto& link : m_BlueprintBuilder.links()) {
 
 			// Get links that ends at the material node
+
+			if(m_BlueprintBuilder.links().size() >= 2) {
+				Log::info("");
+			}
 
 			const auto* startPin = m_BlueprintBuilder.findPin(link.startPinID);
 			const auto* endPin = m_BlueprintBuilder.findPin(link.endPinID);
