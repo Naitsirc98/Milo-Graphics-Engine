@@ -29,10 +29,6 @@ namespace milo {
 		createSemaphores();
 
 		m_Device->graphicsCommandPool()->allocate(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_CommandBuffers.size(), m_CommandBuffers.data());
-
-		for(uint32_t i = 0;i < m_ThreadPool.size();++i) {
-			m_ThreadPool[i] = new ThreadData(i);
-		}
 	}
 
 	VulkanPBRForwardRenderPass::~VulkanPBRForwardRenderPass() {
@@ -52,10 +48,6 @@ namespace milo {
 
 		for(uint32_t i = 0;i < MAX_SWAPCHAIN_IMAGE_COUNT;++i) {
 			VK_CALLV(vkDestroySemaphore(device, m_SignalSemaphores[i], nullptr));
-		}
-
-		for(ThreadData* t : m_ThreadPool) {
-			DELETE_PTR(t);
 		}
 
 		m_Device->graphicsCommandPool()->free(m_CommandBuffers.size(), m_CommandBuffers.data());
@@ -115,148 +107,7 @@ namespace milo {
 		updateShadowsUniformData(imageIndex, SceneManager::activeScene()->viewportSize().width);
 
 		// Multithreading not supported for now
-		if(false && WorldRenderer::get().useMultithreading() && WorldRenderer::get().drawCommands().size() > MIN_SIZE_FOR_MULTITHREADING) {
-			renderSceneMultithreading(imageIndex, commandBuffer, materialResources);
-		} else {
-			renderSceneSingleThread(imageIndex, commandBuffer, materialResources);
-		}
-	}
-
-	void VulkanPBRForwardRenderPass::renderSceneMultithreading(uint32_t imageIndex, VkCommandBuffer commandBuffer,
-															   const VulkanMaterialResourcePool& materialResources) {
-
-		Framebuffer& defaultFramebuffer = WorldRenderer::get().getFramebuffer();
-		VkFramebuffer framebuffer = dynamic_cast<VulkanFramebuffer&>(defaultFramebuffer).get(m_RenderPass);
-
-		const ArrayList<DrawCommand>& drawCommands = WorldRenderer::get().drawCommands();
-
-		VkClearValue clearValues[2];
-		clearValues[0].color = {0, 0, 0, 0};
-		clearValues[1].depthStencil = {1.0f, 0};
-
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = m_RenderPass;
-		renderPassInfo.framebuffer = framebuffer;
-		renderPassInfo.renderArea.offset = {0, 0};
-		renderPassInfo.renderArea.extent = {(uint32_t)defaultFramebuffer.size().width, (uint32_t)defaultFramebuffer.size().height};
-		renderPassInfo.pClearValues = clearValues;
-		renderPassInfo.clearValueCount = 2;
-
-		VK_CALLV(vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS));
-
-		VkViewport viewport;
-		viewport.x = 0;
-		viewport.y = 0;
-		viewport.width = (float)defaultFramebuffer.size().width;
-		viewport.height = (float)defaultFramebuffer.size().height;
-		viewport.minDepth = 0;
-		viewport.maxDepth = 1;
-
-		VkRect2D scissor;
-		scissor.offset = renderPassInfo.renderArea.offset;
-		scissor.extent = renderPassInfo.renderArea.extent;
-
-		uint32_t offset = 0;
-
-		auto maint = std::this_thread::get_id();
-
-		static AtomicUInt threadsRunningCount = 0;
-		static std::mutex mtx;
-		static std::condition_variable cv;
-
-		uint32_t elementsRemaining = drawCommands.size();
-
-		for(uint32_t i = 0;elementsRemaining > 0;++i) {
-
-			uint32_t batchSize = std::min(elementsRemaining, (uint32_t)std::ceil((float)drawCommands.size() / (float)m_ThreadPool.size()));
-			uint32_t start = offset;
-			offset += batchSize;
-			elementsRemaining -= batchSize;
-
-			++threadsRunningCount;
-
-			ThreadData* t = m_ThreadPool[i];
-
-			VkCommandBuffer cmd = t->commandBuffers[imageIndex];
-			m_SecondaryCommandBuffers.push_back(cmd);
-
-			t->queue.push_back([&]() {
-
-				try {
-
-					Log::warn("{} -> command buffer {}", t->name, (uint64_t) cmd);
-
-					VkCommandBufferInheritanceInfo inheritanceInfo{};
-					inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-					inheritanceInfo.framebuffer = framebuffer;
-					inheritanceInfo.renderPass = m_RenderPass;
-					inheritanceInfo.subpass = 0;
-
-					VkCommandBufferBeginInfo beginInfo{};
-					beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-					beginInfo.pInheritanceInfo = &inheritanceInfo;
-					beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-
-					VK_CALL(vkBeginCommandBuffer(cmd, &beginInfo));
-					{
-						VK_CALLV(vkCmdSetViewport(cmd, 0, 1, &viewport));
-						VK_CALLV(vkCmdSetScissor(cmd, 0, 1, &scissor));
-
-						VK_CALLV(vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->vkPipeline()));
-
-						bindDescriptorSets(imageIndex, cmd);
-
-						Mesh* lastMesh = nullptr;
-						Material* lastMaterial = nullptr;
-
-						/*
-						for (uint32_t j = start; j < start + batchSize; ++j) {
-
-							const DrawCommand& drawCommand = drawCommands[j];
-
-							const Matrix4& transform = drawCommand.transform;
-							Mesh* mesh = drawCommand.mesh;
-							Material* material = drawCommand.material;
-
-							if (lastMaterial != material) {
-								bindMaterial(cmd, materialResources, material);
-								lastMaterial = material;
-							}
-
-							if (lastMesh != mesh) {
-								bindMesh(cmd, mesh);
-								lastMesh = mesh;
-							}
-
-							pushConstants(cmd, transform);
-
-							drawMesh(cmd, mesh);
-						}*/
-					}
-					VK_CALLV(vkEndCommandBuffer(cmd));
-
-				} catch(...) {
-					try {
-						std::rethrow_exception(std::current_exception());
-					} catch(const std::exception& e) {
-						Log::error("Error in thread {}: {}", 0, e.what());
-					}
-				}
-
-				if(--threadsRunningCount == 0) {
-					cv.notify_all();
-				}
-			});
-		}
-
-		std::unique_lock<std::mutex> lock(mtx);
-		cv.wait(lock);
-
-		VK_CALLV(vkCmdExecuteCommands(commandBuffer, m_SecondaryCommandBuffers.size(), m_SecondaryCommandBuffers.data()));
-		m_SecondaryCommandBuffers.clear();
-
-		VK_CALLV(vkCmdEndRenderPass(commandBuffer));
+		renderSceneSingleThread(imageIndex, commandBuffer, materialResources);
 	}
 
 	void VulkanPBRForwardRenderPass::renderSceneSingleThread(uint32_t imageIndex, VkCommandBuffer commandBuffer,
@@ -721,49 +572,5 @@ namespace milo {
 
 	void VulkanPBRForwardRenderPass::createSemaphores() {
 		mvk::Semaphore::create(m_SignalSemaphores.size(), m_SignalSemaphores.data());
-	}
-
-	VulkanPBRForwardRenderPass::ThreadData::ThreadData(uint32_t index) {
-
-		running = true;
-
-		std::mutex mtx;
-		std::condition_variable v;
-		std::unique_lock lock(mtx);
-
-		thread = Thread([&]() {
-
-			auto* device = VulkanContext::get()->device();
-			commandPool = new VulkanCommandPool(device->graphicsQueue(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-			commandPool->allocate(VK_COMMAND_BUFFER_LEVEL_SECONDARY, commandBuffers.size(), commandBuffers.data());
-
-			v.notify_all();
-
-			while(running) {
-				if(queue.empty()) continue;
-				Function<void>& task = queue.front();
-				task();
-				queue.pop_front();
-			}
-		});
-
-		v.wait(lock);
-
-		name = fmt::format("{} => Command pool = {:x}, thread = {}", index, (uint64_t)commandPool->vkCommandPool(), threadId());
-
-		Log::warn(name);
-	}
-
-	VulkanPBRForwardRenderPass::ThreadData::~ThreadData() {
-		queue.push_back([&]() {
-			commandPool->free(commandBuffers.size(), commandBuffers.data());
-			DELETE_PTR(commandPool);
-			running = false;
-		});
-		thread.join();
-	}
-
-	size_t VulkanPBRForwardRenderPass::ThreadData::threadId() const {
-		return ::std::hash<::std::thread::id>{}(thread.get_id());
 	}
 }

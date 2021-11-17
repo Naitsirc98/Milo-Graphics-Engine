@@ -15,14 +15,15 @@ public:
 
 		Scene* scene = SceneManager::activeScene();
 
-		Skybox* skybox = Assets::skybox().getPreethamSky();//.load("Landscape", "C:\\Users\\naits\\Downloads\\evening_meadow_2k.hdr");//.getIndoorSkybox();
-		skybox->prefilterLODBias(4);
+		//Skybox* skybox = Assets::skybox().getIndoorSkybox();//Assets::skybox().getPreethamSky();//.load("Landscape", "C:\\Users\\naits\\Downloads\\evening_meadow_2k.hdr");//.getIndoorSkybox();
+		Skybox* skybox = Assets::skybox().load("Landscape", "C:\\Users\\naits\\Downloads\\kloppenheim_06_2k.hdr");
+		skybox->prefilterLODBias(1);
 		skybox->maxPrefilterLOD(-1.5);
 
 		Entity skyboxEntity = scene->createEntity("Skybox");
 		SkyboxView& skyboxView = skyboxEntity.addComponent<SkyboxView>();
 		skyboxView.skybox = skybox;
-		skyboxView.type = SkyType::Dynamic;
+		skyboxView.type = SkyType::Static;
 
 		scene->setSkyEntity(skyboxEntity.id());
 

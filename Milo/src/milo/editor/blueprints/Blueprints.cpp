@@ -501,7 +501,7 @@ namespace milo::bp {
 		node.drawContent = [&]() {
 			float* data = (float*) node.data;
 			ImGui::SetNextItemWidth(64.0f);
-			ImGui::InputFloat("", &data[0]);
+			ImGui::DragFloat("", &data[0]);
 		};
 		return &m_Nodes.back();
 	}
@@ -515,9 +515,9 @@ namespace milo::bp {
 			ImGui::BeginVertical("Float2");
 			{
 				ImGui::SetNextItemWidth(64.0f);
-				ImGui::InputFloat("X", &data[0]);
+				ImGui::DragFloat("X", &data[0]);
 				ImGui::SetNextItemWidth(64.0f);
-				ImGui::InputFloat("Y", &data[1]);
+				ImGui::DragFloat("Y", &data[1]);
 			}
 			ImGui::EndVertical();
 		};
@@ -533,11 +533,11 @@ namespace milo::bp {
 			ImGui::BeginVertical("Float3");
 			{
 				ImGui::SetNextItemWidth(64.0f);
-				ImGui::InputFloat("X", &data[0]);
+				ImGui::DragFloat("X", &data[0]);
 				ImGui::SetNextItemWidth(64.0f);
-				ImGui::InputFloat("Y", &data[1]);
+				ImGui::DragFloat("Y", &data[1]);
 				ImGui::SetNextItemWidth(64.0f);
-				ImGui::InputFloat("Z", &data[2]);
+				ImGui::DragFloat("Z", &data[2]);
 			}
 			ImGui::EndVertical();
 		};
@@ -553,13 +553,13 @@ namespace milo::bp {
 			ImGui::BeginVertical("Float4");
 			{
 				ImGui::SetNextItemWidth(64.0f);
-				ImGui::InputFloat("X", &data[0]);
+				ImGui::DragFloat("X", &data[0]);
 				ImGui::SetNextItemWidth(64.0f);
-				ImGui::InputFloat("Y", &data[1]);
+				ImGui::DragFloat("Y", &data[1]);
 				ImGui::SetNextItemWidth(64.0f);
-				ImGui::InputFloat("Z", &data[2]);
+				ImGui::DragFloat("Z", &data[2]);
 				ImGui::SetNextItemWidth(64.0f);
-				ImGui::InputFloat("W", &data[3]);
+				ImGui::DragFloat("W", &data[3]);
 			}
 			ImGui::EndVertical();
 		};

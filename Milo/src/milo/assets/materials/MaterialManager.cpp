@@ -36,7 +36,7 @@ namespace milo {
 
 		String file = filename;
 
-		if(file == "") {
+		if(file.empty()) {
 			file = str("resources/materials/") + name + ".mat";
 		}
 

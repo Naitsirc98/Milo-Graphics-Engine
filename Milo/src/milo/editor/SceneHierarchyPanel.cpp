@@ -98,9 +98,9 @@ namespace milo {
 					newEntity.getComponent<Transform>().scale({0.2f, 0.2f, 0.2f});
 					PointLight& p = newEntity.addComponent<PointLight>();
 					p.position = Vector4(newEntity.getComponent<Transform>().translation(), 1);
-					MeshView& m = newEntity.addComponent<MeshView>();
-					m.mesh = Assets::meshes().getPlane();
-					m.material = Assets::materials().getDefault();
+					//MeshView& m = newEntity.addComponent<MeshView>();
+					//m.mesh = Assets::meshes().getPlane();
+					//m.material = Assets::materials().getDefault();
 					selectEntity(newEntity);
 				}
 
@@ -148,11 +148,13 @@ namespace milo {
 	}
 
 	void SceneHierarchyPanel::createEntityWithMesh(Scene* scene, const String& name, Mesh* mesh) {
+		static uint32_t materialIndex = 1;
 		auto newEntity = scene->createEntity(name);
 		newEntity.setName(name);
 		MeshView& meshView = newEntity.addComponent<MeshView>();
 		meshView.mesh = mesh;
-		meshView.material = Assets::materials().getDefault();
+		meshView.material = Assets::materials().create("Material_" + str(materialIndex++));
+		meshView.material->metallic(0.01f);
 		selectEntity(newEntity);
 	}
 
